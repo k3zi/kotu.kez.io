@@ -25,7 +25,7 @@ let app = Application(env)
 
 let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
 shell(currentDirectoryURL: directoryURL, args: "npm", "install")
-shell(currentDirectoryURL: directoryURL, args: "npm", "run", "build")
+shell(currentDirectoryURL: directoryURL, args: "webpack")
 
 defer { app.shutdown() }
 try configure(app)
