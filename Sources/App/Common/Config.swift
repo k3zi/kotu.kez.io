@@ -13,8 +13,8 @@ struct Config: Decodable {
 
     private init() { fatalError() }
 
-    let repoScanDirectory: String
-    var repoScanDirectoryURL: URL { URL(fileURLWithPath: repoScanDirectory) }
-    let githubWebhookSecret: String
+    let databaseUsername: String
+    let databasePassword: String
+    let databaseName: String
 
 }

@@ -1,5 +1,6 @@
 import React from "react";
 
+import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
@@ -10,23 +11,42 @@ class RegisterModal extends React.Component {
         super(props);
         this.state = {
             isSubmitting: false,
-            error: null
+            didError: false,
+            message: null,
+            success: false
         };
     }
 
     async submit(event) {
         event.preventDefault();
-        this.setState({ isSubmitting: true });
+        if (this.success || this.isSubmitting) {
+            return;
+        }
+        this.setState({ isSubmitting: true, didError: false, message: null });
+
         const data = Object.fromEntries(new FormData(event.target));
-        console.log(data);
-        const res = await fetch(`/api/auth/register`, {
+        const response = await fetch(`/api/auth/register`, {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
                 "Content-Type": "application/json"
             }
         });
-        this.setState({ isSubmitting: false });
+        const result = await response.json();
+        console.log(result);
+        const success = !result.error;
+        this.setState({
+            isSubmitting: false,
+            didError: result.error,
+            message: result.error ? result.reason : 'Logging in...',
+            success
+         });
+
+         if (success) {
+             setTimeout(() => {
+                 location.reload();
+             }, 3000);
+         }
     }
 
     render() {
@@ -45,13 +65,24 @@ class RegisterModal extends React.Component {
                             <Form.Control type="text" name="username" placeholder="Enter a username" />
                         </Form.Group>
 
-                      <Form.Group controlId="registerModalPassword">
+                        <Form.Group controlId="registerModalPassword">
                             <Form.Label>Password</Form.Label>
-                            <Form.Control type="password" name="password" placeholder="Password" />
-                      </Form.Group>
-                      <Button variant="primary" type="submit">
-                            Register
-                      </Button>
+                            <Form.Control type="password" name="password" placeholder="Enter a password" />
+                        </Form.Group>
+                        <Form.Group controlId="registerModalConfirmPassword">
+                            <Form.Label>Confirm Password</Form.Label>
+                            <Form.Control type="password" name="confirmPassword" placeholder="Reenter the password" />
+                        </Form.Group>
+                        {this.state.didError && <Alert variant="danger">
+                            {this.state.message}
+                        </Alert>}
+
+                        {!this.state.didError && this.state.message && <Alert variant="info">
+                            {this.state.message}
+                        </Alert>}
+                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                            {this.state.isSubmitting ? 'Loading...' : 'Register'}
+                        </Button>}
                     </Form>
                 </Modal.Body>
             </Modal>

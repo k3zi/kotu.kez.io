@@ -1,55 +1,67 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import "bootstrap";
 import "../Styles/Custom.scss";
 
-import Home from "./Home";
-import ViewSubtitles from "./YouTube";
-
-import RegisterModal from "./RegisterModal";
-
+import Container from 'react-bootstrap/Container';
+import { LinkContainer } from 'react-router-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
+
+import Home from "./Home";
+import RegisterModal from "./RegisterModal";
+import Transcribe from "./Transcribe";
 
 class App extends React.Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            showRegisterModal: false
+            showRegisterModal: false,
+            showLoginModal: false
         };
     }
 
-    hideRegisterModal() {
-        this.setState({ showRegisterModal: false });
+    toggleRegisterModal(show) {
+        this.setState({ showRegisterModal: show });
     }
 
-    showRegisterModal() {
-        this.setState({ showRegisterModal: true });
+    toggleLoginModal(show) {
+        this.setState({ showLoginModal: show });
     }
 
     render() {
         return (
             <Router>
                 <Navbar bg="dark" variant="dark">
-                    <Navbar.Brand href="#home">コツ</Navbar.Brand>
-                    <Nav className="mr-auto">
-                        <Nav.Link href="/">Home</Nav.Link>
-                        <Nav.Link href="#features">Login</Nav.Link>
-                        <Nav.Link href="#" onClick={() => this.showRegisterModal()}>Register</Nav.Link>
+                    <LinkContainer to="/">
+                        <Navbar.Brand>コツ</Navbar.Brand>
+                    </LinkContainer>
+                    <Nav className="mr-auto" activeKey={window.location.pathname}>
+                        <LinkContainer to="/transcribe">
+                            <Nav.Link eventKey="/transcribe">Transcribe</Nav.Link>
+                        </LinkContainer>
+                    </Nav>
+                    <Nav>
+                        <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
+                        <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                     </Nav>
                 </Navbar>
-                
-                <div>
-                    <Route exact path="/" component={Home} />
-                    <Route path="/subtitles" component={ViewSubtitles} />
 
-                    <Link to="/">Home</Link>
-                    <Link to="/subtitles">Subtitles</Link>
-                </div>
+                <Container>
+                    <Switch>
+                        <Route exact path="/">
+                            <Home />
+                        </Route>
 
-                <RegisterModal show={this.state.showRegisterModal} onHide={() => this.hideRegisterModal()} />
+                        <Route path="/transcribe">
+                            <Transcribe />
+                        </Route>
+                    </Switch>
+                </Container>
+
+                <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
             </Router>
         )
     }
