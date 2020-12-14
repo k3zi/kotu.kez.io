@@ -7,3 +7,5 @@ DerivedData/
 db.sqlite
 .swiftpm
 config.json
+node_modules
+Public/generated

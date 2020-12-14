@@ -1,0 +1,35 @@
+{
+    "name": "kotu.kez.io",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+        "start": "vapor run",
+        "run": "vapor run",
+        "build": "webpack --config webpack.config.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/k3zi/kotu.kez.io.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/k3zi/kotu.kez.io/issues"
+    },
+    "homepage": "https://github.com/k3zi/kotu.kez.io#readme",
+    "devDependencies": {
+        "@babel/preset-env": "^7.12.10",
+        "@babel/preset-react": "^7.12.10",
+        "babel-loader": "^8.2.2",
+        "bootstrap": "^4.5.3",
+        "css-loader": "^5.0.1",
+        "mini-css-extract-plugin": "^1.3.3",
+        "react": "^17.0.1",
+        "react-dom": "^17.0.1",
+        "react-router-dom": "^5.2.0",
+        "sass": "^1.30.0",
+        "sass-loader": "^10.1.0",
+        "webpack": "^5.10.1",
+        "webpack-cli": "^4.2.0"
+    }
+}
