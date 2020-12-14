@@ -7,4 +7,8 @@ func routes(_ app: Application) throws {
         return req.view.render("index", ["title": "Hello Vapor!"])
     }
 
+    app.get(.anything) { req in
+        return req.view.render("index", ["title": "Hello Vapor!"])
+    }
+
 }

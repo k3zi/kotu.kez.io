@@ -32,7 +32,7 @@ module.exports = {
     },
     plugins: [
         new MiniCssExtractPlugin({
-            filename: "[name].css",
+            filename: "bundle.css",
             chunkFilename: "[id].css"
         })
     ]

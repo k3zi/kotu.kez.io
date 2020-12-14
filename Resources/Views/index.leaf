@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>コツ - #(title)</title>
+    <title>コツ</title>
+    <link href="/generated/bundle.css" rel="stylesheet">
 </head>
 <body>
     <div id="app"></div>
