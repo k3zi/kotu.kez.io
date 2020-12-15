@@ -14,10 +14,11 @@ final class User: Model, Content {
     @Field(key: "password_hash")
     var passwordHash: String
 
-    // Creates a new, empty Planet.
+    @Timestamp(key: "created_at", on: .create)
+    var createdAt: Date?
+
     init() { }
 
-    // Creates a new Planet with all properties set.
     init(id: UUID? = nil, username: String, passwordHash: String) {
         self.id = id
         self.username = username
@@ -45,6 +46,22 @@ extension User {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema("users").delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "AddUserCreationDate" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("created_at", .date)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("created_at")
+                .update()
         }
     }
 

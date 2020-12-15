@@ -4,7 +4,6 @@ import Leaf
 import Redis
 import Vapor
 
-// configures your application
 public func configure(_ app: Application) throws {
 
     app.redis.configuration = try RedisConfiguration(hostname: "localhost")
@@ -18,6 +17,11 @@ public func configure(_ app: Application) throws {
     ), as: .psql)
 
     app.migrations.add(User.Migration())
+    app.migrations.add(User.Migration1())
+    app.migrations.add(Language.Migration())
+    app.migrations.add(Project.Migration())
+    app.migrations.add(Translation.Migration())
+    app.migrations.add(Subtitle.Migration())
     try app.autoMigrate().wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271

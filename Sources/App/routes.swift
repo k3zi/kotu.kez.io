@@ -5,6 +5,7 @@ func routes(_ app: Application) throws {
 
     let api = app.grouped("api")
     try api.register(collection: AuthController())
+    try api.register(collection: SettingsController())
 
     api.get("me") { req -> User in
         return try req.auth.require(User.self)
