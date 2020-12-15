@@ -28,7 +28,6 @@ class AuthController: RouteCollection {
                 username: object.username,
                 passwordHash: Bcrypt.hash(object.password)
             )
-            req.auth.login(user)
             return user.save(on: req.db)
                 .map { user }
                 .always { result in

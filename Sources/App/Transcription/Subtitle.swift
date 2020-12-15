@@ -11,22 +11,18 @@ final class Subtitle: Model, Content {
     @Parent(key: "translation_id")
     var translation: Translation
 
-    @Field(key: "start_time")
-    var startTime: Double
-
-    @Field(key: "end_time")
-    var endTime: Double
+    @Parent(key: "fragment_id")
+    var fragment: Fragment
 
     @Field(key: "text")
     var text: String
 
     init() { }
 
-    init(id: UUID? = nil, translationID: UUID, startTime: Double, endTime: Double, text: String) {
+    init(id: UUID? = nil, translationID: UUID, fragmentID: UUID, text: String) {
         self.id = id
         self.$translation.id = translationID
-        self.startTime = startTime
-        self.endTime = endTime
+        self.$fragment.id = fragmentID
         self.text = text
     }
 
@@ -49,6 +45,26 @@ extension Subtitle {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "TranscriptionSubtitleFragment" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("fragment_id", .uuid, .required, .references("transcription_fragments", "id"))
+                .deleteField("start_time")
+                .deleteField("end_time")
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("fragment_id")
+                .field("start_time", .double, .required)
+                .field("end_time", .double, .required)
+                .update()
         }
     }
 

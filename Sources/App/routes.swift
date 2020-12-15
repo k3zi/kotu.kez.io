@@ -6,6 +6,7 @@ func routes(_ app: Application) throws {
     let api = app.grouped("api")
     try api.register(collection: AuthController())
     try api.register(collection: SettingsController())
+    try api.register(collection: TranscriptionController())
 
     api.get("me") { req -> User in
         return try req.auth.require(User.self)
@@ -15,7 +16,7 @@ func routes(_ app: Application) throws {
         return req.view.render("index", ["title": "Hello Vapor!"])
     }
 
-    app.get(.anything) { req in
+    app.get(.catchall) { req in
         return req.view.render("index", ["title": "Hello Vapor!"])
     }
 

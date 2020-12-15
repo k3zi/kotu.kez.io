@@ -1,9 +1,9 @@
 import Fluent
 import Vapor
 
-final class Translation: Model, Content {
+final class Fragment: Model, Content {
 
-    static let schema = "transcription_translations"
+    static let schema = "transcription_fragments"
 
     @ID(key: .id)
     var id: UUID?
@@ -11,34 +11,37 @@ final class Translation: Model, Content {
     @Parent(key: "project_id")
     var project: Project
 
-    @Parent(key: "language_id")
-    var language: Language
+    @Field(key: "start_time")
+    var startTime: Double
 
-    @Field(key: "is_original")
-    var isOriginal: Bool
+    @Field(key: "end_time")
+    var endTime: Double
+
+    @Children(for: \.$fragment)
+    var subtitles: [Subtitle]
 
     init() { }
 
-    init(id: UUID? = nil, projectID: UUID, languageID: UUID, isOriginal: Bool) {
+    init(id: UUID? = nil, projectID: UUID, startTime: Double, endTime: Double) {
         self.id = id
         self.$project.id = projectID
-        self.$language.id = languageID
-        self.isOriginal = isOriginal
+        self.startTime = startTime
+        self.endTime = endTime
     }
 
 }
 
-extension Translation {
+extension Fragment {
 
     struct Migration: Fluent.Migration {
-        var name: String { "CreateTranscriptionTranslation" }
+        var name: String { "CreateTranscriptionFragment" }
 
         func prepare(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema)
                 .id()
                 .field("project_id", .uuid, .required, .references("transcription_projects", "id"))
-                .field("language_id", .uuid, .required, .references("languages", "id"))
-                .field("is_original", .bool, .required)
+                .field("start_time", .double, .required)
+                .field("end_time", .double, .required)
                 .create()
         }
 

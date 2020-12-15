@@ -4,6 +4,7 @@ import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
+import Spinner from 'react-bootstrap/Spinner';
 
 class LoginModal extends React.Component {
 
@@ -77,7 +78,8 @@ class LoginModal extends React.Component {
                         </Alert>}
 
                         {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
-                            {this.state.isSubmitting ? 'Loading...' : 'Login'}
+                            {this.state.isSubmitting && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />}
+                            {this.state.isSubmitting ? ' Loading...' : 'Login'}
                         </Button>}
                     </Form>
                 </Modal.Body>

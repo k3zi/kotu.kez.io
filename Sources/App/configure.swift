@@ -7,6 +7,7 @@ import Vapor
 public func configure(_ app: Application) throws {
 
     app.redis.configuration = try RedisConfiguration(hostname: "localhost")
+    app.sessions.use(.redis)
 
     app.databases.use(.postgres(
         hostname: "localhost",
@@ -22,6 +23,9 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Project.Migration())
     app.migrations.add(Translation.Migration())
     app.migrations.add(Subtitle.Migration())
+    app.migrations.add(Fragment.Migration())
+    app.migrations.add(Subtitle.Migration1())
+    app.migrations.add(Project.Migration1())
     try app.autoMigrate().wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271

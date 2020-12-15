@@ -25,3 +25,13 @@ body {
 .bg-dark {
     background-color: #272727 !important;
 }
+
+.badge-primary-inverted {
+    color: #007bff;
+    border: #007bff 1px solid;
+}
+
+.no-box-shadow:focus {
+    box-shadow: none !important;
+    border-color: #007bff;
+}

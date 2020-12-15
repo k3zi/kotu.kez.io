@@ -17,6 +17,9 @@ final class User: Model, Content {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Children(for: \.$owner)
+    var projects: [Project]
+
     init() { }
 
     init(id: UUID? = nil, username: String, passwordHash: String) {

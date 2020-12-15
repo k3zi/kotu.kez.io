@@ -12,7 +12,8 @@ import Navbar from 'react-bootstrap/Navbar';
 import Home from "./Home";
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
-import Transcribe from "./Transcribe";
+import TranscriptionProjects from "./Transcription/Projects";
+import TranscriptionProject from "./Transcription/Project";
 
 const UserContext = React.createContext(null);
 
@@ -59,8 +60,8 @@ class App extends React.Component {
                             <Navbar.Brand>コツ</Navbar.Brand>
                         </LinkContainer>
                         <Nav className="mr-auto" activeKey={window.location.pathname}>
-                            <LinkContainer to="/transcribe">
-                                <Nav.Link eventKey="/transcribe">Transcribe</Nav.Link>
+                            <LinkContainer to="/transcription">
+                                <Nav.Link eventKey="/transcription">Transcription</Nav.Link>
                             </LinkContainer>
                         </Nav>
                         {!this.state.user && <Nav>
@@ -82,8 +83,12 @@ class App extends React.Component {
                                 <Home />
                             </Route>
 
-                            <Route path="/transcribe">
-                                <Transcribe />
+                            <Route exact path="/transcription">
+                                <TranscriptionProjects />
+                            </Route>
+
+                            <Route path="/transcription/:id">
+                                <TranscriptionProject />
                             </Route>
                         </Switch>
                     </Container>
