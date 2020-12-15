@@ -71,3 +71,22 @@ extension User.Create: Validatable {
     }
 
 }
+
+extension User: SessionAuthenticatable {
+
+    var sessionID: UUID {
+        self.id ?? .init()
+    }
+
+}
+
+extension User: ModelCredentialsAuthenticatable {
+
+    static let usernameKey = \User.$username
+    static let passwordHashKey = \User.$passwordHash
+
+    func verify(password: String) throws -> Bool {
+        try Bcrypt.verify(password, created: self.passwordHash)
+    }
+
+}

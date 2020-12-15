@@ -5,7 +5,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 
-class RegisterModal extends React.Component {
+class LoginModal extends React.Component {
 
     constructor(props) {
         super(props);
@@ -25,7 +25,7 @@ class RegisterModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        const response = await fetch(`/api/auth/register`, {
+        const response = await fetch(`/api/auth/login`, {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
@@ -53,24 +53,20 @@ class RegisterModal extends React.Component {
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
-                        Register
+                        Login
                     </Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <Form.Group controlId="registerModalUsername">
+                        <Form.Group controlId="loginModalUsername">
                             <Form.Label>Username</Form.Label>
                             <Form.Control type="text" name="username" placeholder="Enter a username" />
                         </Form.Group>
 
-                        <Form.Group controlId="registerModalPassword">
+                        <Form.Group controlId="loginModalPassword">
                             <Form.Label>Password</Form.Label>
                             <Form.Control type="password" name="password" placeholder="Enter a password" />
-                        </Form.Group>
-                        <Form.Group controlId="registerModalConfirmPassword">
-                            <Form.Label>Confirm Password</Form.Label>
-                            <Form.Control type="password" name="confirmPassword" placeholder="Reenter the password" />
                         </Form.Group>
 
                         {this.state.didError && <Alert variant="danger">
@@ -81,7 +77,7 @@ class RegisterModal extends React.Component {
                         </Alert>}
 
                         {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
-                            {this.state.isSubmitting ? 'Loading...' : 'Register'}
+                            {this.state.isSubmitting ? 'Loading...' : 'Login'}
                         </Button>}
                     </Form>
                 </Modal.Body>
@@ -91,4 +87,4 @@ class RegisterModal extends React.Component {
 
 }
 
-export default RegisterModal;
+export default LoginModal;

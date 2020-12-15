@@ -92,6 +92,24 @@
         }
       },
       {
+        "package": "redis",
+        "repositoryURL": "https://github.com/vapor/redis.git",
+        "state": {
+          "branch": null,
+          "revision": "00fdd687ec56468a3e21204ac0a9b6337d7e79ed",
+          "version": "4.0.0"
+        }
+      },
+      {
+        "package": "RediStack",
+        "repositoryURL": "https://gitlab.com/mordil/RediStack.git",
+        "state": {
+          "branch": null,
+          "revision": "b2367ac33eb8632011c1ec7afff12307838a4dab",
+          "version": "1.1.0"
+        }
+      },
+      {
         "package": "routing-kit",
         "repositoryURL": "https://github.com/vapor/routing-kit.git",
         "state": {

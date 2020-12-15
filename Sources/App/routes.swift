@@ -6,6 +6,10 @@ func routes(_ app: Application) throws {
     let api = app.grouped("api")
     try api.register(collection: AuthController())
 
+    api.get("me") { req -> User in
+        return try req.auth.require(User.self)
+    }
+
     app.get { req in
         return req.view.render("index", ["title": "Hello Vapor!"])
     }
