@@ -3,6 +3,7 @@ import FluentPostgresDriver
 import Leaf
 import Redis
 import Vapor
+import VaporSecurityHeaders
 
 public func configure(_ app: Application) throws {
 
@@ -31,6 +32,13 @@ public func configure(_ app: Application) throws {
     try app.autoMigrate().wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
+
+
+    let cspValue = "default-src * data: blob: ws: wss: gap://ready file://*; connect-src * ws: wss:;"
+    let cspConfig = ContentSecurityPolicyConfiguration(value: cspValue)
+    let securityHeadersFactory = SecurityHeadersFactory().with(contentSecurityPolicy: cspConfig)
+    app.middleware.use(securityHeadersFactory.build())
+    app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.middleware.use(app.sessions.middleware)
     app.middleware.use(User.sessionAuthenticator())
