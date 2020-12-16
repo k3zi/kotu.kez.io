@@ -51,3 +51,29 @@ extension Fragment {
     }
 
 }
+
+extension Fragment {
+
+    struct Create: Content {
+        let baseText: String
+        let baseTranslationID: UUID
+        let targetText: String?
+        let targetTranslationID: UUID?
+        let startTime: Double
+        let endTime: Double
+    }
+
+}
+
+extension Fragment.Create: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("baseText", as: String.self, is: !.empty)
+        validations.add("baseTranslationID", as: UUID.self)
+        validations.add("targetText", as: String?.self, required: false)
+        validations.add("targetTranslationID", as: UUID?.self, required: false)
+        validations.add("startTime", as: Double.self)
+        validations.add("endTime", as: Double.self)
+    }
+
+}

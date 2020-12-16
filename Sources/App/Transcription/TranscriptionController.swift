@@ -65,7 +65,7 @@ class TranscriptionController: RouteCollection {
                 .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
         }
 
-        project.post(":id", "translations", "create") { (req: Request) -> EventLoopFuture<Translation> in
+        project.post(":id", "translation", "create") { (req: Request) -> EventLoopFuture<Translation> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
@@ -89,6 +89,105 @@ class TranscriptionController: RouteCollection {
                             return translation.save(on: req.db)
                                 .map { translation }
                         }
+                }
+        }
+
+        project.post(":id", "fragment", "create") { (req: Request) -> EventLoopFuture<Fragment> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            try Fragment.Create.validate(content: req)
+            let object = try req.content.decode(Fragment.Create.self)
+            guard object.startTime <= object.endTime else {
+                throw Abort(.badRequest, reason: "Start time can not be greater than end time")
+            }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$translations)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .throwingFlatMap { project in
+                    let fragment = Fragment(projectID: try project.requireID(), startTime: object.startTime, endTime: object.endTime)
+                    return fragment.save(on: req.db)
+                        .throwingFlatMap {
+                            guard let baseTranslation = project.translations.first(where: { $0.id == object.baseTranslationID }) else {
+                                throw Abort(.unauthorized, reason: "Base translation could not be found")
+                            }
+                            var subtitles = [Subtitle]()
+                            let baseSubtitle = Subtitle(translationID: try baseTranslation.requireID(), fragmentID: try fragment.requireID(), text: object.baseText)
+                            subtitles.append(baseSubtitle)
+                            
+                            if let targetText = object.targetText, targetText.count > 0, let targetTranslationID = object.targetTranslationID {
+                                guard let targetTranslation = project.translations.first(where: { $0.id == targetTranslationID }) else {
+                                    throw Abort(.unauthorized, reason: "Target translation could not be found")
+                                }
+
+                                let targetSubtitle = Subtitle(translationID: try targetTranslation.requireID(), fragmentID: try fragment.requireID(), text: targetText)
+                                subtitles.append(targetSubtitle)
+                            }
+                            return fragment.$subtitles.create(subtitles, on: req.db)
+                        }
+                        .map { fragment }
+                }
+        }
+
+        project.post(":id", "subtitle", "create") { (req: Request) -> EventLoopFuture<Subtitle> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
+
+            try Subtitle.Create.validate(content: req)
+            let object = try req.content.decode(Subtitle.Create.self)
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$translations)
+                .with(\.$fragments) { $0.with(\.$subtitles) { $0.with(\.$translation) } }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .throwingFlatMap { project in
+                    guard let translation = project.translations.first(where: { $0.id == object.translationID }) else {
+                        throw Abort(.unauthorized, reason: "Translation could not be found")
+                    }
+
+                    guard let fragment = project.fragments.first(where: { $0.id == object.fragmentID }) else {
+                        throw Abort(.unauthorized, reason: "Fragment could not be found")
+                    }
+
+                    guard !fragment.subtitles.contains(where: { $0.translation.id == translation.id }) else {
+                        throw Abort(.unauthorized, reason: "Duplicate subtitle found")
+                    }
+
+                    let subtitle = Subtitle(translationID: try translation.requireID(), fragmentID: try fragment.requireID(), text: object.text)
+                    return subtitle.save(on: req.db)
+                        .map { subtitle }
+                }
+        }
+
+        project.put(":id", "subtitle", ":subtitleID") { (req: Request) -> EventLoopFuture<Subtitle> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
+            guard let subtitleID = req.parameters.get("subtitleID", as: UUID.self) else { throw Abort(.badRequest, reason: "Subtitle ID not provided") }
+
+            try Subtitle.Update.validate(content: req)
+            let object = try req.content.decode(Subtitle.Update.self)
+            return Subtitle.query(on: req.db)
+                .with(\.$fragment) { $0.with(\.$project) { $0.with(\.$owner) } }
+                .filter(\.$id == subtitleID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Subtitle not found"))
+                .guard({ $0.fragment.project.owner.id == userID }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.fragment.project.id == id }, else: Abort(.unauthorized, reason: "Subtitle does not belong to this project"))
+                .flatMap { subtitle in
+                    subtitle.text = object.text
+                    return subtitle.update(on: req.db)
+                        .map { subtitle }
                 }
         }
 

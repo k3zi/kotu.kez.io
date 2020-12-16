@@ -39,7 +39,7 @@ class AddTargetLanguageModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        const response = await fetch(`/api/transcription/project/${this.props.project.id}/translations/create`, {
+        const response = await fetch(`/api/transcription/project/${this.props.project.id}/translation/create`, {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
@@ -54,7 +54,7 @@ class AddTargetLanguageModal extends React.Component {
          });
 
          if (response.ok) {
-             this.props.onFinish();
+             this.props.onFinish(result);
          } else {
              this.setState({
                  didError: result.error,
@@ -64,7 +64,6 @@ class AddTargetLanguageModal extends React.Component {
     }
 
     render() {
-        console.log(this.props);
         return (
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>

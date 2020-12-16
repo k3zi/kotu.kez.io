@@ -69,3 +69,39 @@ extension Subtitle {
     }
 
 }
+
+extension Subtitle {
+
+    struct Create: Content {
+        let translationID: UUID
+        let fragmentID: UUID
+        let text: String
+    }
+
+}
+
+extension Subtitle.Create: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("translationID", as: UUID.self)
+        validations.add("fragmentID", as: UUID.self)
+        validations.add("text", as: String.self, is: !.empty)
+    }
+
+}
+
+extension Subtitle {
+
+    struct Update: Content {
+        let text: String
+    }
+
+}
+
+extension Subtitle.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("text", as: String.self, is: !.empty)
+    }
+
+}
