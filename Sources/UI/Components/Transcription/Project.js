@@ -214,7 +214,7 @@ class Project extends React.Component {
     setupSocket() {
         const id = this.props.match.params.id;
         const self = this;
-        this.ws = new WebSocket(`ws://${window.location.host}/api/transcription/project/${id}/socket`);
+        this.ws = new WebSocket(`wss://${window.location.host}/api/transcription/project/${id}/socket`);
 
        this.ws.onmessage = (evt) => {
            const message = JSON.parse(evt.data);
