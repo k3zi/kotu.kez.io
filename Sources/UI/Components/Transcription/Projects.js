@@ -22,19 +22,26 @@ class Projects extends React.Component {
         this.state = {
             showCreateProjectModal: false,
             showDeleteProjectModal: null,
-            projects: []
+            projects: [],
+            invites: []
         };
     }
 
     componentDidMount() {
-        this.loadProjects();
+        this.load();
     }
 
-    async loadProjects() {
+    async load() {
         const response = await fetch(`/api/transcription/projects`);
         if (response.ok) {
             const projects = await response.json();
             this.setState({ projects });
+        }
+
+        const response2 = await fetch(`/api/transcription/invites`);
+        if (response2.ok) {
+            const invites = await response2.json();
+            this.setState({ invites });
         }
     }
 
@@ -48,7 +55,21 @@ class Projects extends React.Component {
         this.setState({
             showDeleteProjectModal: project
         });
-        await this.loadProjects();
+        await this.load();
+    }
+
+    async acceptInvite(invite) {
+        await fetch(`/api/transcription/project/${invite.project.id}/invite/accept`, {
+            method: "POST"
+        });
+        await this.load();
+    }
+
+    async declineInvite(invite) {
+        await fetch(`/api/transcription/project/${invite.project.id}/invite/decline`, {
+            method: "POST"
+        });
+        await this.load();
     }
 
     render() {
@@ -76,6 +97,33 @@ class Projects extends React.Component {
                                     </LinkContainer>
                                     {" "}
                                     <Button variant="danger" onClick={() => this.showDeleteProjectModal(project)}><i class="bi bi-trash"></i></Button>
+                                </td>
+                            </tr>)
+                        })}
+                    </tbody>
+                </Table>
+
+                <h2>Invites <small className="text-muted">{this.state.invites.length}</small></h2>
+                <hr/>
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>Name</th>
+                            <th>Base Language</th>
+                            <th className="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {this.state.invites.map(invite => {
+                            return (<tr>
+                                <td className="align-middle">{invite.project.owner.username}</td>
+                                <td className="align-middle">{invite.project.name}</td>
+                                <td className="align-middle">{invite.project.translations.filter(t => t.isOriginal)[0].language.name}</td>
+                                <td className="align-middle text-center">
+                                    <Button variant="success" onClick={() => this.acceptInvite(invite)}><i class="bi bi-check"></i></Button>
+                                    {" "}
+                                    <Button variant="danger" onClick={() => this.declineInvite(invite)}><i class="bi bi-x"></i></Button>
                                 </td>
                             </tr>)
                         })}

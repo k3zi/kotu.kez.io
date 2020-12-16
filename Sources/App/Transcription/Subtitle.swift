@@ -85,7 +85,7 @@ extension Subtitle.Create: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("translationID", as: UUID.self)
         validations.add("fragmentID", as: UUID.self)
-        validations.add("text", as: String.self, is: !.empty)
+        validations.add("text", as: String.self)
     }
 
 }

@@ -68,7 +68,7 @@ extension Fragment {
 extension Fragment.Create: Validatable {
 
     static func validations(_ validations: inout Validations) {
-        validations.add("baseText", as: String.self, is: !.empty)
+        validations.add("baseText", as: String.self)
         validations.add("baseTranslationID", as: UUID.self)
         validations.add("targetText", as: String?.self, required: false)
         validations.add("targetTranslationID", as: UUID?.self, required: false)

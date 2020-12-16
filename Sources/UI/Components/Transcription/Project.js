@@ -12,13 +12,16 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
 import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
 import Table from 'react-bootstrap/Table';
+import Tooltip from 'react-bootstrap/Tooltip';
 import YouTube from 'react-youtube';
 
 import AddTargetLanguageModal from "./AddTargetLanguageModal";
+import InviteUserModal from "./InviteUserModal";
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -28,42 +31,150 @@ const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelle
             <ul className="list-unstyled my-0">
                 {React.Children.toArray(children).filter(child => !value || child.props.children.toLowerCase().startsWith(value))}
             </ul>
-          </div>
-        );
-    },
-);
+        </div>
+    );
+});
 
 class ContentEditable extends React.Component {
+
+    getTextSelection(editor) {
+        const selection = window.getSelection();
+        if (selection != null && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+
+            return {
+                start: this.getTextLength(editor, range.startContainer, range.startOffset),
+                end: this.getTextLength(editor, range.endContainer, range.endOffset)
+            };
+        } else {
+            return null;
+        };
+    }
+
+    getTextLength(parent, node, offset) {
+        if (!node) { return 0; }
+        let textLength = 0;
+        if (node && node.nodeName == '#text') {
+            textLength += offset;
+        } else {
+            for (var i = 0; i < offset; i++) {
+                textLength += this.getNodeTextLength(node.childNodes[i]);
+            }
+        }
+
+        if (node != parent) {
+            textLength += this.getTextLength(parent, node.parentNode, this.getNodeOffset(node));
+        }
+
+        return textLength;
+    }
+
+    getNodeTextLength(node) {
+        let textLength = 0;
+        if (node && node.nodeName == 'BR')
+            textLength = 1;
+        else if (node && node.nodeName == '#text')
+            textLength = node.nodeValue.length;
+        else if (node && node.childNodes != null)
+            for (var i = 0; i < node.childNodes.length; i++)
+                textLength += this.getNodeTextLength(node.childNodes[i]);
+
+        return textLength;
+    }
+
+    getNodeOffset(node) {
+        return node == null ? -1 : 1 + this.getNodeOffset(node.previousSibling);
+    }
 
     getDOMNode() {
         return ReactDOM.findDOMNode(this);
     }
 
+    componentDidMount() {
+        this.ces = Math.random();
+        const self = this;
+        this.getDOMNode().addEventListener("selectstart", (e) => {
+            const target = e.target;
+            setTimeout(() => {
+                if (window.getSelection()) {
+                    function check() {
+                        setTimeout(() => {
+                            const selection = window.getSelection();
+                            if (selection.baseNode.isEqualNode(target)) {
+                                self.emitChange();
+                                check();
+                            }
+                        }, 50);
+                    }
+
+                    check();
+                }
+                self.emitChange();
+            }, 50);
+        });
+    }
+
     shouldComponentUpdate(nextProps) {
-        return nextProps.value !== this.getDOMNode().innerText;
+        return this.contentFromProps(nextProps) !== this.currentContent();
     }
 
     componentDidUpdate() {
-        if (this.props.value !== this.getDOMNode().innerText) {
-           this.getDOMNode().innerText = this.props.value;
+        if (this.contentFromProps(this.props) !== this.currentContent()) {
+           this.setCurrentContent(this.contentFromProps(this.props));
         }
+    }
+
+    isUsingHTML() {
+        return !!this.props.html;
+    }
+
+    currentContent() {
+        return this.isUsingHTML() ? this.getDOMNode().innerHTML : this.getDOMNode().innerText;
+    }
+
+    setCurrentContent(content) {
+        if (this.isUsingHTML()) {
+            this.getDOMNode().innerHTML = content;
+        } else {
+            this.getDOMNode().innerText = content;
+        }
+    }
+
+    contentFromProps(props) {
+        return props.html || props.value;
     }
 
     emitChange() {
-        const value = this.getDOMNode().innerText;
-        if (this.props.onChange && value !== this.lastText) {
+        const node = this.getDOMNode();
+        let value = node.innerText;
+        const selection = this.getTextSelection(node);
+        const selectionStart = selection ? selection.start : null;
+        const selectionEnd = selection ? selection.end : null
+        if (!this.isUsingHTML() && this.props.onChange && (value !== this.lastText || selectionStart !== this.lastSelectionStart || selectionEnd !== this.lastSelectionEnd)) {
             this.props.onChange({
                 target: {
-                    value: value
+                    value,
+                    selectionStart,
+                    selectionEnd
                 }
             });
         }
+
+        if (this.isUsingHTML() && this.props.onHTMLClick) {
+            const text = this.props.onHTMLClick();
+            node.innerText = text;
+            value = text;
+            this.props.html = null;
+        }
+
         this.lastText = value;
+        this.lastSelectionStart = selectionStart;
+        this.lastSelectionEnd = selectionEnd;
     }
 
     render() {
-        return <div {...this.props} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} contentEditable>
-            {this.props.value || ""}
+        return <div {...this.props} data-ces={this.ces} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} onFocus={() => this.emitChange()} contentEditable>
+            {this.props.html || this.props.value || ""}
         </div>;
     }
 
@@ -79,18 +190,89 @@ class Project extends React.Component {
             selectedBaseTranslation: null,
             selectedTargetTranslation: null,
             showAddTargetLanguageModal: false,
+            showInviteUserModal: false,
             videoDuration: 0,
             currentTime: 0,
             baseLanguageText: "",
             targetLanguageText: "",
             player: null,
             updateQueue: [],
-            isSubmittingUpdate: false
+            isSubmittingUpdate: false,
+            connectionID: null,
+            color: null,
+            isReady: false,
+            otherUsers: []
         };
+        this.ws = null;
     }
 
     componentDidMount() {
         this.loadProject();
+        this.setupSocket();
+    }
+
+    setupSocket() {
+        const id = this.props.match.params.id;
+        const self = this;
+        this.ws = new WebSocket(`ws://${window.location.host}/api/transcription/project/${id}/socket`);
+
+       this.ws.onmessage = (evt) => {
+           const message = JSON.parse(evt.data);
+           const name = message.name;
+           const data = message.data;
+           if (name === "hello") {
+               this.setState({ isReady: true, color: data.color, connectionID: data.id });
+           } else if (name === "usersList") {
+               for (let fragment of this.state.fragments) {
+                   for (let subtitle of fragment.subtitles) {
+                       subtitle.html = null;
+                   }
+               }
+               for (let user of data) {
+                   if (user.edit) {
+                       let subtitle = this.state.fragments.map(f => f.subtitles.filter(s => s.id === user.edit.subtitleID)[0]).filter(s => s)[0];
+                       if (subtitle) {
+                           subtitle.text = user.edit.lastText;
+                           if (user.edit.selectionStart != null && user.edit.selectionEnd != null && user.edit.selectionStart != user.edit.selectionEnd) {
+                               subtitle.html = `${subtitle.text.slice(0, user.edit.selectionEnd)}</mark-${user.color}>${subtitle.text.slice(user.edit.selectionEnd)}`;
+                               subtitle.html = `${subtitle.html.slice(0, user.edit.selectionStart)}<mark-${user.color}>${subtitle.html.slice(user.edit.selectionStart)}`;
+                           } else if (user.edit.selectionStart != null) {
+                               subtitle.html = `${subtitle.text.slice(0, user.edit.selectionStart)}<span class="fake-caret fake-caret-${user.color}"></span>${subtitle.text.slice(user.edit.selectionStart)}`;
+                           } else {
+                               subtitle.html = null;
+                           }
+                       }
+                   }
+               }
+               this.setState({ otherUsers: data, fragments: this.state.fragments });
+               console.log(data);
+           } else if (name === "updateSubtitle") {
+               if (this.state.focusedSubtitle && data.id === this.state.focusedSubtitle.id) {
+                   document.activeElement.blur();
+                   this.setState({ focusedSubtitle: null });
+               }
+           } else if (name === "newSubtitle") {
+               for (let fragment of this.state.fragments) {
+                   if (fragment.id === data.fragment.id) {
+                       fragment.subtitles.push(data);
+                       break;
+                   }
+               }
+               this.setState({ fragments: this.state.fragments });
+               console.log(message);
+           } else if (name === "newFragment") {
+               const fragments = this.state.fragments;
+               fragments.push(data);
+               this.setState({ fragments });
+           }
+       };
+
+       this.ws.onclose = () => {
+           this.setState({ isReady: false });
+           setTimeout(function() {
+               self.setupSocket();
+           }, 1000);
+       };
     }
 
     async loadProject(targetTranslation) {
@@ -121,6 +303,12 @@ class Project extends React.Component {
         });
     }
 
+    toggleInviteUserModal(show) {
+        this.setState({
+            showInviteUserModal: show
+        });
+    }
+
     async addedNewTargetTranslation(translation) {
         await this.loadProject(translation);
         this.toggleAddTargetLanguageModal(false);
@@ -132,7 +320,9 @@ class Project extends React.Component {
             player: e.target
         });
 
+        e.target.pauseVideo();
         e.target.seekTo(this.nextStartTime());
+        e.target.pauseVideo();
     }
 
     onPause(e) {
@@ -179,6 +369,11 @@ class Project extends React.Component {
                  targetLanguageText: ""
              });
              this.bottomOfFragments.scrollIntoView({ behavior: "smooth" });
+             this.ws.send(JSON.stringify({
+                 name: 'newFragment',
+                 data: await response.json(),
+                 connectionID: this.state.connectionID
+             }));
          } else {
              const result = await response.json();
              this.setState({
@@ -227,29 +422,10 @@ class Project extends React.Component {
         }
     }
 
-    async addToUpdateQueue(fragment, translation, text) {
+    async addToUpdateQueue(fragment, translation, target) {
+        await this.didFocusOn(fragment, translation, target);
+        const text = target.value;
         const updateQueue = this.state.updateQueue;
-        let subtitle = fragment.subtitles.filter(s => s.translation.id == translation.id)[0];
-        if (subtitle) {
-            subtitle.text = text;
-        } else {
-            const response = await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/create`, {
-                method: "POST",
-                body: JSON.stringify({
-                    translationID: translation.id,
-                    fragmentID: fragment.id,
-                    text
-                 }),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-            if (!response.ok) return;
-            subtitle = await response.json();
-            fragment.subtitles.push(subtitle);
-            this.setState({ fragments: this.state.fragments });
-            return;
-        }
         updateQueue.push({ fragment, translation, text });
         if (!this.state.isSubmittingUpdate) {
             const next = updateQueue.shift();
@@ -274,12 +450,77 @@ class Project extends React.Component {
         return fragment.subtitles.filter(s => s.translation.id == this.state.selectedTargetTranslation.id)[0];
     }
 
+    async didFocusOn(fragment, translation, target) {
+        let subtitle;
+        if (fragment || translation) {
+            subtitle = fragment.subtitles.filter(s => s.translation.id == translation.id)[0];
+        }
+
+        if (this.state.focusedSubtitle && (!subtitle || this.state.focusedSubtitle.id != subtitle.id)) {
+            this.setState({ focusedSubtitle: null });
+            this.ws.send(JSON.stringify({
+                name: 'blurSubtitle',
+                data: this.state.focusedSubtitle,
+                connectionID: this.state.connectionID
+            }));
+        }
+
+        if (!fragment || !translation) {
+            return;
+        }
+
+        if (subtitle) {
+            subtitle.text = target.value;
+            subtitle.html = null;
+        } else if (!subtitle) {
+            const response = await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/create`, {
+                method: "POST",
+                body: JSON.stringify({
+                    translationID: translation.id,
+                    fragmentID: fragment.id,
+                    text: ""
+                 }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) return;
+            subtitle = await response.json();
+            fragment.subtitles.push(subtitle);
+            this.setState({ fragments: this.state.fragments });
+            this.ws.send(JSON.stringify({
+                name: 'newSubtitle',
+                data: subtitle,
+                connectionID: this.state.connectionID
+            }));
+        }
+
+        subtitle.selectionStart = target.selectionStart;
+        subtitle.selectionEnd = target.selectionEnd;
+
+        this.setState({
+            focusedSubtitle: subtitle
+        });
+
+        this.ws.send(JSON.stringify({
+            name: 'updateSubtitle',
+            data: subtitle,
+            connectionID: this.state.connectionID
+        }));
+    }
+
+    onHTMLClick(subtitle) {
+        subtitle.html = null;
+        return subtitle.text;
+    }
+
     render() {
         return (
             <div>
-                {!this.state.project && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+                {(!this.state.project || !this.state.isReady) && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
 
-                {this.state.project && <div>
+                {this.state.project && this.state.isReady  && <div>
                     <Row className="mb-4">
                         <Col>
                             <h2 className="display-4">{this.state.project.name}</h2>
@@ -290,6 +531,7 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
+                            <Button variant="primary" className="float-right" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                         </Col>
                     </Row>
                     <Form.Row className="align-items-center justify-content-center" inline>
@@ -320,6 +562,26 @@ class Project extends React.Component {
                         </Col>
                     </Form.Row>
                     <hr />
+                    <Container className="py-0">
+                        <Row>
+                            <span className="align-self-center">
+                                Helpers:
+                            </span>
+                            <Col>
+                                {this.state.otherUsers.map((u, i) => {
+                                    return <OverlayTrigger key={i} placement="bottom" overlay={<Tooltip>{u.username}</Tooltip>}>
+                                        <Spinner className="mr-2" animation="grow" variant={u.color} />
+                                    </OverlayTrigger>;
+                                })}
+                            </Col>
+                            <Col xs="auto">
+                                <OverlayTrigger placement="bottom" overlay={<Tooltip>(You)</Tooltip>}>
+                                    <Spinner className="px-2" xs="auto" animation="grow" variant={this.state.color} />
+                                </OverlayTrigger>
+                            </Col>
+                        </Row>
+                    </Container>
+                    <hr />
                     <Container className="py-0" fluid>
                         <Row>
                             <Col className="col-6">
@@ -330,14 +592,14 @@ class Project extends React.Component {
                                                 <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
                                                 <Row className="bg-light py-3 align-items-center">
                                                     <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime)} variant="primary-inverted">{this.formatTime(fragment.startTime)}</Badge>
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime)} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                     </Col>
                                                     <Col className="px-0">
-                                                        <ContentEditable value={this.baseSubtitleForFragment(fragment).text} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target.value)} className={`form-control h-auto text-break no-box-shadow`} style={{"caret-color": "#007bff"}} />
-                                                        {this.state.selectedTargetTranslation && <ContentEditable value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target.value)}  className="form-control h-auto text-break mt-2 no-box-shadow" style={{"caret-color": "#007bff"}} />}
+                                                        <ContentEditable onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
+                                                        {this.state.selectedTargetTranslation && <ContentEditable onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
                                                     </Col>
                                                     <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime)} variant="primary-inverted">{this.formatTime(fragment.endTime)}</Badge>
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime)} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
                                                     </Col>
                                                 </Row>
                                             </div>;
@@ -352,14 +614,14 @@ class Project extends React.Component {
                                     <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
                                     <Row className="bg-white py-3 align-items-center">
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime())} variant="primary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
+                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime())} variant="secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
                                         </Col>
                                         <Col className="px-0">
-                                            <ContentEditable value={this.state.baseLanguageText} onChange={(e) => this.setState({ baseLanguageText: e.target.value })} className={`form-control h-auto text-break no-box-shadow`} style={{"caret-color": "#007bff"}} />
-                                            {this.state.selectedTargetTranslation && <ContentEditable value={this.state.targetLanguageText} onChange={(e) => this.setState({ targetLanguageText: e.target.value })}  className="form-control h-auto text-break mt-2 no-box-shadow" style={{"caret-color": "#007bff"}} />}
+                                            <ContentEditable value={this.state.baseLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ baseLanguageText: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />
+                                            {this.state.selectedTargetTranslation && <ContentEditable value={this.state.targetLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ targetLanguageText: e.target.value })}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />}
                                         </Col>
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge variant="primary-inverted">{this.formatTime(this.state.currentTime)}</Badge>
+                                            <Badge variant="secondary-inverted">{this.formatTime(this.state.currentTime)}</Badge>
                                         </Col>
                                     </Row>
                                     <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
@@ -370,12 +632,13 @@ class Project extends React.Component {
                             </Col>
                             <Col>
                                 <ResponsiveEmbed aspectRatio="16by9">
-                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, rel: 0, showinfo: 0, ecver: 2 }}}/>
+                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1 }}}/>
                                 </ResponsiveEmbed>
                             </Col>
                         </Row>
                     </Container>
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
+                    <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
                 </div>}
             </div>
         )

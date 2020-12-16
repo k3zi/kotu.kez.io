@@ -20,6 +20,12 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var projects: [Project]
 
+    @Children(for: \.$invitee)
+    var invites: [Invite]
+
+    @Children(for: \.$sharedUser)
+    var shares: [Share]
+
     init() { }
 
     init(id: UUID? = nil, username: String, passwordHash: String) {

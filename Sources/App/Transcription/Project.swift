@@ -23,6 +23,12 @@ final class Project: Model, Content {
     @Children(for: \.$project)
     var fragments: [Fragment]
 
+    @Children(for: \.$project)
+    var shares: [Share]
+
+    @Children(for: \.$project)
+    var invites: [Invite]
+
     init() { }
 
     init(id: UUID? = nil, ownerID: UUID, name: String, youtubeID: String) {

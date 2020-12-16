@@ -1,11 +1,183 @@
 import Fluent
 import Vapor
 
+extension Array: WSEvent where Element == ProjectSession.Connection.User {
+    static var eventName: String {
+        "usersList"
+    }
+}
+
+class ProjectSession {
+
+    class Connection: Equatable {
+
+        struct User: Codable {
+
+            struct Edit: Codable {
+                let subtitleID: UUID
+                let lastText: String
+                let selectionStart: Int?
+                let selectionEnd: Int?
+            }
+
+            let id: String
+            let username: String
+            let color: String
+            var edit: Edit?
+
+        }
+
+        let id: String
+        var user: User
+        let ws: WebSocket
+
+        init(id: String, color: String, databaseUser: App.User, ws: WebSocket) {
+            self.id = id
+            self.user = User(id: databaseUser.id!.uuidString, username: databaseUser.username, color: color, edit: nil)
+            self.ws = ws
+        }
+
+        static func == (lhs: Connection, rhs: Connection) -> Bool {
+            lhs.id == rhs.id
+        }
+    }
+
+    let projectID: UUID
+    private var connections = [Connection]()
+
+    init(project: Project) {
+        self.projectID = project.id!
+    }
+
+    var existingColors: [String] {
+        connections.map { $0.user.color }
+    }
+
+    func sendUsersList() {
+        for connection in connections {
+            let otherConnections = connections.filter { $0 != connection }
+            let otherUsers = otherConnections.map { $0.user }
+            let payloadString = otherUsers.jsonString(connectionID: connection.id)!
+            connection.ws.send(payloadString)
+        }
+    }
+
+    func add(db: FluentKit.Database, connection: Connection) {
+        let projectID = self.projectID
+        let connectionID = connection.id
+        connection.ws.onText { [weak self] (ws, text) in
+            guard let self = self else { return}
+            print(text)
+
+            WSEventHolder.attemptDecodeUnwrap(type: NewFragment.self, jsonString: text) { holder in
+                let id = holder.data.id
+                Fragment.query(on: db)
+                    .with(\.$project)
+                    .with(\.$subtitles) { subtitle in
+                        subtitle.with(\.$translation)
+                    }
+                    .filter(\.$id == id)
+                    .first()
+                    .unwrap(or: Abort(.badRequest))
+                    .guard({ $0.project.id == projectID }, else: Abort(.badRequest))
+                    .whenSuccess { [weak self] fragment in
+                        guard let string = fragment.jsonString(connectionID: connectionID) else { return }
+                        self?.connections.filter { $0 != connection }
+                            .forEach { $0.ws.send(string) }
+                    }
+
+            }
+
+            WSEventHolder.attemptDecodeUnwrap(type: BlurSubtitle.self, jsonString: text) { holder in
+                if connection.user.edit?.subtitleID == holder.data.id {
+                    connection.user.edit = nil
+                }
+                self.sendUsersList()
+            }
+
+            WSEventHolder.attemptDecodeUnwrap(type: NewSubtitle.self, jsonString: text) { holder in
+                Subtitle
+                    .query(on: db)
+                    .filter(\.$id == holder.data.id)
+                    .with(\.$translation) { $0.with(\.$project) }
+                    .first()
+                    .unwrap(or: Abort(.badRequest))
+                    .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
+                    .whenSuccess { [weak self] _ in
+                        guard let string = holder.data.jsonString(connectionID: connectionID) else { return }
+                        self?.connections.filter { $0 != connection }
+                            .forEach {
+                                $0.ws.send(string)
+                            }
+                    }
+            }
+
+            WSEventHolder.attemptDecodeUnwrap(type: UpdateSubtitle.self, jsonString: text) { holder in
+                print(holder)
+                Subtitle
+                    .query(on: db)
+                    .filter(\.$id == holder.data.id)
+                    .with(\.$translation) { $0.with(\.$project) }
+                    .first()
+                    .unwrap(or: Abort(.badRequest))
+                    .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
+                    .whenSuccess { [weak self] _ in
+                        for connection in self?.connections ?? [] {
+                            if connection.user.edit?.subtitleID == holder.data.id {
+                                connection.user.edit = nil
+                            }
+                        }
+                        connection.user.edit = Connection.User.Edit(subtitleID: holder.data.id, lastText: holder.data.text, selectionStart: holder.data.selectionStart, selectionEnd: holder.data.selectionEnd)
+                        var data = holder.data
+                        data.color = connection.user.color
+                        guard let string = data.jsonString(connectionID: connectionID) else { return }
+                        self?.connections.filter { $0 != connection }
+                            .forEach {
+                                $0.ws.send(string)
+                            }
+                        self?.sendUsersList()
+                    }
+            }
+        }
+        connections.append(connection)
+    }
+
+    func remove(id: String) {
+        connections.removeAll(where: { $0.id == id })
+        sendUsersList()
+    }
+
+}
+
 class TranscriptionController: RouteCollection {
+
+    let sessionDispatchQueue = DispatchQueue(label: "io.kez.kotu.transcription.project.session")
+    var projectSessions = [UUID: ProjectSession]()
+
+    func session(for project: Project) -> ProjectSession? {
+        guard let id = project.id else { return nil }
+        return sessionDispatchQueue.sync {
+            let session = projectSessions[id, default: ProjectSession(project: project)]
+            projectSessions[id] = session
+            return session
+        }
+    }
 
     func boot(routes: RoutesBuilder) throws {
         let transcription = routes.grouped("transcription")
             .grouped(User.guardMiddleware())
+
+        transcription.get("invites") { req -> EventLoopFuture<[Invite]> in
+            let user = try req.auth.require(User.self)
+            return user.$invites
+                .query(on: req.db)
+                .with(\.$project) {
+                    $0.with(\.$translations) {
+                        $0.with(\.$language)
+                    }.with(\.$owner)
+                }
+                .all()
+        }
 
         let projects = transcription.grouped("projects")
 
@@ -17,6 +189,18 @@ class TranscriptionController: RouteCollection {
                     translation.with(\.$language)
                 }
                 .all()
+                .flatMap { ownedProjects in
+                    user.$shares.query(on: req.db)
+                        .with(\.$project) {
+                            $0.with(\.$translations) {
+                                $0.with(\.$language)
+                            }
+                        }
+                        .all()
+                        .map { $0.map { $0.project }}
+                        .map { ($0 + ownedProjects) }
+                        .map { $0.sorted(by: { $0.name > $1.name })}
+                }
         }
 
         let project = transcription.grouped("project")
@@ -51,6 +235,9 @@ class TranscriptionController: RouteCollection {
             // In the future do a join for shared projects.
             return Project.query(on: req.db)
                 .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
                 .with(\.$translations) { translation in
                     translation.with(\.$language)
                 }
@@ -62,7 +249,141 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+        }
+
+        project.webSocket(":id", "socket") { (req: Request, ws: WebSocket) in
+            guard let user = try? req.auth.require(User.self), let userID = try? user.requireID(), let projectID = req.parameters.get("id", as: UUID.self) else {
+                return ws.close(promise: nil)
+            }
+
+            let projectCall = Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+            projectCall.whenFailure({ _ in
+                ws.close(promise: nil)
+            })
+            projectCall.whenSuccess({ [unowned self] project in
+                guard let session = self.session(for: project) else {
+                    return ws.close(promise: nil)
+                }
+
+                let wsID = UUID().uuidString
+                let existingColors = session.existingColors
+                let randomColors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "cyan"]
+                let onceRandomColors = randomColors.filter { !existingColors.contains($0) }
+                let color = onceRandomColors.randomElement() ?? randomColors.randomElement()!
+                let hello = Hello(id: wsID, color: color)
+                guard let jsonString = hello.jsonString(connectionID: wsID) else {
+                    return ws.close(promise: nil)
+                }
+                ws.send(jsonString)
+                session.add(db: req.db, connection: .init(id: wsID, color: color, databaseUser: user, ws: ws))
+                session.sendUsersList()
+
+                ws.onClose.whenComplete { _ in
+                    session.remove(id: wsID)
+                }
+            })
+        }
+
+        project.post(":id", "invite", ":username") { (req: Request) -> EventLoopFuture<Invite> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            guard let username = req.parameters.get("username", as: String.self) else { throw Abort(.badRequest, reason: "Username not provided") }
+            guard user.username != username else { throw Abort(.badRequest, reason: "You are not permitted to invite yourself") }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .with(\.$invites) {
+                    $0.with(\.$invitee)
+                }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .flatMap { project in
+                    User.query(on: req.db)
+                        .filter(\.$username == username)
+                        .first()
+                        .unwrap(orError: Abort(.badRequest, reason: "User not found"))
+                        .throwingFlatMap { invitee in
+                            let projectID = try project.requireID()
+                            let inviteeID = try invitee.requireID()
+                            guard !project.shares.contains(where: { $0.sharedUser.id == inviteeID }) else {
+                                throw Abort(.badRequest, reason: "This user has already accepted an invite")
+                            }
+
+                            guard !project.invites.contains(where: { $0.invitee.id == inviteeID }) else {
+                                throw Abort(.badRequest, reason: "An invite already exists for this user")
+                            }
+
+                            let invite = Invite(projectID: projectID, inviteeID: inviteeID)
+                            return invite.save(on: req.db)
+                                .map { invite }
+                        }
+                }
+        }
+
+        project.post(":id", "invite", "accept") { (req: Request) -> EventLoopFuture<Share> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$invites) {
+                    $0.with(\.$invitee)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .throwingFlatMap { project in
+                    guard let invite = project.invites.first(where: { $0.invitee.id == userID }) else {
+                        throw Abort(.badRequest, reason: "You do not have an invite for this project")
+                    }
+
+                    return invite.delete(on: req.db)
+                        .throwingFlatMap {
+                            let projectID = try project.requireID()
+                            let share = Share(projectID: projectID, sharedUserID: userID)
+                            return share.save(on: req.db)
+                                .map { share }
+                        }
+                }
+        }
+
+        project.post(":id", "invite", "decline") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$invites) {
+                    $0.with(\.$invitee)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .throwingFlatMap { project in
+                    guard let invite = project.invites.first(where: { $0.invitee.id == userID }) else {
+                        throw Abort(.badRequest, reason: "You do not have an invite for this project")
+                    }
+
+                    return invite.delete(on: req.db)
+                        .map { Response(status: .ok) }
+                }
         }
 
         project.post(":id", "translation", "create") { (req: Request) -> EventLoopFuture<Translation> in
@@ -75,10 +396,13 @@ class TranscriptionController: RouteCollection {
 
             return Project.query(on: req.db)
                 .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .flatMap { project in
                     Language.find(object.languageID, on: req.db)
                         .unwrap(orError: Abort(.badRequest, reason: "Language not found"))
@@ -106,10 +430,13 @@ class TranscriptionController: RouteCollection {
             return Project.query(on: req.db)
                 .with(\.$owner)
                 .with(\.$translations)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     let fragment = Fragment(projectID: try project.requireID(), startTime: object.startTime, endTime: object.endTime)
                     return fragment.save(on: req.db)
@@ -144,12 +471,15 @@ class TranscriptionController: RouteCollection {
             let object = try req.content.decode(Subtitle.Create.self)
             return Project.query(on: req.db)
                 .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
                 .with(\.$translations)
                 .with(\.$fragments) { $0.with(\.$subtitles) { $0.with(\.$translation) } }
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID}, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     guard let translation = project.translations.first(where: { $0.id == object.translationID }) else {
                         throw Abort(.unauthorized, reason: "Translation could not be found")
@@ -178,11 +508,18 @@ class TranscriptionController: RouteCollection {
             try Subtitle.Update.validate(content: req)
             let object = try req.content.decode(Subtitle.Update.self)
             return Subtitle.query(on: req.db)
-                .with(\.$fragment) { $0.with(\.$project) { $0.with(\.$owner) } }
+                .with(\.$fragment) {
+                    $0.with(\.$project) {
+                        $0.with(\.$owner)
+                            .with(\.$shares) {
+                                $0.with(\.$sharedUser)
+                            }
+                    }
+                }
                 .filter(\.$id == subtitleID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Subtitle not found"))
-                .guard({ $0.fragment.project.owner.id == userID }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.fragment.project.owner.id == userID || $0.fragment.project.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .guard({ $0.fragment.project.id == id }, else: Abort(.unauthorized, reason: "Subtitle does not belong to this project"))
                 .flatMap { subtitle in
                     subtitle.text = object.text

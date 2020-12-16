@@ -26,6 +26,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Fragment.Migration())
     app.migrations.add(Subtitle.Migration1())
     app.migrations.add(Project.Migration1())
+    app.migrations.add(Invite.Migration())
+    app.migrations.add(Share.Migration())
     try app.autoMigrate().wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
