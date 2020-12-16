@@ -6,7 +6,7 @@ import Vapor
 
 public func configure(_ app: Application) throws {
 
-    app.redis.configuration = try RedisConfiguration(hostname: "localhost")
+    app.redis.configuration = try RedisConfiguration(hostname: "127.0.0.1")
     app.sessions.use(.redis)
 
     app.databases.use(.postgres(
