@@ -177,7 +177,8 @@ class Project extends React.Component {
              this.setState({
                  baseLanguageText: "",
                  targetLanguageText: ""
-             })
+             });
+             this.bottomOfFragments.scrollIntoView({ behavior: "smooth" });
          } else {
              const result = await response.json();
              this.setState({
@@ -322,25 +323,33 @@ class Project extends React.Component {
                     <Container className="py-0" fluid>
                         <Row>
                             <Col className="col-6">
-                                <Container className="mb-2 py-0" fluid>
-                                    {this.state.fragments.map((fragment, id) => {
-                                        return <div key={id}>
-                                            <Row className="bg-light py-3 align-items-center">
-                                                <Col xs="auto" className="text-center align-self-center">
-                                                    <Badge onClick={() => this.state.player.seekTo(fragment.startTime)} variant="primary-inverted">{this.formatTime(fragment.startTime)}</Badge>
-                                                </Col>
-                                                <Col className="px-0">
-                                                    <ContentEditable value={this.baseSubtitleForFragment(fragment).text} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target.value)} className={`form-control h-auto text-break no-box-shadow`} style={{"caret-color": "#007bff"}} />
-                                                    {this.state.selectedTargetTranslation && <ContentEditable value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target.value)}  className="form-control h-auto text-break mt-2 no-box-shadow" style={{"caret-color": "#007bff"}} />}
-                                                </Col>
-                                                <Col xs="auto" className="text-center align-self-center">
-                                                    <Badge onClick={() => this.state.player.seekTo(fragment.endTime)} variant="primary-inverted">{this.formatTime(fragment.endTime)}</Badge>
-                                                </Col>
-                                            </Row>
-                                            <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
-                                        </div>;
-                                    })}
+                                <div className="overflow-auto max-vh-50">
+                                    <Container className="mb-0 py-0" fluid>
+                                        {this.state.fragments.map((fragment, id) => {
+                                            return <div key={id}>
+                                                <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
+                                                <Row className="bg-light py-3 align-items-center">
+                                                    <Col xs="auto" className="text-center align-self-center">
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime)} variant="primary-inverted">{this.formatTime(fragment.startTime)}</Badge>
+                                                    </Col>
+                                                    <Col className="px-0">
+                                                        <ContentEditable value={this.baseSubtitleForFragment(fragment).text} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target.value)} className={`form-control h-auto text-break no-box-shadow`} style={{"caret-color": "#007bff"}} />
+                                                        {this.state.selectedTargetTranslation && <ContentEditable value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target.value)}  className="form-control h-auto text-break mt-2 no-box-shadow" style={{"caret-color": "#007bff"}} />}
+                                                    </Col>
+                                                    <Col xs="auto" className="text-center align-self-center">
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime)} variant="primary-inverted">{this.formatTime(fragment.endTime)}</Badge>
+                                                    </Col>
+                                                </Row>
+                                            </div>;
+                                        })}
+                                        <div style={{ float:"left", clear: "both" }}
+                                            ref={(el) => { this.bottomOfFragments = el; }}>
+                                        </div>
+                                    </Container>
+                                </div>
 
+                                <Container className="mb-2 py-0" fluid>
+                                    <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
                                     <Row className="bg-white py-3 align-items-center">
                                         <Col xs="auto" className="text-center align-self-center">
                                             <Badge onClick={() => this.state.player.seekTo(this.nextStartTime())} variant="primary-inverted">{this.formatTime(this.nextStartTime())}</Badge>

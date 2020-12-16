@@ -35,3 +35,20 @@ body {
     box-shadow: none !important;
     border-color: #007bff;
 }
+
+.max-vh-50 {
+    max-height: 50vh!important;
+}
+
+.max-vh-75 {
+    max-height: 75vh!important;
+}
+
+.overflow-auto::-webkit-scrollbar {
+    display: none;
+}
+
+.overflow-auto {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
