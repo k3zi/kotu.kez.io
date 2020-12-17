@@ -214,7 +214,7 @@ class Project extends React.Component {
     setupSocket() {
         const id = this.props.match.params.id;
         const self = this;
-        this.ws = new WebSocket(`wss://${window.location.host}/api/transcription/project/${id}/socket`);
+        this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcription/project/${id}/socket`);
 
        this.ws.onmessage = (evt) => {
            const message = JSON.parse(evt.data);
@@ -263,6 +263,9 @@ class Project extends React.Component {
            } else if (name === "newFragment") {
                const fragments = this.state.fragments;
                fragments.push(data);
+               this.setState({ fragments });
+           } else if (name === "deleteFragment") {
+               const fragments = this.state.fragments.filter(f => f.id != data.id);
                this.setState({ fragments });
            }
        };
@@ -485,7 +488,7 @@ class Project extends React.Component {
                 }
             });
 
-            if (!response.ok) return;
+            if (!response.ok) return this.handleError(response);
             subtitle = await response.json();
             fragment.subtitles.push(subtitle);
             this.setState({ fragments: this.state.fragments });
@@ -506,6 +509,25 @@ class Project extends React.Component {
         this.ws.send(JSON.stringify({
             name: 'updateSubtitle',
             data: subtitle,
+            connectionID: this.state.connectionID
+        }));
+    }
+
+    async handleError(response) {
+
+    }
+
+    async deleteFragment(fragment) {
+        const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/${fragment.id}`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) return this.handleError(response);
+        const fragments = this.state.fragments.filter(f => f.id != fragment.id);
+        this.setState({ fragments });
+        this.ws.send(JSON.stringify({
+            name: 'deleteFragment',
+            data: fragment,
             connectionID: this.state.connectionID
         }));
     }
@@ -590,17 +612,18 @@ class Project extends React.Component {
                                         {this.state.fragments.map((fragment, id) => {
                                             return <div key={id}>
                                                 <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
-                                                <Row className="bg-light py-3 align-items-center">
+                                                <Row className="bg-light py-3 align-items-center position-relative">
                                                     <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime)} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                     </Col>
                                                     <Col className="px-0">
                                                         <ContentEditable onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
                                                         {this.state.selectedTargetTranslation && <ContentEditable onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
                                                     </Col>
                                                     <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime)} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
+                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
                                                     </Col>
+                                                    {this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
                                                 </Row>
                                             </div>;
                                         })}
@@ -614,7 +637,7 @@ class Project extends React.Component {
                                     <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
                                     <Row className="bg-white py-3 align-items-center">
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime())} variant="secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
+                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime()) && this.state.player.playVideo()} style={{ cursor: "pointer" }}  variant="secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
                                         </Col>
                                         <Col className="px-0">
                                             <ContentEditable value={this.state.baseLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ baseLanguageText: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />

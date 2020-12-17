@@ -74,6 +74,14 @@ class ProjectSession {
         connection.ws.onText { [weak self] (ws, text) in
             guard let self = self else { return}
 
+            WSEventHolder.attemptDecodeUnwrap(type: DeleteFragment.self, jsonString: text) { holder in
+                guard let string = holder.data.jsonString(connectionID: connectionID) else { return }
+                sessionDispatchQueue.sync {
+                    self.connections.filter { $0 != connection }
+                        .forEach { $0.ws.send(string) }
+                }
+            }
+
             WSEventHolder.attemptDecodeUnwrap(type: NewFragment.self, jsonString: text) { holder in
                 let id = holder.data.id
                 Fragment.query(on: db)
@@ -92,7 +100,6 @@ class ProjectSession {
                                 .forEach { $0.ws.send(string) }
                         }
                     }
-
             }
 
             WSEventHolder.attemptDecodeUnwrap(type: BlurSubtitle.self, jsonString: text) { holder in
@@ -267,6 +274,8 @@ class TranscriptionController: RouteCollection {
                 .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
         }
 
+        // MARK: Socket
+
         project.webSocket(":id", "socket") { (req: Request, ws: WebSocket) in
             guard let user = try? req.auth.require(User.self), let userID = try? user.requireID(), let projectID = req.parameters.get("id", as: UUID.self) else {
                 return ws.close(promise: nil)
@@ -307,6 +316,8 @@ class TranscriptionController: RouteCollection {
                 }
             })
         }
+
+        // MARK: Invites
 
         project.post(":id", "invite", ":username") { (req: Request) -> EventLoopFuture<Invite> in
             let user = try req.auth.require(User.self)
@@ -401,6 +412,8 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
+        // MARK: Translation
+
         project.post(":id", "translation", "create") { (req: Request) -> EventLoopFuture<Translation> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
@@ -430,6 +443,8 @@ class TranscriptionController: RouteCollection {
                         }
                 }
         }
+
+        // MARK: Fragment
 
         project.post(":id", "fragment", "create") { (req: Request) -> EventLoopFuture<Fragment> in
             let user = try req.auth.require(User.self)
@@ -474,6 +489,38 @@ class TranscriptionController: RouteCollection {
                             return fragment.$subtitles.create(subtitles, on: req.db)
                         }
                         .map { fragment }
+                }
+        }
+
+        project.delete(":id", "fragment", ":fragmentID") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            guard let fragmentID = req.parameters.get("fragmentID", as: UUID.self) else { throw Abort(.badRequest, reason: "Fragment ID not provided") }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .throwingFlatMap { project in
+                    project.$fragments
+                        .query(on: req.db)
+                        .with(\.$subtitles)
+                        .filter(\.$id == fragmentID)
+                        .first()
+                        .unwrap(or: Abort(.badRequest, reason: "Fragment not found"))
+                        .flatMap { fragment in
+                            fragment.subtitles.delete(on: req.db)
+                                .flatMap {
+                                    fragment.delete(on: req.db)
+                                }
+                        }
+                        .map { Response(status: .ok) }
                 }
         }
 
@@ -551,11 +598,31 @@ class TranscriptionController: RouteCollection {
                 .query(on: req.db)
                 .filter(\.$id == id)
                 .with(\.$translations)
+                .with(\.$fragments) {
+                    $0.with(\.$subtitles)
+                }
+                .with(\.$invites)
+                .with(\.$shares)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
                 .flatMap { project in
-                    project.translations.delete(on: req.db)
-                        .flatMap { project.delete(on: req.db) }
+                    project.fragments.flatMap { $0.subtitles }
+                        .delete(on: req.db)
+                        .flatMap {
+                            project.fragments.delete(on: req.db)
+                        }
+                        .flatMap {
+                            project.translations.delete(on: req.db)
+                        }
+                        .flatMap {
+                            project.invites.delete(on: req.db)
+                        }
+                        .flatMap {
+                            project.shares.delete(on: req.db)
+                        }
+                        .flatMap {
+                            project.delete(on: req.db)
+                        }
                 }
                 .map { "Project deleted." }
         }

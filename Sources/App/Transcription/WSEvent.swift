@@ -73,6 +73,13 @@ struct NewFragment: WSEvent {
 
 }
 
+struct DeleteFragment: WSEvent {
+
+    static let eventName = "deleteFragment"
+    let id: UUID
+
+}
+
 extension Fragment: WSEvent {
     static let eventName = "newFragment"
 }
