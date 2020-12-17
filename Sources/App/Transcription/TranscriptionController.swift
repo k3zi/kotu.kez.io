@@ -7,6 +7,8 @@ extension Array: WSEvent where Element == ProjectSession.Connection.User {
     }
 }
 
+fileprivate let sessionDispatchQueue = DispatchQueue(label: "io.kez.kotu.transcription.project.session")
+
 class ProjectSession {
 
     class Connection: Equatable {
@@ -50,24 +52,27 @@ class ProjectSession {
     }
 
     var existingColors: [String] {
-        connections.map { $0.user.color }
+        sessionDispatchQueue.sync {
+            connections.map { $0.user.color }
+        }
     }
 
     func sendUsersList() {
-        for connection in connections {
-            let otherConnections = connections.filter { $0 != connection }
-            let otherUsers = otherConnections.map { $0.user }
-            let payloadString = otherUsers.jsonString(connectionID: connection.id)!
-            connection.ws.send(payloadString)
+        sessionDispatchQueue.sync {
+            for connection in connections {
+                let otherConnections = connections.filter { $0 != connection }
+                let otherUsers = otherConnections.map { $0.user }
+                let payloadString = otherUsers.jsonString(connectionID: connection.id)!
+                connection.ws.send(payloadString)
+            }
         }
     }
 
     func add(db: FluentKit.Database, connection: Connection) {
         let projectID = self.projectID
         let connectionID = connection.id
-        connection.ws.onText { [weak self] (ws, text) in
+        connection.ws.onText { (ws, text) in
             guard let self = self else { return}
-            print(text)
 
             WSEventHolder.attemptDecodeUnwrap(type: NewFragment.self, jsonString: text) { holder in
                 let id = holder.data.id
@@ -82,8 +87,10 @@ class ProjectSession {
                     .guard({ $0.project.id == projectID }, else: Abort(.badRequest))
                     .whenSuccess { [weak self] fragment in
                         guard let string = fragment.jsonString(connectionID: connectionID) else { return }
-                        self?.connections.filter { $0 != connection }
-                            .forEach { $0.ws.send(string) }
+                        sessionDispatchQueue.sync {
+                            self?.connections.filter { $0 != connection }
+                                .forEach { $0.ws.send(string) }
+                        }
                     }
 
             }
@@ -105,15 +112,16 @@ class ProjectSession {
                     .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
                     .whenSuccess { [weak self] _ in
                         guard let string = holder.data.jsonString(connectionID: connectionID) else { return }
-                        self?.connections.filter { $0 != connection }
-                            .forEach {
-                                $0.ws.send(string)
-                            }
+                        sessionDispatchQueue.sync {
+                            self?.connections.filter { $0 != connection }
+                                .forEach {
+                                    $0.ws.send(string)
+                                }
+                        }
                     }
             }
 
             WSEventHolder.attemptDecodeUnwrap(type: UpdateSubtitle.self, jsonString: text) { holder in
-                print(holder)
                 Subtitle
                     .query(on: db)
                     .filter(\.$id == holder.data.id)
@@ -122,28 +130,36 @@ class ProjectSession {
                     .unwrap(or: Abort(.badRequest))
                     .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
                     .whenSuccess { [weak self] _ in
-                        for connection in self?.connections ?? [] {
-                            if connection.user.edit?.subtitleID == holder.data.id {
-                                connection.user.edit = nil
+                        sessionDispatchQueue.sync {
+                            for connection in self?.connections ?? [] {
+                                if connection.user.edit?.subtitleID == holder.data.id {
+                                    connection.user.edit = nil
+                                }
                             }
                         }
                         connection.user.edit = Connection.User.Edit(subtitleID: holder.data.id, lastText: holder.data.text, selectionStart: holder.data.selectionStart, selectionEnd: holder.data.selectionEnd)
                         var data = holder.data
                         data.color = connection.user.color
                         guard let string = data.jsonString(connectionID: connectionID) else { return }
-                        self?.connections.filter { $0 != connection }
-                            .forEach {
-                                $0.ws.send(string)
-                            }
+                        sessionDispatchQueue.sync {
+                            self?.connections.filter { $0 != connection }
+                                .forEach {
+                                    $0.ws.send(string)
+                                }
+                        }
                         self?.sendUsersList()
                     }
             }
         }
-        connections.append(connection)
+        sessionDispatchQueue.sync {
+            connections.append(connection)
+        }
     }
 
     func remove(id: String) {
-        connections.removeAll(where: { $0.id == id })
+        sessionDispatchQueue.sync {
+            connections.removeAll(where: { $0.id == id })
+        }
         sendUsersList()
     }
 
@@ -151,7 +167,6 @@ class ProjectSession {
 
 class TranscriptionController: RouteCollection {
 
-    let sessionDispatchQueue = DispatchQueue(label: "io.kez.kotu.transcription.project.session")
     var projectSessions = [UUID: ProjectSession]()
 
     func session(for project: Project) -> ProjectSession? {
