@@ -71,7 +71,7 @@ class ProjectSession {
     func add(db: FluentKit.Database, connection: Connection) {
         let projectID = self.projectID
         let connectionID = connection.id
-        connection.ws.onText { (ws, text) in
+        connection.ws.onText { [weak self] (ws, text) in
             guard let self = self else { return}
 
             WSEventHolder.attemptDecodeUnwrap(type: NewFragment.self, jsonString: text) { holder in
