@@ -583,27 +583,28 @@ class Project extends React.Component {
                             </InputGroup>
                         </Col>
                     </Form.Row>
-                    <hr />
+                    <hr className="mb-2" />
                     <Container className="py-0">
                         <Row>
-                            <span className="align-self-center">
-                                Helpers:
-                            </span>
                             <Col>
                                 {this.state.otherUsers.map((u, i) => {
-                                    return <OverlayTrigger key={i} placement="bottom" overlay={<Tooltip>{u.username}</Tooltip>}>
-                                        <Spinner className="mr-2" animation="grow" variant={u.color} />
-                                    </OverlayTrigger>;
+                                    return <div className="d-inline-block text-center mr-2" key={i}>
+                                        <Spinner animation="grow" variant={u.color} />
+                                        <br />
+                                        <div className="bg-gray-200 text-secondary rounded px-2 py-0">{u.username}</div>
+                                    </div>;
                                 })}
                             </Col>
                             <Col xs="auto">
-                                <OverlayTrigger placement="bottom" overlay={<Tooltip>(You)</Tooltip>}>
+                                <div className="d-inline-block text-center">
                                     <Spinner className="px-2" xs="auto" animation="grow" variant={this.state.color} />
-                                </OverlayTrigger>
+                                    <br />
+                                    <div className="bg-gray-200 text-secondary rounded px-2 py-0">(You)</div>
+                                </div>
                             </Col>
                         </Row>
                     </Container>
-                    <hr />
+                    <hr className="mt-2" />
                     <Container className="py-0" fluid>
                         <Row>
                             <Col className="col-6">
@@ -657,6 +658,34 @@ class Project extends React.Component {
                                 <ResponsiveEmbed aspectRatio="16by9">
                                     <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1 }}}/>
                                 </ResponsiveEmbed>
+
+                                <hr />
+
+                                <h4 className="text-center">Export Options</h4>
+                                <Table responsive="sm">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-center">Base ({this.state.selectedBaseTranslation.language.name})</th>
+                                            {this.state.selectedTargetTranslation && <th className="text-center">Target ({this.state.selectedTargetTranslation.language.name})</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {['srt'].map(ext => {
+                                            return <tr>
+                                                <td>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}`} variant="outline-secondary" block download>
+                                                        Download .{ext}
+                                                    </Button>
+                                                </td>
+                                                {this.state.selectedTargetTranslation &&<td>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}`} variant="outline-secondary" block download>
+                                                        Download .{ext}
+                                                    </Button>
+                                                </td>}
+                                            </tr>
+                                        })}
+                                    </tbody>
+                                </Table>
                             </Col>
                         </Row>
                     </Container>

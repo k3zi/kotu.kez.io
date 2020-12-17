@@ -186,6 +186,18 @@ mark-gray {
     background-color: $gray-100;
 }
 
+.bg-gray-100 {
+    background-color: $gray-100;
+}
+
+.bg-gray-200 {
+    background-color: $gray-200;
+}
+
+.bg-gray-300 {
+    background-color: $gray-300;
+}
+
 @each $state, $value in $theme-colors {
     .badge-#{$state}-inverted {
         color: $value;
@@ -267,13 +279,17 @@ body {
 }
 
 .fake-caret {
-  position: relative;
+    position: relative;
 }
 
 .fake-caret::after {
-  content: "|";
-  display: inline-block;
-  position: absolute;
-  top: -4px;
-  left: -2px;
+    content: "|";
+    display: inline-block;
+    position: absolute;
+    top: -4px;
+    left: -2px;
+}
+
+.rounded {
+    border-radius: 0.5rem !important;
 }

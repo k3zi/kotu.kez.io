@@ -274,6 +274,58 @@ class TranscriptionController: RouteCollection {
                 .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
         }
 
+        project.get(":id", "translation", ":translationID", "download", ":kind") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            guard let translationID = req.parameters.get("translationID", as: UUID.self) else { throw Abort(.badRequest, reason: "Translation not provided") }
+            guard let kind = req.parameters.get("kind", as: SubtitleFile.Kind.self) else { throw Abort(.badRequest, reason: "Subtitle kind not provided") }
+
+            // In the future do a join for shared projects.
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .with(\.$translations) { translation in
+                    translation.with(\.$language)
+                }
+                .with(\.$fragments) { fragments in
+                    fragments.with(\.$subtitles) { subtitle in
+                        subtitle
+                            .with(\.$translation)
+                            .with(\.$fragment)
+                    }
+                }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .flatMapThrowing { project in
+                    let subtitles = project.fragments.flatMap { $0.subtitles.filter { $0.translation.id == translationID } }.sorted(by: { $0.fragment.startTime < $1.fragment.startTime })
+                    let language = project.translations.first { $0.id == translationID }?.language
+                    let genericSubtitles = subtitles.map {
+                        GenericSubtitleFile.Subtitle(text: $0.text, start: $0.fragment.startTime, end: $0.fragment.endTime)
+                    }
+                    let genericSubtitleFile = GenericSubtitleFile(subtitles: genericSubtitles)
+                    let file = try SubtitleFile(file: genericSubtitleFile, kind: kind)
+                    let string = file.asString()
+                    guard let data = string.data(using: .unicode) else {
+                        throw Abort(.internalServerError)
+                    }
+
+                    let response = Response(status: .ok)
+                    if let type = HTTPMediaType.fileExtension(kind.fileExtension) {
+                        response.headers.contentType = type
+                    }
+                    let filename = [project.name, language?.code, kind.fileExtension]
+                        .compactMap { $0 }.filter { $0.count > 0 }.joined(separator: ".")
+                    response.headers.contentDisposition = .init(.attachment, filename: filename)
+                    response.body = .init(data: data)
+                    return response
+                }
+        }
+
         // MARK: Socket
 
         project.webSocket(":id", "socket") { (req: Request, ws: WebSocket) in
