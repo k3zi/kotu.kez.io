@@ -61,7 +61,8 @@ class Project extends React.Component {
             isReady: false,
             otherUsers: [],
             fragmentListTopScroll: 0.0,
-            fragmentListBottomScroll: 0.0
+            fragmentListBottomScroll: 0.0,
+            canWrite: false
         };
         this.ws = null;
     }
@@ -73,7 +74,6 @@ class Project extends React.Component {
 
     getShareHash() {
         const urlParams = new URLSearchParams(window.location.search);
-        console.log(urlParams);
         return urlParams.get('shareHash') || null;
     }
 
@@ -91,7 +91,7 @@ class Project extends React.Component {
            const name = message.name;
            const data = message.data;
            if (name === "hello") {
-               this.setState({ isReady: true, color: data.color, connectionID: data.id });
+               this.setState({ isReady: true, color: data.color, connectionID: data.id, canWrite: data.canWrite });
            } else if (name === "usersList") {
                for (let fragment of this.state.fragments) {
                    for (let subtitle of fragment.subtitles) {
@@ -445,11 +445,11 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            <div className="float-right">
+                            {this.state.canWrite && <div className="float-right">
                                 <Button variant="primary" onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
                                 {" "}
                                 <Button variant="primary" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
-                            </div>
+                            </div>}
                         </Col>
                     </Row>
                     <Form.Row className="align-items-center justify-content-center" inline>
@@ -506,7 +506,7 @@ class Project extends React.Component {
                             <Col className="col-6">
                                 <div className="position-relative">
                                     <div className="position-absolute w-100" style={{ height: "27px", "pointer-events": "none", background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, "z-index": "1", "top": "0" }}></div>
-                                    <div className="overflow-auto hide-scrollbar max-vh-50" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
+                                    <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
                                         <Container className="mb-0 py-0" fluid>
                                             {this.state.fragments.map((fragment, id) => {
                                                 return <div key={id}>
@@ -516,13 +516,13 @@ class Project extends React.Component {
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                         </Col>
                                                         <Col className="px-0">
-                                                            <ContentEditable onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
-                                                            {this.state.selectedTargetTranslation && <ContentEditable onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
+                                                            <ContentEditable disabled={!this.state.canWrite} onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
+                                                            {this.state.selectedTargetTranslation && <ContentEditable disabled={!this.state.canWrite} onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
                                                         </Col>
                                                         <Col xs="auto" className="text-center align-self-center">
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
                                                         </Col>
-                                                        {this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
+                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
                                                     </Row>
                                                 </div>;
                                             })}
@@ -536,7 +536,7 @@ class Project extends React.Component {
 
                                 <Container className="mb-2 py-0" fluid>
                                     <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
-                                    <Row className="bg-white py-3 align-items-center">
+                                    {this.state.canWrite && <Row className="bg-white py-3 align-items-center">
                                         <Col xs="auto" className="text-center align-self-center">
                                             <Badge onClick={() => this.state.player.seekTo(this.nextStartTime()) && this.state.player.playVideo()} style={{ cursor: "pointer" }}  variant="secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
                                         </Col>
@@ -545,14 +545,15 @@ class Project extends React.Component {
                                             {this.state.selectedTargetTranslation && <ContentEditable value={this.state.targetLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ targetLanguageText: e.target.value })}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />}
                                         </Col>
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge variant="secondary-inverted">{this.formatTime(this.state.currentTime)}</Badge>
+                                            <Badge variant="secondary-inverted">{this.formatTime(Math.max(this.state.currentTime, this.nextStartTime()))}</Badge>
                                         </Col>
-                                    </Row>
+                                    </Row>}
                                     <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
                                 </Container>
-
-                                {this.state.selectedBaseTranslation && !this.state.selectedBaseTranslation.isOriginal && <Alert className="mt-1 mb-2" variant="secondary">Switch to the original transcription to add more fragments.</Alert>}
-                                <Button variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0} block>Add Fragment</Button>
+                                {this.state.canWrite && <>
+                                    {this.state.selectedBaseTranslation && !this.state.selectedBaseTranslation.isOriginal && <Alert className="mt-1 mb-2" variant="secondary">Switch to the original transcription to add more fragments.</Alert>}
+                                    <Button variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0} block>Add Fragment</Button>
+                                </>}
                             </Col>
                             <Col>
                                 <ResponsiveEmbed aspectRatio="16by9">
@@ -573,12 +574,12 @@ class Project extends React.Component {
                                         {['srt'].map(ext => {
                                             return <tr>
                                                 <td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}`} variant="outline-secondary" block download>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash()}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>
                                                 {this.state.selectedTargetTranslation &&<td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}`} variant="outline-secondary" block download>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash()}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>}
@@ -591,7 +592,7 @@ class Project extends React.Component {
                     </Container>
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
-                    <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />
+                    {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}
             </div>
         )

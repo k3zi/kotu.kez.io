@@ -35,6 +35,11 @@ class AddTargetLanguageModal extends React.Component {
         }
     }
 
+    getShareHash() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('shareHash') || null;
+    }
+
     async submit(event) {
         event.preventDefault();
         if (this.success || this.isSubmitting) {

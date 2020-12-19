@@ -139,7 +139,7 @@ class ContentEditable extends React.Component {
     }
 
     render() {
-        return <div {...this.props} data-ces={this.ces} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} onFocus={() => this.emitChange()} contentEditable>
+        return <div {...this.props} data-ces={this.ces} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} onFocus={() => this.emitChange()} contentEditable={!this.props.disabled}>
             {this.props.html || this.props.value || ""}
         </div>;
     }

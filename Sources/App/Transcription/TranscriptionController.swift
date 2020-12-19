@@ -177,30 +177,28 @@ class TranscriptionController: RouteCollection {
     var projectSessions = [UUID: ProjectSession]()
 
     static func verifyRead(req: Request, for project: Project) -> Bool {
-        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash") else {
+        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash"), let projectID = try? project.requireID() else {
             return false
         }
-        guard let data = Data(base64Encoded: encodedShareHash), let shareHash = String(data: data, encoding: .utf8) else {
+        guard let data = Data(base64Encoded: encodedShareHash) else {
             return false
         }
-        let readOnlyString = try? "\(project.requireID())\(project.owner.passwordHash)-readonly"
-        let readOnly = try? readOnlyString.flatMap { try Bcrypt.verify($0, created: shareHash) }
-        let readWriteString = try? "\(project.requireID())\(project.owner.passwordHash)-edit"
-        let readWrite = try? readWriteString.flatMap { try Bcrypt.verify($0, created: shareHash) }
-        return readOnly ?? readWrite ?? false
+        let key = SymmetricKey(data: project.owner.passwordHash.data(using: .utf8)!)
+        let readOnly = "\(projectID)-readonly".data(using: .utf8)!
+        let edit = "\(projectID)-edit".data(using: .utf8)!
+        return HMAC<SHA256>.isValidAuthenticationCode(data, authenticating: readOnly, using: key) || HMAC<SHA256>.isValidAuthenticationCode(data, authenticating: edit, using: key)
     }
 
     static func verifyWrite(req: Request, for project: Project) -> Bool {
-        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash") else {
+        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash"), let projectID = try? project.requireID() else {
             return false
         }
-        guard let data = Data(base64Encoded: encodedShareHash), let shareHash = String(data: data, encoding: .utf8) else {
+        guard let data = Data(base64Encoded: encodedShareHash) else {
             return false
         }
-        let readWriteString = try? "\(project.requireID())\(project.owner.passwordHash)-edit"
-        let readWrite = try? readWriteString.flatMap { try Bcrypt.verify($0, created: shareHash) }
-        print("readWrite: \(readWrite) for \(req.description)")
-        return readWrite ?? false
+        let key = SymmetricKey(data: project.owner.passwordHash.data(using: .utf8)!)
+        let edit = "\(projectID)-edit".data(using: .utf8)!
+        return HMAC<SHA256>.isValidAuthenticationCode(data, authenticating: edit, using: key)
     }
 
     func session(for project: Project) -> ProjectSession? {
@@ -387,7 +385,7 @@ class TranscriptionController: RouteCollection {
                 let randomColors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "cyan"]
                 let onceRandomColors = randomColors.filter { !existingColors.contains($0) }
                 let color = onceRandomColors.randomElement() ?? randomColors.randomElement()!
-                let hello = Hello(id: wsID, color: color)
+                let hello = Hello(id: wsID, color: color, canWrite: !user.passwordHash.isEmpty || Self.verifyWrite(req: req, for: project))
                 guard let jsonString = hello.jsonString(connectionID: wsID) else {
                     return ws.close(promise: nil)
                 }
@@ -418,11 +416,13 @@ class TranscriptionController: RouteCollection {
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
                 .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .flatMapThrowing { project in
-                    let readOnlyHash = try Bcrypt.hash("\(projectID)\(project.owner.passwordHash)-readonly")
-                    let readOnlyHashEncoded = readOnlyHash.data(using: .utf8)?.base64EncodedString() ?? ""
-                    let editHash = try Bcrypt.hash("\(projectID)\(project.owner.passwordHash)-edit")
-                    let editHashEncoded = editHash.data(using: .utf8)?.base64EncodedString() ?? ""
-                    return Project.ShareHash(readOnly: readOnlyHashEncoded, edit: editHashEncoded)
+                    let key = SymmetricKey(data: project.owner.passwordHash.data(using: .utf8)!)
+                    let readOnly = "\(projectID)-readonly".data(using: .utf8)!
+                    let readOnlyEncrypted = Data(HMAC<SHA256>.authenticationCode(for: readOnly, using: key)).base64EncodedString()
+
+                    let edit = "\(projectID)-edit".data(using: .utf8)!
+                    let editEncrypted = Data(HMAC<SHA256>.authenticationCode(for: edit, using: key)).base64EncodedString()
+                    return Project.ShareHash(readOnly: readOnlyEncrypted, edit: editEncrypted)
                 }
         }
 

@@ -17,17 +17,8 @@ class InviteUserModal extends React.Component {
             isSubmitting: false,
             didError: false,
             message: null,
-            success: false,
-            languages: []
+            success: false
         };
-    }
-
-    async componentDidMount() {
-        const response = await fetch(`/api/settings/languages`);
-        if (response.ok) {
-            const languages = await response.json();
-            this.setState({ languages });
-        }
     }
 
     async submit(event) {
@@ -83,7 +74,7 @@ class InviteUserModal extends React.Component {
 
                         {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
                         {" "}
-                        {this.state.languages.length > 0 && !this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Inviting...' : 'Invite'}
                         </Button>}
                     </Form>

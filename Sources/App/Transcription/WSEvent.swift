@@ -30,6 +30,7 @@ struct Hello: WSEvent {
     static let eventName = "hello"
     let id: String
     let color: String
+    let canWrite: Bool
 
 }
 
