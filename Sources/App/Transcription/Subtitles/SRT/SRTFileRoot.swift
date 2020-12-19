@@ -27,7 +27,7 @@ struct SRTFileRoot: SubtitleFileRoot {
     static func encode(file: GenericSubtitleFile) -> SRTFileRoot {
         var subtitles = [Subtitle]()
         for (i, genericSubtitle) in file.subtitles.enumerated() {
-            subtitles.append(.init(index: i, timeRange: .init(start: .init(milliseconds: genericSubtitle.start * 1000), end: .init(milliseconds: genericSubtitle.end * 1000)), displayCoordinate: nil, text: genericSubtitle.text))
+            subtitles.append(.init(index: i + 1, timeRange: .init(start: .init(milliseconds: genericSubtitle.start * 1000), end: .init(milliseconds: genericSubtitle.end * 1000)), displayCoordinate: nil, text: genericSubtitle.text))
         }
         return .init(subtitles: subtitles)
     }

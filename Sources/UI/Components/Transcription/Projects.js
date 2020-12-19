@@ -75,7 +75,7 @@ class Projects extends React.Component {
     render() {
         return (
             <div>
-                <h1>Transcribe <small className="text-muted">{this.state.projects.length} Project(s)</small></h1>
+                <h2>Transcribe <small className="text-muted">{this.state.projects.length} Project(s)</small></h2>
                 <Button variant="primary" onClick={() => this.toggleCreateProjectModal(true)}>Create Project</Button>
                 <hr/>
                 <Table striped bordered hover>

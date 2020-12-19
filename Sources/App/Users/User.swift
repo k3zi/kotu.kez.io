@@ -116,3 +116,11 @@ extension User: ModelCredentialsAuthenticatable {
     }
 
 }
+
+extension User {
+
+    static var guest: User {
+        User(id: .init(), username: "Guest", passwordHash: "")
+    }
+
+}

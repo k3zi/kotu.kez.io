@@ -21,7 +21,9 @@ import Tooltip from 'react-bootstrap/Tooltip';
 import YouTube from 'react-youtube';
 
 import AddTargetLanguageModal from "./AddTargetLanguageModal";
+import ContentEditable from "./ContentEditable";
 import InviteUserModal from "./InviteUserModal";
+import ShareURLModal from "./ShareURLModal";
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -35,151 +37,6 @@ const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelle
     );
 });
 
-class ContentEditable extends React.Component {
-
-    getTextSelection(editor) {
-        const selection = window.getSelection();
-        if (selection != null && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-
-            return {
-                start: this.getTextLength(editor, range.startContainer, range.startOffset),
-                end: this.getTextLength(editor, range.endContainer, range.endOffset)
-            };
-        } else {
-            return null;
-        };
-    }
-
-    getTextLength(parent, node, offset) {
-        if (!node) { return 0; }
-        let textLength = 0;
-        if (node && node.nodeName == '#text') {
-            textLength += offset;
-        } else {
-            for (var i = 0; i < offset; i++) {
-                textLength += this.getNodeTextLength(node.childNodes[i]);
-            }
-        }
-
-        if (node != parent) {
-            textLength += this.getTextLength(parent, node.parentNode, this.getNodeOffset(node));
-        }
-
-        return textLength;
-    }
-
-    getNodeTextLength(node) {
-        let textLength = 0;
-        if (node && node.nodeName == 'BR')
-            textLength = 1;
-        else if (node && node.nodeName == '#text')
-            textLength = node.nodeValue.length;
-        else if (node && node.childNodes != null)
-            for (var i = 0; i < node.childNodes.length; i++)
-                textLength += this.getNodeTextLength(node.childNodes[i]);
-
-        return textLength;
-    }
-
-    getNodeOffset(node) {
-        return node == null ? -1 : 1 + this.getNodeOffset(node.previousSibling);
-    }
-
-    getDOMNode() {
-        return ReactDOM.findDOMNode(this);
-    }
-
-    componentDidMount() {
-        this.ces = Math.random();
-        const self = this;
-        this.getDOMNode().addEventListener("selectstart", (e) => {
-            const target = e.target;
-            setTimeout(() => {
-                if (window.getSelection()) {
-                    function check() {
-                        setTimeout(() => {
-                            const selection = window.getSelection();
-                            if (selection.baseNode.isEqualNode(target)) {
-                                self.emitChange();
-                                check();
-                            }
-                        }, 50);
-                    }
-
-                    check();
-                }
-                self.emitChange();
-            }, 50);
-        });
-    }
-
-    shouldComponentUpdate(nextProps) {
-        return this.contentFromProps(nextProps) !== this.currentContent();
-    }
-
-    componentDidUpdate() {
-        if (this.contentFromProps(this.props) !== this.currentContent()) {
-           this.setCurrentContent(this.contentFromProps(this.props));
-        }
-    }
-
-    isUsingHTML() {
-        return !!this.props.html;
-    }
-
-    currentContent() {
-        return this.isUsingHTML() ? this.getDOMNode().innerHTML : this.getDOMNode().innerText;
-    }
-
-    setCurrentContent(content) {
-        if (this.isUsingHTML()) {
-            this.getDOMNode().innerHTML = content;
-        } else {
-            this.getDOMNode().innerText = content;
-        }
-    }
-
-    contentFromProps(props) {
-        return props.html || props.value;
-    }
-
-    emitChange() {
-        const node = this.getDOMNode();
-        let value = node.innerText;
-        const selection = this.getTextSelection(node);
-        const selectionStart = selection ? selection.start : null;
-        const selectionEnd = selection ? selection.end : null
-        if (!this.isUsingHTML() && this.props.onChange && (value !== this.lastText || selectionStart !== this.lastSelectionStart || selectionEnd !== this.lastSelectionEnd)) {
-            this.props.onChange({
-                target: {
-                    value,
-                    selectionStart,
-                    selectionEnd
-                }
-            });
-        }
-
-        if (this.isUsingHTML() && this.props.onHTMLClick) {
-            const text = this.props.onHTMLClick();
-            node.innerText = text;
-            value = text;
-            this.props.html = null;
-        }
-
-        this.lastText = value;
-        this.lastSelectionStart = selectionStart;
-        this.lastSelectionEnd = selectionEnd;
-    }
-
-    render() {
-        return <div {...this.props} data-ces={this.ces} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} onFocus={() => this.emitChange()} contentEditable>
-            {this.props.html || this.props.value || ""}
-        </div>;
-    }
-
-}
-
 class Project extends React.Component {
 
     constructor(props) {
@@ -191,6 +48,7 @@ class Project extends React.Component {
             selectedTargetTranslation: null,
             showAddTargetLanguageModal: false,
             showInviteUserModal: false,
+            showShareURLModal: false,
             videoDuration: 0,
             currentTime: 0,
             baseLanguageText: "",
@@ -201,7 +59,9 @@ class Project extends React.Component {
             connectionID: null,
             color: null,
             isReady: false,
-            otherUsers: []
+            otherUsers: [],
+            fragmentListTopScroll: 0.0,
+            fragmentListBottomScroll: 0.0
         };
         this.ws = null;
     }
@@ -211,10 +71,16 @@ class Project extends React.Component {
         this.setupSocket();
     }
 
+    getShareHash() {
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log(urlParams);
+        return urlParams.get('shareHash') || null;
+    }
+
     setupSocket() {
         const id = this.props.match.params.id;
         const self = this;
-        this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcription/project/${id}/socket`);
+        this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcription/project/${id}/socket?shareHash=${this.getShareHash()}`);
 
         this.ws.onerror = (err) => {
             console.log(err);
@@ -249,7 +115,6 @@ class Project extends React.Component {
                    }
                }
                this.setState({ otherUsers: data, fragments: this.state.fragments });
-               console.log(data);
            } else if (name === "updateSubtitle") {
                if (this.state.focusedSubtitle && data.id === this.state.focusedSubtitle.id) {
                    document.activeElement.blur();
@@ -263,7 +128,6 @@ class Project extends React.Component {
                    }
                }
                this.setState({ fragments: this.state.fragments });
-               console.log(message);
            } else if (name === "newFragment") {
                const fragments = this.state.fragments;
                fragments.push(data);
@@ -284,7 +148,11 @@ class Project extends React.Component {
 
     async loadProject(targetTranslation) {
         const id = this.props.match.params.id;
-        const response = await fetch(`/api/transcription/project/${id}`);
+        const response = await fetch(`/api/transcription/project/${id}`, {
+            headers: {
+                "X-Kotu-Share-Hash": this.getShareHash()
+            }
+        });
         let selectedBaseTranslation = this.state.selectedBaseTranslation;
         let selectedTargetTranslation = targetTranslation || this.state.selectedTargetTranslation;
         if (response.ok) {
@@ -313,6 +181,12 @@ class Project extends React.Component {
     toggleInviteUserModal(show) {
         this.setState({
             showInviteUserModal: show
+        });
+    }
+
+    toggleShareURLModal(show) {
+        this.setState({
+            showShareURLModal: show
         });
     }
 
@@ -366,7 +240,8 @@ class Project extends React.Component {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-Kotu-Share-Hash": this.getShareHash()
             }
         });
          if (response.ok) {
@@ -404,7 +279,8 @@ class Project extends React.Component {
                     text
                  }),
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-Kotu-Share-Hash": this.getShareHash()
                 }
             });
         } else {
@@ -412,7 +288,8 @@ class Project extends React.Component {
                 method: "PUT",
                 body: JSON.stringify({ text }),
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-Kotu-Share-Hash": this.getShareHash()
                 }
             });
         }
@@ -488,7 +365,8 @@ class Project extends React.Component {
                     text: ""
                  }),
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-Kotu-Share-Hash": this.getShareHash()
                 }
             });
 
@@ -541,6 +419,16 @@ class Project extends React.Component {
         return subtitle.text;
     }
 
+    onFragmentListScroll(element) {
+        if (!element) return;
+        let bottom = element.scrollHeight - element.clientHeight;
+        let fragmentListTopScroll = Math.min(1, element.scrollTop / 127);
+        let fragmentListBottomScroll = Math.min(1, (bottom - element.scrollTop) / 127);
+        if (this.state.fragmentListTopScroll != fragmentListTopScroll || this.state.fragmentListBottomScroll != fragmentListBottomScroll) {
+            this.setState({ fragmentListTopScroll, fragmentListBottomScroll});
+        }
+    }
+
     render() {
         return (
             <div>
@@ -557,7 +445,11 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            <Button variant="primary" className="float-right" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                            <div className="float-right">
+                                <Button variant="primary" onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                {" "}
+                                <Button variant="primary" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                            </div>
                         </Col>
                     </Row>
                     <Form.Row className="align-items-center justify-content-center" inline>
@@ -612,30 +504,34 @@ class Project extends React.Component {
                     <Container className="py-0" fluid>
                         <Row>
                             <Col className="col-6">
-                                <div className="overflow-auto max-vh-50">
-                                    <Container className="mb-0 py-0" fluid>
-                                        {this.state.fragments.map((fragment, id) => {
-                                            return <div key={id}>
-                                                <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
-                                                <Row className="bg-light py-3 align-items-center position-relative">
-                                                    <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
-                                                    </Col>
-                                                    <Col className="px-0">
-                                                        <ContentEditable onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
-                                                        {this.state.selectedTargetTranslation && <ContentEditable onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
-                                                    </Col>
-                                                    <Col xs="auto" className="text-center align-self-center">
-                                                        <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
-                                                    </Col>
-                                                    {this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
-                                                </Row>
-                                            </div>;
-                                        })}
-                                        <div style={{ float:"left", clear: "both" }}
-                                            ref={(el) => { this.bottomOfFragments = el; }}>
-                                        </div>
-                                    </Container>
+                                <div className="position-relative">
+                                    <div className="position-absolute w-100" style={{ height: "27px", "pointer-events": "none", background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, "z-index": "1", "top": "0" }}></div>
+                                    <div className="overflow-auto hide-scrollbar max-vh-50" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
+                                        <Container className="mb-0 py-0" fluid>
+                                            {this.state.fragments.map((fragment, id) => {
+                                                return <div key={id}>
+                                                    <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
+                                                    <Row className="bg-light py-3 align-items-center position-relative">
+                                                        <Col xs="auto" className="text-center align-self-center">
+                                                            <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
+                                                        </Col>
+                                                        <Col className="px-0">
+                                                            <ContentEditable onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
+                                                            {this.state.selectedTargetTranslation && <ContentEditable onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
+                                                        </Col>
+                                                        <Col xs="auto" className="text-center align-self-center">
+                                                            <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
+                                                        </Col>
+                                                        {this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
+                                                    </Row>
+                                                </div>;
+                                            })}
+                                            <div style={{ float:"left", clear: "both" }}
+                                                ref={(el) => { this.bottomOfFragments = el; }}>
+                                            </div>
+                                        </Container>
+                                    </div>
+                                    <div className="position-absolute w-100" style={{ height: "27px", "pointer-events": "none", background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.fragmentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, "z-index": "1", "bottom": "0" }}></div>
                                 </div>
 
                                 <Container className="mb-2 py-0" fluid>
@@ -660,7 +556,7 @@ class Project extends React.Component {
                             </Col>
                             <Col>
                                 <ResponsiveEmbed aspectRatio="16by9">
-                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1 }}}/>
+                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0 }}} />
                                 </ResponsiveEmbed>
 
                                 <hr />
@@ -695,6 +591,7 @@ class Project extends React.Component {
                     </Container>
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
+                    <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />
                 </div>}
             </div>
         )

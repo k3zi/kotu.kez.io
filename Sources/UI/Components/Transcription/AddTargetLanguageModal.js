@@ -24,7 +24,11 @@ class AddTargetLanguageModal extends React.Component {
     }
 
     async componentDidMount() {
-        const response = await fetch(`/api/settings/languages`);
+        const response = await fetch(`/api/settings/languages`, {
+            headers: {
+                "X-Kotu-Share-Hash": this.getShareHash()
+            }
+        });
         if (response.ok) {
             const languages = await response.json();
             this.setState({ languages });
@@ -43,7 +47,8 @@ class AddTargetLanguageModal extends React.Component {
             method: "POST",
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-Kotu-Share-Hash": this.getShareHash()
             }
         });
         const result = await response.json();

@@ -248,11 +248,11 @@ body {
     max-height: 75vh!important;
 }
 
-.overflow-auto::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
-.overflow-auto {
+.hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }

@@ -29,11 +29,10 @@ extension SRTFileRoot {
                 displayCoordinate = try DisplayCoordinate.parse(tokenizer: tokenizer)
             }
 
-            try tokenizer.consume(expect: "\n")
-
             var text = ""
-            while tokenizer.next != "\n" && tokenizer.nextNext != "\n" {
-                text.append(tokenizer.consume())
+            if tokenizer.next == "\n" && tokenizer.nextNext != "\n" {
+                try tokenizer.consume(expect: "\n")
+                text = tokenizer.consume(upUntil: { n, nn in n == "\n" && nn == "\n" })
             }
 
             return .init(index: index, timeRange: timeRange, displayCoordinate: displayCoordinate, text: text)

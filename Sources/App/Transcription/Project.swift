@@ -95,3 +95,12 @@ extension Project.Create: Validatable {
     }
 
 }
+
+extension Project {
+
+    struct ShareHash: Content {
+        let readOnly: String
+        let edit: String
+    }
+
+}

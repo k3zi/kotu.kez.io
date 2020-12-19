@@ -36,6 +36,7 @@ class Tokenizer {
         }
     }
 
+    @discardableResult
     func consume(times: Int) throws -> String {
         guard input.count >= times else {
             throw Error.ranOutOfInput
@@ -49,26 +50,26 @@ class Tokenizer {
     }
 
     @discardableResult
-    func consume(upUntil stopCharacter: Character) -> String {
+    func consume(while condition: (Character, Character?) -> Bool) -> String {
         var result = ""
-        while let next = next, next != stopCharacter {
+        while let next = next, condition(next, nextNext) {
             result.append(consume())
         }
         return result
     }
 
     func consume(while character: Character) {
-        while let next = next, next == character {
-            consume()
-        }
+        consume(while: { n, _ in n == character })
     }
 
-    func consume(while condition: (Character) -> Bool) -> String {
-        var result = ""
-        while let next = next, condition(next) {
-            result.append(consume())
-        }
-        return result
+    @discardableResult
+    func consume(upUntil stopCharacter: Character) -> String {
+        consume(upUntil: { n, _ in n == stopCharacter })
+    }
+
+    @discardableResult
+    func consume(upUntil condition: (Character, Character?) -> Bool) -> String {
+        consume(while: { !condition($0, $1) })
     }
 
     var next: Character? {

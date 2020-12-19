@@ -176,6 +176,33 @@ class TranscriptionController: RouteCollection {
 
     var projectSessions = [UUID: ProjectSession]()
 
+    static func verifyRead(req: Request, for project: Project) -> Bool {
+        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash") else {
+            return false
+        }
+        guard let data = Data(base64Encoded: encodedShareHash), let shareHash = String(data: data, encoding: .utf8) else {
+            return false
+        }
+        let readOnlyString = try? "\(project.requireID())\(project.owner.passwordHash)-readonly"
+        let readOnly = try? readOnlyString.flatMap { try Bcrypt.verify($0, created: shareHash) }
+        let readWriteString = try? "\(project.requireID())\(project.owner.passwordHash)-edit"
+        let readWrite = try? readWriteString.flatMap { try Bcrypt.verify($0, created: shareHash) }
+        return readOnly ?? readWrite ?? false
+    }
+
+    static func verifyWrite(req: Request, for project: Project) -> Bool {
+        guard let encodedShareHash = try? req.headers.first(name: "X-Kotu-Share-Hash") ?? req.query.get(at: "shareHash") else {
+            return false
+        }
+        guard let data = Data(base64Encoded: encodedShareHash), let shareHash = String(data: data, encoding: .utf8) else {
+            return false
+        }
+        let readWriteString = try? "\(project.requireID())\(project.owner.passwordHash)-edit"
+        let readWrite = try? readWriteString.flatMap { try Bcrypt.verify($0, created: shareHash) }
+        print("readWrite: \(readWrite) for \(req.description)")
+        return readWrite ?? false
+    }
+
     func session(for project: Project) -> ProjectSession? {
         guard let id = project.id else { return nil }
         return sessionDispatchQueue.sync {
@@ -187,9 +214,11 @@ class TranscriptionController: RouteCollection {
 
     func boot(routes: RoutesBuilder) throws {
         let transcription = routes.grouped("transcription")
+
+        let guardedTranscriptions = transcription
             .grouped(User.guardMiddleware())
 
-        transcription.get("invites") { req -> EventLoopFuture<[Invite]> in
+        guardedTranscriptions.get("invites") { req -> EventLoopFuture<[Invite]> in
             let user = try req.auth.require(User.self)
             return user.$invites
                 .query(on: req.db)
@@ -201,9 +230,10 @@ class TranscriptionController: RouteCollection {
                 .all()
         }
 
+        let protectedProjects = guardedTranscriptions.grouped("projects")
         let projects = transcription.grouped("projects")
 
-        projects.get { req -> EventLoopFuture<[Project]> in
+        protectedProjects.get { req -> EventLoopFuture<[Project]> in
             let user = try req.auth.require(User.self)
             return user.$projects
                 .query(on: req.db)
@@ -225,8 +255,9 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
+        let protectedProject = guardedTranscriptions.grouped("project")
         let project = transcription.grouped("project")
-        project.post("create") { req -> EventLoopFuture<Project> in
+        protectedProject.post("create") { req -> EventLoopFuture<Project> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
 
@@ -250,7 +281,7 @@ class TranscriptionController: RouteCollection {
         }
 
         project.get(":id") { (req: Request) -> EventLoopFuture<Project> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
@@ -271,11 +302,11 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyRead(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
         }
 
         project.get(":id", "translation", ":translationID", "download", ":kind") { (req: Request) -> EventLoopFuture<Response> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             guard let translationID = req.parameters.get("translationID", as: UUID.self) else { throw Abort(.badRequest, reason: "Translation not provided") }
@@ -300,7 +331,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyRead(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .flatMapThrowing { project in
                     let subtitles = project.fragments.flatMap { $0.subtitles.filter { $0.translation.id == translationID } }.sorted(by: { $0.fragment.startTime < $1.fragment.startTime })
                     let language = project.translations.first { $0.id == translationID }?.language
@@ -329,7 +360,8 @@ class TranscriptionController: RouteCollection {
         // MARK: Socket
 
         project.webSocket(":id", "socket") { (req: Request, ws: WebSocket) in
-            guard let user = try? req.auth.require(User.self), let userID = try? user.requireID(), let projectID = req.parameters.get("id", as: UUID.self) else {
+            let user = req.auth.get(User.self) ?? User.guest
+            guard let userID = try? user.requireID(), let projectID = req.parameters.get("id", as: UUID.self) else {
                 return ws.close(promise: nil)
             }
 
@@ -341,7 +373,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == projectID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyRead(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
             projectCall.whenFailure({ _ in
                 ws.close(promise: nil)
             })
@@ -369,9 +401,35 @@ class TranscriptionController: RouteCollection {
             })
         }
 
+        // MARK: Sharing
+
+        project.get(":id", "shareURLs") { (req: Request) -> EventLoopFuture<Project.ShareHash> in
+            let user = req.auth.get(User.self) ?? User.guest
+            let userID = try user.requireID()
+            guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .flatMapThrowing { project in
+                    let readOnlyHash = try Bcrypt.hash("\(projectID)\(project.owner.passwordHash)-readonly")
+                    let readOnlyHashEncoded = readOnlyHash.data(using: .utf8)?.base64EncodedString() ?? ""
+                    let editHash = try Bcrypt.hash("\(projectID)\(project.owner.passwordHash)-edit")
+                    let editHashEncoded = editHash.data(using: .utf8)?.base64EncodedString() ?? ""
+                    return Project.ShareHash(readOnly: readOnlyHashEncoded, edit: editHashEncoded)
+                }
+        }
+
+
         // MARK: Invites
 
-        project.post(":id", "invite", ":username") { (req: Request) -> EventLoopFuture<Invite> in
+        protectedProject.post(":id", "invite", ":username") { (req: Request) -> EventLoopFuture<Invite> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
@@ -413,7 +471,7 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
-        project.post(":id", "invite", "accept") { (req: Request) -> EventLoopFuture<Share> in
+        protectedProject.post(":id", "invite", "accept") { (req: Request) -> EventLoopFuture<Share> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
@@ -441,7 +499,7 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
-        project.post(":id", "invite", "decline") { (req: Request) -> EventLoopFuture<Response> in
+        protectedProject.post(":id", "invite", "decline") { (req: Request) -> EventLoopFuture<Response> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
@@ -467,7 +525,7 @@ class TranscriptionController: RouteCollection {
         // MARK: Translation
 
         project.post(":id", "translation", "create") { (req: Request) -> EventLoopFuture<Translation> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
@@ -482,7 +540,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .flatMap { project in
                     Language.find(object.languageID, on: req.db)
                         .unwrap(orError: Abort(.badRequest, reason: "Language not found"))
@@ -499,7 +557,7 @@ class TranscriptionController: RouteCollection {
         // MARK: Fragment
 
         project.post(":id", "fragment", "create") { (req: Request) -> EventLoopFuture<Fragment> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
@@ -518,7 +576,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     let fragment = Fragment(projectID: try project.requireID(), startTime: object.startTime, endTime: object.endTime)
                     return fragment.save(on: req.db)
@@ -545,7 +603,7 @@ class TranscriptionController: RouteCollection {
         }
 
         project.delete(":id", "fragment", ":fragmentID") { (req: Request) -> EventLoopFuture<Response> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             guard let fragmentID = req.parameters.get("fragmentID", as: UUID.self) else { throw Abort(.badRequest, reason: "Fragment ID not provided") }
@@ -558,7 +616,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == projectID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     project.$fragments
                         .query(on: req.db)
@@ -577,7 +635,7 @@ class TranscriptionController: RouteCollection {
         }
 
         project.post(":id", "subtitle", "create") { (req: Request) -> EventLoopFuture<Subtitle> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
 
@@ -593,7 +651,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
-                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     guard let translation = project.translations.first(where: { $0.id == object.translationID }) else {
                         throw Abort(.unauthorized, reason: "Translation could not be found")
@@ -614,7 +672,7 @@ class TranscriptionController: RouteCollection {
         }
 
         project.put(":id", "subtitle", ":subtitleID") { (req: Request) -> EventLoopFuture<Subtitle> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
             guard let subtitleID = req.parameters.get("subtitleID", as: UUID.self) else { throw Abort(.badRequest, reason: "Subtitle ID not provided") }
@@ -633,7 +691,7 @@ class TranscriptionController: RouteCollection {
                 .filter(\.$id == subtitleID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Subtitle not found"))
-                .guard({ $0.fragment.project.owner.id == userID || $0.fragment.project.shares.contains(where: { $0.sharedUser.id == userID }) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .guard({ $0.fragment.project.owner.id == userID || $0.fragment.project.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0.fragment.project) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .guard({ $0.fragment.project.id == id }, else: Abort(.unauthorized, reason: "Subtitle does not belong to this project"))
                 .flatMap { subtitle in
                     subtitle.text = object.text
@@ -642,7 +700,7 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
-        project.delete(":id") { (req: Request) -> EventLoopFuture<String> in
+        protectedProject.delete(":id") { (req: Request) -> EventLoopFuture<String> in
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
