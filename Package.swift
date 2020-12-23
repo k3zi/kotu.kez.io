@@ -13,8 +13,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
-        .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop")),
-        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "1.7.4")
+        .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop"))
     ],
     targets: [
         .target(
@@ -37,8 +36,7 @@ let package = Package(
         .target(
             name: "Run",
             dependencies: [
-                .target(name: "App"),
-                .product(name: "SwiftSoup", package: "SwiftSoup")
+                .target(name: "App")
             ]
         ),
         .testTarget(name: "AppTests", dependencies: [

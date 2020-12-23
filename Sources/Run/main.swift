@@ -1,6 +1,4 @@
 import App
-import Compression
-import SwiftSoup
 import Vapor
 
 @discardableResult
@@ -25,7 +23,7 @@ var env = try Environment.detect()
 try LoggingSystem.bootstrap(from: &env)
 let app = Application(env)
 
-//let contentsDirectory = directoryURL.appendingPathComponent("Resources/SMK8/contents")
+//let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
 //let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
 //let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
 //try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)

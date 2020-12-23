@@ -45,13 +45,13 @@ public func configure(_ app: Application) throws {
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
 
-    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/SMK8/headline/short-headline.headlinestore"))
+    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/short-headline.headlinestore"))
     let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
 
-    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/SMK8/headline/headline.headlinestore"))
+    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/headline.headlinestore"))
     let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
 
-    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/SMK8/key/headword.keystore"))
+    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/key/headword.keystore"))
     let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
 
     let headwords = headWordKeyStore.pairs

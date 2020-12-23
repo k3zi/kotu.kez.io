@@ -58,13 +58,13 @@ struct DictionaryManager {
         let directory = DirectoryConfiguration.detect().workingDirectory
         let directoryURL = URL(fileURLWithPath: directory)
 
-        let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/SMK8/SMK8.css"))
+        let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/SMK8.css"))
         var cssString = String(data: cssData, encoding: .utf8)!
         let replacements = cssString.replaceNonASCIICharacters()
 
-        let contentsDirectory = directoryURL.appendingPathComponent("Resources/SMK8/contents")
+        let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
         let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
-        let contentMapData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/SMK8/contents/contents.map"))
+        let contentMapData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents/contents.map"))
         let contentMap = try! ContentMap.parse(tokenizer: DataTokenizer(data: contentMapData))
 
         return .init(
