@@ -62,7 +62,7 @@ class ShareURLModal extends React.Component {
                     <Form.Group>
                         <Form.Label>View Only</Form.Label>
                         <InputGroup className="mb-3">
-                            <Form.Control id="share-url-read-only" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${this.state.shareHashes.readOnly}`} />
+                            <Form.Control id="share-url-read-only" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${encodeURIComponent(this.state.shareHashes.readOnly)}`} />
                             <InputGroup.Append>
                                 <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, "share-url-read-only")}>Copy</Button>
                             </InputGroup.Append>
@@ -71,7 +71,7 @@ class ShareURLModal extends React.Component {
                     <Form.Group>
                         <Form.Label>View / Modify</Form.Label>
                         <InputGroup className="mb-3">
-                            <Form.Control id="share-url-edit" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${this.state.shareHashes.edit}`} />
+                            <Form.Control id="share-url-edit" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${encodeURIComponent(this.state.shareHashes.edit)}`} />
                             <InputGroup.Append>
                                 <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, "share-url-edit")}>Copy</Button>
                             </InputGroup.Append>

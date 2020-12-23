@@ -74,7 +74,7 @@ class Project extends React.Component {
 
     getShareHash() {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('shareHash') || null;
+        return encodeURIComponent(urlParams.get('shareHash') || '');
     }
 
     setupSocket() {
@@ -91,6 +91,7 @@ class Project extends React.Component {
            const name = message.name;
            const data = message.data;
            if (name === "hello") {
+               console.log(data);
                this.setState({ isReady: true, color: data.color, connectionID: data.id, canWrite: data.canWrite });
            } else if (name === "usersList") {
                for (let fragment of this.state.fragments) {

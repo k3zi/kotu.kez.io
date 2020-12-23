@@ -12,7 +12,9 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0")
+        .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
+        .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop")),
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "1.7.4")
     ],
     targets: [
         .target(
@@ -22,7 +24,8 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "Redis", package: "redis")
+                .product(name: "Redis", package: "redis"),
+                .product(name: "Gzip", package: "Gzip")
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
@@ -31,10 +34,16 @@ let package = Package(
                 .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
             ]
         ),
-        .target(name: "Run", dependencies: [.target(name: "App")]),
+        .target(
+            name: "Run",
+            dependencies: [
+                .target(name: "App"),
+                .product(name: "SwiftSoup", package: "SwiftSoup")
+            ]
+        ),
         .testTarget(name: "AppTests", dependencies: [
             .target(name: "App"),
-            .product(name: "XCTVapor", package: "vapor"),
+            .product(name: "XCTVapor", package: "vapor")
         ])
     ]
 )

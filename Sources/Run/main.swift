@@ -1,4 +1,6 @@
 import App
+import Compression
+import SwiftSoup
 import Vapor
 
 @discardableResult
@@ -22,6 +24,18 @@ func shell(currentDirectoryURL: URL, args: String...) -> Int32 {
 var env = try Environment.detect()
 try LoggingSystem.bootstrap(from: &env)
 let app = Application(env)
+
+//let contentsDirectory = directoryURL.appendingPathComponent("Resources/SMK8/contents")
+//let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+//let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
+//try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
+//for (i, collection) in fileContainer.collections.enumerated() {
+//    for (j, file) in collection.files.enumerated() {
+//        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05x", i))_\(String(format: "%05x", j)).html")
+//        try file.text.data(using: .utf8)!.write(to: outputFileURL)
+//    }
+//}
+
 
 let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
 shell(currentDirectoryURL: directoryURL, args: "npm", "install")
