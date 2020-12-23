@@ -34,7 +34,6 @@ extension String {
     mutating func replaceNonASCIIHTMLNodes() {
         let invalidGroup = #"[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890\\/\*"\,\-_\+=@ \?$#;\n\{\}\t\:\.<>]"#
         let validGroup = #"[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890=" \-_]"#
-        let tagName = #"[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890\-]"#
         func replace(_ regex: String, _ replacementModifier: (String) -> String) {
             while let range = self.range(of: regex, options: .regularExpression) {
                 let string = self[range]
