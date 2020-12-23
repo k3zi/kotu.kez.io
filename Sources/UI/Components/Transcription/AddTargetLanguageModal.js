@@ -26,7 +26,7 @@ class AddTargetLanguageModal extends React.Component {
     async componentDidMount() {
         const response = await fetch(`/api/settings/languages`, {
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash()
+                "X-Kotu-Share-Hash": this.getShareHash(false)
             }
         });
         if (response.ok) {
@@ -35,9 +35,10 @@ class AddTargetLanguageModal extends React.Component {
         }
     }
 
-    getShareHash() {
+    getShareHash(shouldEncode) {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('shareHash') || null;
+        const shareHash = urlParams.get('shareHash') || '';
+        return shouldEncode ? encodeURIComponent(shareHash) : shareHash;
     }
 
     async submit(event) {
@@ -53,7 +54,7 @@ class AddTargetLanguageModal extends React.Component {
             body: JSON.stringify(data),
             headers: {
                 "Content-Type": "application/json",
-                "X-Kotu-Share-Hash": this.getShareHash()
+                "X-Kotu-Share-Hash": this.getShareHash(false)
             }
         });
         const result = await response.json();

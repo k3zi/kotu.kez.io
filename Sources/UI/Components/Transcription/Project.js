@@ -72,15 +72,16 @@ class Project extends React.Component {
         this.setupSocket();
     }
 
-    getShareHash() {
+    getShareHash(shouldEncode) {
         const urlParams = new URLSearchParams(window.location.search);
-        return encodeURIComponent(urlParams.get('shareHash') || '');
+        const shareHash = urlParams.get('shareHash') || '';
+        return shouldEncode ? encodeURIComponent(shareHash) : shareHash;
     }
 
     setupSocket() {
         const id = this.props.match.params.id;
         const self = this;
-        this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcription/project/${id}/socket?shareHash=${this.getShareHash()}`);
+        this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcription/project/${id}/socket?shareHash=${this.getShareHash(true)}`);
 
         this.ws.onerror = (err) => {
             console.log(err);
@@ -91,7 +92,6 @@ class Project extends React.Component {
            const name = message.name;
            const data = message.data;
            if (name === "hello") {
-               console.log(data);
                this.setState({ isReady: true, color: data.color, connectionID: data.id, canWrite: data.canWrite });
            } else if (name === "usersList") {
                for (let fragment of this.state.fragments) {
@@ -151,7 +151,7 @@ class Project extends React.Component {
         const id = this.props.match.params.id;
         const response = await fetch(`/api/transcription/project/${id}`, {
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash()
+                "X-Kotu-Share-Hash": this.getShareHash(false)
             }
         });
         let selectedBaseTranslation = this.state.selectedBaseTranslation;
@@ -242,7 +242,7 @@ class Project extends React.Component {
             body: JSON.stringify(data),
             headers: {
                 "Content-Type": "application/json",
-                "X-Kotu-Share-Hash": this.getShareHash()
+                "X-Kotu-Share-Hash": this.getShareHash(false)
             }
         });
          if (response.ok) {
@@ -271,7 +271,7 @@ class Project extends React.Component {
             isSubmittingUpdate: true
         });
         let subtitle = fragment.subtitles.filter(s => s.translation.id == translation.id)[0];
-        if (!subtitle) {
+        if (!subtitle && this.state.canWrite) {
             const response = await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/create`, {
                 method: "POST",
                 body: JSON.stringify({
@@ -281,16 +281,16 @@ class Project extends React.Component {
                  }),
                 headers: {
                     "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash()
+                    "X-Kotu-Share-Hash": this.getShareHash(false)
                 }
             });
-        } else {
+        } else if (this.state.canWrite) {
             await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/${subtitle.id}`, {
                 method: "PUT",
                 body: JSON.stringify({ text }),
                 headers: {
                     "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash()
+                    "X-Kotu-Share-Hash": this.getShareHash(false)
                 }
             });
         }
@@ -367,7 +367,7 @@ class Project extends React.Component {
                  }),
                 headers: {
                     "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash()
+                    "X-Kotu-Share-Hash": this.getShareHash(false)
                 }
             });
 
@@ -575,12 +575,12 @@ class Project extends React.Component {
                                         {['srt'].map(ext => {
                                             return <tr>
                                                 <td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash()}`} variant="outline-secondary" block download>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>
                                                 {this.state.selectedTargetTranslation &&<td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash()}`} variant="outline-secondary" block download>
+                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>}

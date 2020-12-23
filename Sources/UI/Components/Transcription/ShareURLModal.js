@@ -20,15 +20,16 @@ class ShareURLModal extends React.Component {
         };
     }
 
-    getShareHash() {
+    getShareHash(shouldEncode) {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('shareHash') || null;
+        const shareHash = urlParams.get('shareHash') || '';
+        return shouldEncode ? encodeURIComponent(shareHash) : shareHash;
     }
 
     async componentDidMount() {
         const response = await fetch(`/api/transcription/project/${this.props.project.id}/shareURLs`, {
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash()
+                "X-Kotu-Share-Hash": this.getShareHash(false)
             }
         });
         if (response.ok) {

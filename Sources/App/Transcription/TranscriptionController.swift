@@ -229,7 +229,6 @@ class TranscriptionController: RouteCollection {
         }
 
         let protectedProjects = guardedTranscriptions.grouped("projects")
-        let projects = transcription.grouped("projects")
 
         protectedProjects.get { req -> EventLoopFuture<[Project]> in
             let user = try req.auth.require(User.self)
