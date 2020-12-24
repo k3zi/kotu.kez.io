@@ -123,7 +123,7 @@ class Project extends React.Component {
                }
            } else if (name === "newSubtitle") {
                for (let fragment of this.state.fragments) {
-                   if (fragment.id === data.fragment.id) {
+                   if (fragment.id === data.fragment.id && fragment.subtitles.filter(s => s.id === data.id).length === 0) {
                        fragment.subtitles.push(data);
                        break;
                    }
@@ -271,20 +271,7 @@ class Project extends React.Component {
             isSubmittingUpdate: true
         });
         let subtitle = fragment.subtitles.filter(s => s.translation.id == translation.id)[0];
-        if (!subtitle && this.state.canWrite) {
-            const response = await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/create`, {
-                method: "POST",
-                body: JSON.stringify({
-                    translationID: translation.id,
-                    fragmentID: fragment.id,
-                    text
-                 }),
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash(false)
-                }
-            });
-        } else if (this.state.canWrite) {
+        if (subtitle && this.state.canWrite) {
             await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/${subtitle.id}`, {
                 method: "PUT",
                 body: JSON.stringify({ text }),

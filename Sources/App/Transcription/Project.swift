@@ -38,6 +38,12 @@ final class Project: Model, Content {
         self.youtubeID = youtubeID
     }
 
+    func beforeEncode() throws {
+        if self.$fragments.value != nil {
+            self.$fragments.value = fragments.sorted(by: { $0.startTime < $1.startTime })
+        }
+    }
+
 }
 
 extension Project {

@@ -38,7 +38,11 @@ class App extends React.Component {
         };
     }
 
-    async componentDidMount() {
+    componentDidMount() {
+        this.loadUser();
+    }
+
+    async loadUser() {
         const response = await fetch(`/api/me`);
         const user = await response.json();
         if (!user.error) {
@@ -76,6 +80,14 @@ class App extends React.Component {
         this.setState({ selectedResultHTML: result, isLoading: false });
     }
 
+    loginProtect(view) {
+        if (this.state.user) {
+            return view;
+        }
+
+        return <LoginModal show backdrop="static" onHide={() => this.loadUser()} />;
+    }
+
     render() {
         return (
             <UserContext.Provider value={this.state.user}>
@@ -89,7 +101,7 @@ class App extends React.Component {
                                 <Nav.Link eventKey="/transcription">Transcription</Nav.Link>
                             </LinkContainer>
                         </Nav>
-                        <Form as="div" className="mr-auto w-50 d-inline">
+                        {this.state.user && <Form as="div" className="mr-auto w-50 d-inline">
                             <Dropdown>
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ "display": (!this.state.selectedResult && this.state.query.length > 0) ? "block" : "none"}}>
@@ -98,7 +110,7 @@ class App extends React.Component {
                                     })}
                                 </Dropdown.Menu>
                             </Dropdown>
-                        </Form>
+                        </Form>}
                         {!this.state.user && <Nav>
                             <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                             <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
@@ -119,7 +131,7 @@ class App extends React.Component {
                             </Route>
 
                             <Route exact path="/transcription">
-                                <TranscriptionProjects />
+                                {this.loginProtect(<TranscriptionProjects />)}
                             </Route>
 
                             <Route path="/transcription/:id">

@@ -101,7 +101,7 @@ extension Subtitle {
 extension Subtitle.Update: Validatable {
 
     static func validations(_ validations: inout Validations) {
-        validations.add("text", as: String.self, is: !.empty)
+        validations.add("text", as: String.self)
     }
 
 }
