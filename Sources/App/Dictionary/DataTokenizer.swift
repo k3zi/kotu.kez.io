@@ -24,9 +24,9 @@ public class DataTokenizer {
         return result
     }
 
-    func consume(expect value: UInt8) throws {
+    func consume(expect value: UInt8, file: String = #file, function: String = #function, line: Int = #line) throws {
         if consume() != value {
-            throw Error.notEqual("consume expected \(value)")
+            throw Error.notEqual("consume expected \(value) in \(file) \(function): \(line)")
         }
     }
 
