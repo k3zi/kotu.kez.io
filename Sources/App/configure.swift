@@ -40,43 +40,43 @@ public func configure(_ app: Application) throws {
 //    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
 //    try! data.write(to: directoryURL.appendingPathComponent("listOfAllHeadlineUsages.json"))
 
-    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-    let directoryName = "SANSEIDO-DAIJIRIN2"
-
-    let oldDictionary = try Dictionary.query(on: app.db)
-        .filter(\.$name == "大辞林 4.0")
-        .first()
-        .wait()
-    let dictionary = oldDictionary ?? Dictionary(name: "大辞林 4.0", directoryName: directoryName)
-    if dictionary.id == nil {
-        try dictionary.create(on: app.db).wait()
-    }
-
-    try Headword.query(on: app.db)
-        .filter("dictionary_id", .equal, try dictionary.requireID())
-        .delete().wait()
-
-    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
-    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
-
-    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/headline.headlinestore"))
-    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
-
-    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/key/headword.keystore"))
-    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
-
-    let headwords = headWordKeyStore.pairs
-        .flatMap { headword in
-            headword.matches.map { match -> Headword in
-                let headline = headlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
-                let shortHeadline = shortHeadlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
-                return Headword(dictionary: dictionary, text: headword.value, headline: headline?.text ?? "", shortHeadline: shortHeadline?.text ?? "", entryIndex: Int(match.entryIndex), subentryIndex: Int(match.subentryIndex))
-            }
-        }
-
-   try headwords
-        .chunked(into: 127)
-        .forEach { try $0.create(on: app.db).wait() }
+//    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
+//    let directoryName = "SANSEIDO-DAIJIRIN2"
+//
+//    let oldDictionary = try Dictionary.query(on: app.db)
+//        .filter(\.$name == "大辞林 4.0")
+//        .first()
+//        .wait()
+//    let dictionary = oldDictionary ?? Dictionary(name: "大辞林 4.0", directoryName: directoryName)
+//    if dictionary.id == nil {
+//        try dictionary.create(on: app.db).wait()
+//    }
+//
+//    try Headword.query(on: app.db)
+//        .filter("dictionary_id", .equal, try dictionary.requireID())
+//        .delete().wait()
+//
+//    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
+//    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
+//
+//    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/headline.headlinestore"))
+//    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
+//
+//    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/key/headword.keystore"))
+//    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
+//
+//    let headwords = headWordKeyStore.pairs
+//        .flatMap { headword in
+//            headword.matches.map { match -> Headword in
+//                let headline = headlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
+//                let shortHeadline = shortHeadlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
+//                return Headword(dictionary: dictionary, text: headword.value, headline: headline?.text ?? "", shortHeadline: shortHeadline?.text ?? "", entryIndex: Int(match.entryIndex), subentryIndex: Int(match.subentryIndex))
+//            }
+//        }
+//
+//   try headwords
+//        .chunked(into: 127)
+//        .forEach { try $0.create(on: app.db).wait() }
 
     try DictionaryManager.configure(app: app).wait()
 
