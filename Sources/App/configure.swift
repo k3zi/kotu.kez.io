@@ -52,8 +52,14 @@ public func configure(_ app: Application) throws {
     let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/key/headword.keystore"))
     let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
 
-    let dictionary = Dictionary(name: "大辞林 4.0", directoryName: directoryName)
-    try dictionary.create(on: app.db).wait()
+    let oldDictionary = try Dictionary.query(on: app.db)
+        .filter(\.$name == "大辞林 4.0")
+        .first()
+        .wait()
+    let dictionary = oldDictionary ?? Dictionary(name: "大辞林 4.0", directoryName: directoryName)
+    if dictionary.id == nil {
+        try dictionary.create(on: app.db).wait()
+    }
 
     let headwords = headWordKeyStore.pairs
         .flatMap { headword in

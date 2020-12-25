@@ -30,7 +30,7 @@ final class Headword: Model, Content {
 
     init(id: UUID? = nil, dictionary: Dictionary, text: String, headline: String, shortHeadline: String, entryIndex: Int, subentryIndex: Int) {
         self.id = id
-        self.dictionary = dictionary
+        self.$dictionary.id = try! dictionary.requireID()
         self.text = text
         self.headline = headline
         self.shortHeadline = shortHeadline
