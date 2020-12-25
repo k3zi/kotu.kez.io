@@ -102,7 +102,7 @@ public struct KeyStore {
             let matchTokenizer = DataTokenizer(data: matchData)
             let matches = try [Match].parse(tokenizer: matchTokenizer)
             pairs.append(Pair(value: text, matches: matches))
-            //print("\(text) @ \(matches.map { "\($0.entryIndex)-\($0.subentryIndex)" }.joined(separator: ", "))")
+            print("\(i) of \(dataIndices.count) = \(text) @ \(matches.map { "\($0.entryIndex)-\($0.subentryIndex)" }.joined(separator: ", "))")
         }
 
         return .init(pairs: pairs)
