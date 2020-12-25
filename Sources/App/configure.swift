@@ -34,8 +34,6 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Headword.Migration1())
     try app.autoMigrate().wait()
 
-    try Headword.query(on: app.db).delete().wait()
-
 //    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
 //    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/headline.headlinestore"))
 //    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
@@ -62,6 +60,10 @@ public func configure(_ app: Application) throws {
     if dictionary.id == nil {
         try dictionary.create(on: app.db).wait()
     }
+
+    try Headword.query(on: app.db)
+        .filter("dictionary_id", .equal, try dictionary.requireID())
+        .delete().wait()
 
     let headwords = headWordKeyStore.pairs
         .flatMap { headword in
