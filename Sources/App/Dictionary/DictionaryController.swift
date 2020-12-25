@@ -13,6 +13,7 @@ class DictionaryController: RouteCollection {
             let modifiedQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
             return Headword
                 .query(on: req.db)
+                .with(\.$dictionary)
                 .filter(\.$text =~ modifiedQuery)
                 .limit(25)
                 .all()
@@ -22,6 +23,7 @@ class DictionaryController: RouteCollection {
             let id = try req.parameters.require("id", as: UUID.self)
             return Headword
                 .query(on: req.db)
+                .with(\.$dictionary)
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
