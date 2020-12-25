@@ -70,6 +70,7 @@ struct DictionaryManager {
                 var containers = [String: CompressedFileContainer]()
                 var cssStrings = [String: String]()
                 var cssWordMappings = [String: [String: String]]()
+                var contentIndexes = [String: ContentIndex]()
                 for dictionary in dictionaries {
                     let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/style.css"))
                     var cssString = String(data: cssData, encoding: .utf8)!
@@ -77,15 +78,21 @@ struct DictionaryManager {
 
                     let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/contents")
                     let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
+
+                    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/contents/contents.idx"))
+                    let contentIndex = try! ContentIndex.parse(tokenizer: .init(data: contentIndexData))
+
                     containers[dictionary.directoryName] = fileContainer
                     cssStrings[dictionary.directoryName] = cssString
                     cssWordMappings[dictionary.directoryName] = replacements
+                    contentIndexes[dictionary.directoryName] = contentIndex
                 }
 
                 _shared = .init(
                     containers: containers,
                     cssStrings: cssStrings,
-                    cssWordMappings: cssWordMappings
+                    cssWordMappings: cssWordMappings,
+                    contentIndexes: contentIndexes
                 )
             }
     }
@@ -93,5 +100,6 @@ struct DictionaryManager {
     let containers: [String: CompressedFileContainer]
     let cssStrings: [String: String]
     let cssWordMappings: [String: [String: String]]
+    let contentIndexes: [String: ContentIndex]
 
 }

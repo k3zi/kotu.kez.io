@@ -35,8 +35,10 @@ class DictionaryController: RouteCollection {
                     let container = DictionaryManager.shared.containers[dictionary]!
                     let css = DictionaryManager.shared.cssStrings[dictionary]!
                     let cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!
+                    let contentIndex = DictionaryManager.shared.contentIndexes[dictionary]!
 
-                    let file = container.files[headword.entryIndex]
+                    let realEntryIndex = contentIndex.indexMapping[headword.entryIndex]!
+                    let file = container.files[realEntryIndex]
                     var text = file.text
                     for (original, replacement) in cssWordMappings {
                         text = text
