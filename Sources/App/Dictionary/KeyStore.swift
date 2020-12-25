@@ -86,7 +86,7 @@ public struct KeyStore {
         for i in 0..<dataIndices.count {
             let index = tokenizer.consumeInt32() + offset
             print(tokenizer.currentIndex)
-            try tokenizer.consume(expect: 0)
+            tokenizer.consume() // can be a 1 or 0 but probably a 0 (way of counting sub headwords?)
             var utf8Array = tokenizer.consume(times: 3)
             while utf8Array.last != .zero || utf8Array[utf8Array.count - 2] != .zero {
                 utf8Array.append(contentsOf: tokenizer.consume(times: 4))
