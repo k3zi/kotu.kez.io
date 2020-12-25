@@ -84,6 +84,7 @@ public struct KeyStore {
         }
         var pairs = [Pair]()
         for i in 0..<dataIndices.count {
+            let here = tokenizer.currentIndex
             let index = tokenizer.consumeInt32() + offset
             try tokenizer.consume(expect: 0)
             var utf8Array = tokenizer.consume(times: 3)
@@ -102,7 +103,7 @@ public struct KeyStore {
             let matchTokenizer = DataTokenizer(data: matchData)
             let matches = try [Match].parse(tokenizer: matchTokenizer)
             pairs.append(Pair(value: text, matches: matches))
-            print("\(i) of \(dataIndices.count) = \(text) @ \(matches.map { "\($0.entryIndex)-\($0.subentryIndex)" }.joined(separator: ", "))")
+            print("#\(here) = \(i) of \(dataIndices.count) = \(text) @ \(matches.map { "\($0.entryIndex)-\($0.subentryIndex)" }.joined(separator: ", "))")
         }
 
         return .init(pairs: pairs)
