@@ -14,7 +14,10 @@ class DictionaryController: RouteCollection {
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
+                .join(parent: \.$dictionary)
                 .filter(\.$text =~ modifiedQuery)
+                .sort(\.$text)
+                .sort(Dictionary.self, \.$name)
                 .limit(25)
                 .all()
         }
