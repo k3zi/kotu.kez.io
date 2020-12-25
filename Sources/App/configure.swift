@@ -34,6 +34,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Headword.Migration1())
     try app.autoMigrate().wait()
 
+    try Headword.query(on: app.db).delete().wait()
+
 //    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
 //    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/headline.headlinestore"))
 //    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
