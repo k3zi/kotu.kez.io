@@ -30,7 +30,15 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Invite.Migration())
     app.migrations.add(Share.Migration())
     app.migrations.add(Headword.Migration())
+    app.migrations.add(Dictionary.Migration())
+    app.migrations.add(Headword.Migration1())
     try app.autoMigrate().wait()
+
+//    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
+//    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/headline.headlinestore"))
+//    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
+//    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
+//    try! data.write(to: directoryURL.appendingPathComponent("listOfAllHeadlineUsages.json"))
 
 //    try app.db.schema("dictionary_headwords").delete().wait()
 //    try app.db.schema("dictionary_headwords")

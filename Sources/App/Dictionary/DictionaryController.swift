@@ -24,15 +24,11 @@ class DictionaryController: RouteCollection {
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { headword in
                     let dictionary = "SMK8"
-                    let contentMap = DictionaryManager.shared.contentMaps[dictionary]!
                     let container = DictionaryManager.shared.containers[dictionary]!
                     let css = DictionaryManager.shared.cssStrings[dictionary]!
                     let cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!
-                    guard let pair = contentMap.pairs.first(where: { $0.index == headword.entryIndex }) else {
-                        throw Abort(.notFound)
-                    }
 
-                    let file = container.files[pair.index]
+                    let file = container.files[headword.entryIndex]
                     var text = file.text
                     for (original, replacement) in cssWordMappings {
                         text = text

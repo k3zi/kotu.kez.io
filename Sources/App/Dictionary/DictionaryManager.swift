@@ -63,12 +63,9 @@ struct DictionaryManager {
 
         let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
         let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
-        let contentMapData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents/contents.map"))
-        let contentMap = try! ContentMap.parse(tokenizer: DataTokenizer(data: contentMapData))
 
         return .init(
             containers: ["SMK8": fileContainer],
-            contentMaps: ["SMK8": contentMap],
             cssStrings: ["SMK8": cssString],
             cssWordMappings: ["SMK8": replacements]
         )
@@ -79,7 +76,6 @@ struct DictionaryManager {
     }
 
     let containers: [String: CompressedFileContainer]
-    let contentMaps: [String: ContentMap]
     let cssStrings: [String: String]
     let cssWordMappings: [String: [String: String]]
 

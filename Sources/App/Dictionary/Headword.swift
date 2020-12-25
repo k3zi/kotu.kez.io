@@ -23,10 +23,14 @@ final class Headword: Model, Content {
     @Field(key: "subentry_index")
     var subentryIndex: Int
 
+    @Parent(key: "dictionary_id")
+    var dictionary: Dictionary
+
     init() { }
 
-    init(id: UUID? = nil, text: String, headline: String, shortHeadline: String, entryIndex: Int, subentryIndex: Int) {
+    init(id: UUID? = nil, dictionary: Dictionary, text: String, headline: String, shortHeadline: String, entryIndex: Int, subentryIndex: Int) {
         self.id = id
+        self.dictionary = dictionary
         self.text = text
         self.headline = headline
         self.shortHeadline = shortHeadline
@@ -54,6 +58,32 @@ extension Headword {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "DictionaryHeadwordDictionary" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("dictionary_id", .uuid, .references("dictionaries", "id"))
+                .update()
+                .flatMap {
+                    let dictionary = Dictionary(name: "新明解国語辞典　第8版", directoryName: "SMK8")
+                    return dictionary.save(on: database)
+                        .flatMap {
+                            let id = try! dictionary.requireID()
+                            return Headword.query(on: database)
+                                .set(["dictionary_id": .bind(id)])
+                                .update()
+                        }
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("dictionary_id")
+                .update()
         }
     }
 
