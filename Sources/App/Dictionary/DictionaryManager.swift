@@ -53,26 +53,41 @@ extension String {
 
 struct DictionaryManager {
 
-    static var shared: DictionaryManager = {
-        let directory = DirectoryConfiguration.detect().workingDirectory
+    fileprivate static var _shared: DictionaryManager?
+
+    static var shared: DictionaryManager {
+        return _shared!
+    }
+
+    static func configure(app: Application) -> EventLoopFuture<Void> {
+        let directory = app.directory.workingDirectory
         let directoryURL = URL(fileURLWithPath: directory)
 
-        let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/SMK8.css"))
-        var cssString = String(data: cssData, encoding: .utf8)!
-        let replacements = cssString.replaceNonASCIICharacters()
+        return Dictionary
+            .query(on: app.db)
+            .all()
+            .map { dictionaries in
+                var containers = [String: CompressedFileContainer]()
+                var cssStrings = [String: String]()
+                var cssWordMappings = [String: [String: String]]()
+                for dictionary in dictionaries {
+                    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/style.css"))
+                    var cssString = String(data: cssData, encoding: .utf8)!
+                    let replacements = cssString.replaceNonASCIICharacters()
 
-        let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
-        let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
+                    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
+                    let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
+                    containers[dictionary.directoryName] = fileContainer
+                    cssStrings[dictionary.directoryName] = cssString
+                    cssWordMappings[dictionary.directoryName] = replacements
+                }
 
-        return .init(
-            containers: ["SMK8": fileContainer],
-            cssStrings: ["SMK8": cssString],
-            cssWordMappings: ["SMK8": replacements]
-        )
-    }()
-
-    static func preload() {
-        _ = DictionaryManager.shared
+                _shared = .init(
+                    containers: containers,
+                    cssStrings: cssStrings,
+                    cssWordMappings: cssWordMappings
+                )
+            }
     }
 
     let containers: [String: CompressedFileContainer]

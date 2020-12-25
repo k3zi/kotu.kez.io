@@ -37,7 +37,7 @@ public struct ContentMap {
                 itemIndex = 1
             }
 
-            print("\(index): \(collectionOffset)-\(itemOffset)")
+            //print("\(index): \(collectionOffset)-\(itemOffset)")
             pairs.append(.init(index: index, collectionIndex: collectionIndex, collectionOffset: Int(collectionOffset), itemOffset: Int(itemOffset), itemIndex: itemIndex))
             itemIndex += 1
             index += 1

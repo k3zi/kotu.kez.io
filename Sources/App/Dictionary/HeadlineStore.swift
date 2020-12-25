@@ -1,6 +1,6 @@
 public struct HeadlineStore {
 
-    public struct Headline {
+    public struct Headline: Encodable {
         public let index: UInt
         public let subindex: UInt
         public let text: String
@@ -35,8 +35,6 @@ public struct HeadlineStore {
                 utf8Array.append(contentsOf: headlineTokenizer.consume(maxTimes: 2))
             }
             let text = String(bytes: utf8Array[...(utf8Array.count - 2)], encoding: .utf16LittleEndian)!
-
-            print("\(index)-\(subindex): \(text)")
             headlines.append(.init(index: UInt(index), subindex: UInt(subindex), text: text))
         }
 

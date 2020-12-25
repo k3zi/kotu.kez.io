@@ -20,10 +20,13 @@ class DictionaryController: RouteCollection {
 
         dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
             let id = try req.parameters.require("id", as: UUID.self)
-            return Headword.find(id, on: req.db)
+            return Headword
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { headword in
-                    let dictionary = "SMK8"
+                    let dictionary = headword.dictionary.directoryName
                     let container = DictionaryManager.shared.containers[dictionary]!
                     let css = DictionaryManager.shared.cssStrings[dictionary]!
                     let cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!

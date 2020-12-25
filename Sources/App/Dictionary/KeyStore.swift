@@ -12,7 +12,7 @@ extension Array where Element == KeyStore.Match {
             // Ends in 1
             let hexStringArray = Array<Character>(String(format:"%02X", header))
             let isSubentry = UInt8(String(hexStringArray[0]), radix: 16)!
-            let bytesToExpect = UInt8(String(hexStringArray[1]), radix: 16)!
+            let style = UInt8(String(hexStringArray[1]), radix: 16)!
             let hasSubentry: Bool
             if isSubentry == 1 {
                 hasSubentry = true
@@ -23,10 +23,24 @@ extension Array where Element == KeyStore.Match {
                 fatalError()
             }
 
-            var match = tokenizer.consume(times: Int(bytesToExpect))
-            while !match.count.isMultiple(of: 4) {
-                match.insert(.zero, at: 0)
+            let numberOfBytes: Int // Seems to be log2 of `style`.
+            switch style {
+            case 1:
+                numberOfBytes = 1
+            case 2:
+                numberOfBytes = 2
+            case 4:
+                numberOfBytes = 3
+            default:
+                fatalError()
             }
+
+            var match = tokenizer.consume(times: numberOfBytes)
+            while !match.count.isMultiple(of: 4) {
+                match.insert(.zero, at: 0) // DSProductFlipping => false?
+            }
+            // bigEndian for DSProductFlipping => false?
+            // littleEndian for 
             let entryIndex = UInt32(bigEndian: match.withUnsafeBufferPointer {
                 ($0.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: 1) { $0 })
             }.pointee)

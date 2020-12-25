@@ -68,16 +68,6 @@ extension Headword {
             database.schema(schema)
                 .field("dictionary_id", .uuid, .references("dictionaries", "id"))
                 .update()
-                .flatMap {
-                    let dictionary = Dictionary(name: "新明解国語辞典　第8版", directoryName: "SMK8")
-                    return dictionary.save(on: database)
-                        .flatMap {
-                            let id = try! dictionary.requireID()
-                            return Headword.query(on: database)
-                                .set(["dictionary_id": .bind(id)])
-                                .update()
-                        }
-                }
         }
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
