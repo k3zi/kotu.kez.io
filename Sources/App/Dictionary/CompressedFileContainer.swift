@@ -37,7 +37,6 @@ extension CompressedFileContainer {
 
                 let partTokenizer = DataTokenizer(data: decompressedData)
                 while !partTokenizer.reachedEnd {
-                    let here = partTokenizer.currentOffset
                     let size = partTokenizer.consumeInt32()
                     let data = partTokenizer.dataConsuming(times: Int(size))
                     let string = String(data: data, encoding: .utf8)!

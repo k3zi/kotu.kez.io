@@ -3,7 +3,7 @@ import Foundation
 public class DataTokenizer {
 
     enum Error: Swift.Error {
-        case notEqual
+        case notEqual(String)
     }
 
     let data: Data
@@ -26,7 +26,7 @@ public class DataTokenizer {
 
     func consume(expect value: UInt8) throws {
         if consume() != value {
-            throw Error.notEqual
+            throw Error.notEqual("consume expected \(value)")
         }
     }
 
@@ -83,7 +83,7 @@ public class DataTokenizer {
 
     func consumeInt32(expect value: UInt32) throws {
         if consumeInt32() != value {
-            throw Error.notEqual
+            throw Error.notEqual("consumeInt32 expected \(value)")
         }
     }
 
