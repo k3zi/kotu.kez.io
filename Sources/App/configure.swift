@@ -43,15 +43,6 @@ public func configure(_ app: Application) throws {
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
     let directoryName = "SANSEIDO-DAIJIRIN2"
 
-    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
-    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
-
-    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/headline.headlinestore"))
-    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
-
-    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/key/headword.keystore"))
-    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
-
     let oldDictionary = try Dictionary.query(on: app.db)
         .filter(\.$name == "大辞林 4.0")
         .first()
@@ -64,6 +55,15 @@ public func configure(_ app: Application) throws {
     try Headword.query(on: app.db)
         .filter("dictionary_id", .equal, try dictionary.requireID())
         .delete().wait()
+
+    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
+    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
+
+    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/headline.headlinestore"))
+    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
+
+    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/key/headword.keystore"))
+    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
 
     let headwords = headWordKeyStore.pairs
         .flatMap { headword in
