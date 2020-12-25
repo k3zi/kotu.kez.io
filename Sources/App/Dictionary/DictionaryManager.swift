@@ -75,7 +75,7 @@ struct DictionaryManager {
                     var cssString = String(data: cssData, encoding: .utf8)!
                     let replacements = cssString.replaceNonASCIICharacters()
 
-                    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/contents")
+                    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/contents")
                     let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
                     containers[dictionary.directoryName] = fileContainer
                     cssStrings[dictionary.directoryName] = cssString
