@@ -1,177 +1,6 @@
 import Fluent
 import Vapor
 
-extension Array: WSEvent where Element == ProjectSession.Connection.User {
-    static var eventName: String {
-        "usersList"
-    }
-}
-
-fileprivate let sessionDispatchQueue = DispatchQueue(label: "io.kez.kotu.transcription.project.session")
-
-class ProjectSession {
-
-    class Connection: Equatable {
-
-        struct User: Codable {
-
-            struct Edit: Codable {
-                let subtitleID: UUID
-                let lastText: String
-                let selectionStart: Int?
-                let selectionEnd: Int?
-            }
-
-            let id: String
-            let username: String
-            let color: String
-            var edit: Edit?
-
-        }
-
-        let id: String
-        var user: User
-        let ws: WebSocket
-
-        init(id: String, color: String, databaseUser: App.User, ws: WebSocket) {
-            self.id = id
-            self.user = User(id: databaseUser.id!.uuidString, username: databaseUser.username, color: color, edit: nil)
-            self.ws = ws
-        }
-
-        static func == (lhs: Connection, rhs: Connection) -> Bool {
-            lhs.id == rhs.id
-        }
-    }
-
-    let projectID: UUID
-    private var connections = [Connection]()
-
-    init(project: Project) {
-        self.projectID = project.id!
-    }
-
-    var existingColors: [String] {
-        sessionDispatchQueue.sync {
-            connections.map { $0.user.color }
-        }
-    }
-
-    func sendUsersList() {
-        sessionDispatchQueue.sync {
-            for connection in connections {
-                let otherConnections = connections.filter { $0 != connection }
-                let otherUsers = otherConnections.map { $0.user }
-                let payloadString = otherUsers.jsonString(connectionID: connection.id)!
-                connection.ws.send(payloadString)
-            }
-        }
-    }
-
-    func add(db: FluentKit.Database, connection: Connection) {
-        let projectID = self.projectID
-        let connectionID = connection.id
-        connection.ws.onText { [weak self] (ws, text) in
-            guard let self = self else { return}
-
-            WSEventHolder.attemptDecodeUnwrap(type: DeleteFragment.self, jsonString: text) { holder in
-                guard let string = holder.data.jsonString(connectionID: connectionID) else { return }
-                sessionDispatchQueue.sync {
-                    self.connections.filter { $0 != connection }
-                        .forEach { $0.ws.send(string) }
-                }
-            }
-
-            WSEventHolder.attemptDecodeUnwrap(type: NewFragment.self, jsonString: text) { holder in
-                let id = holder.data.id
-                Fragment.query(on: db)
-                    .with(\.$project)
-                    .with(\.$subtitles) { subtitle in
-                        subtitle.with(\.$translation)
-                    }
-                    .filter(\.$id == id)
-                    .first()
-                    .unwrap(or: Abort(.badRequest))
-                    .guard({ $0.project.id == projectID }, else: Abort(.badRequest))
-                    .whenSuccess { [weak self] fragment in
-                        guard let string = fragment.jsonString(connectionID: connectionID) else { return }
-                        sessionDispatchQueue.sync {
-                            self?.connections.filter { $0 != connection }
-                                .forEach { $0.ws.send(string) }
-                        }
-                    }
-            }
-
-            WSEventHolder.attemptDecodeUnwrap(type: BlurSubtitle.self, jsonString: text) { holder in
-                if connection.user.edit?.subtitleID == holder.data.id {
-                    connection.user.edit = nil
-                }
-                self.sendUsersList()
-            }
-
-            WSEventHolder.attemptDecodeUnwrap(type: NewSubtitle.self, jsonString: text) { holder in
-                Subtitle
-                    .query(on: db)
-                    .filter(\.$id == holder.data.id)
-                    .with(\.$translation) { $0.with(\.$project) }
-                    .first()
-                    .unwrap(or: Abort(.badRequest))
-                    .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
-                    .whenSuccess { [weak self] _ in
-                        guard let string = holder.data.jsonString(connectionID: connectionID) else { return }
-                        sessionDispatchQueue.sync {
-                            self?.connections.filter { $0 != connection }
-                                .forEach {
-                                    $0.ws.send(string)
-                                }
-                        }
-                    }
-            }
-
-            WSEventHolder.attemptDecodeUnwrap(type: UpdateSubtitle.self, jsonString: text) { holder in
-                Subtitle
-                    .query(on: db)
-                    .filter(\.$id == holder.data.id)
-                    .with(\.$translation) { $0.with(\.$project) }
-                    .first()
-                    .unwrap(or: Abort(.badRequest))
-                    .guard({ $0.translation.project.id == projectID }, else: Abort(.badRequest))
-                    .whenSuccess { [weak self] _ in
-                        sessionDispatchQueue.sync {
-                            for connection in self?.connections ?? [] {
-                                if connection.user.edit?.subtitleID == holder.data.id {
-                                    connection.user.edit = nil
-                                }
-                            }
-                        }
-                        connection.user.edit = Connection.User.Edit(subtitleID: holder.data.id, lastText: holder.data.text, selectionStart: holder.data.selectionStart, selectionEnd: holder.data.selectionEnd)
-                        var data = holder.data
-                        data.color = connection.user.color
-                        guard let string = data.jsonString(connectionID: connectionID) else { return }
-                        sessionDispatchQueue.sync {
-                            self?.connections.filter { $0 != connection }
-                                .forEach {
-                                    $0.ws.send(string)
-                                }
-                        }
-                        self?.sendUsersList()
-                    }
-            }
-        }
-        sessionDispatchQueue.sync {
-            connections.append(connection)
-        }
-    }
-
-    func remove(id: String) {
-        sessionDispatchQueue.sync {
-            connections.removeAll(where: { $0.id == id })
-        }
-        sendUsersList()
-    }
-
-}
-
 class TranscriptionController: RouteCollection {
 
     var projectSessions = [UUID: ProjectSession]()
@@ -367,10 +196,41 @@ class TranscriptionController: RouteCollection {
                 .with(\.$shares) {
                     $0.with(\.$sharedUser)
                 }
+                .with(\.$translations) { translation in
+                    translation.with(\.$language)
+                }
+                .with(\.$fragments) { fragments in
+                    fragments.with(\.$subtitles) { subtitle in
+                        subtitle
+                            .with(\.$translation)
+                            .with(\.$fragment)
+                    }
+                }
                 .filter(\.$id == projectID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
                 .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyRead(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .flatMap { project -> EventLoopFuture<Project> in
+                    let allSubtitles = project.fragments.flatMap { $0.subtitles }
+                    let duplicates = allSubtitles
+                        .filter { sub in sub.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                        .filter { sub in allSubtitles.contains { $0.fragment.id == sub.fragment.id && $0.translation.id == sub.translation.id && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
+                    return duplicates.delete(on: req.db)
+                        .flatMap {
+                            project.$fragments.query(on: req.db)
+                                .with(\.$subtitles) { subtitle in
+                                    subtitle
+                                        .with(\.$translation)
+                                        .with(\.$fragment)
+                                }
+                                .all()
+                                .map {
+                                    project.$fragments.value = $0
+                                    return project
+                                }
+                        }
+                }
+
             projectCall.whenFailure({ _ in
                 ws.close(promise: nil)
             })
@@ -384,7 +244,7 @@ class TranscriptionController: RouteCollection {
                 let randomColors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "cyan"]
                 let onceRandomColors = randomColors.filter { !existingColors.contains($0) }
                 let color = onceRandomColors.randomElement() ?? randomColors.randomElement()!
-                let hello = Hello(id: wsID, color: color, canWrite: !user.passwordHash.isEmpty || Self.verifyWrite(req: req, for: project))
+                let hello = Hello(id: wsID, color: color, canWrite: project.owner.id == userID || project.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: project), project: project)
                 guard let jsonString = hello.jsonString(connectionID: wsID) else {
                     return ws.close(promise: nil)
                 }
@@ -653,15 +513,15 @@ class TranscriptionController: RouteCollection {
                 .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
                 .throwingFlatMap { project in
                     guard let translation = project.translations.first(where: { $0.id == object.translationID }) else {
-                        throw Abort(.unauthorized, reason: "Translation could not be found")
+                        throw Abort(.badRequest, reason: "Translation could not be found")
                     }
 
                     guard let fragment = project.fragments.first(where: { $0.id == object.fragmentID }) else {
-                        throw Abort(.unauthorized, reason: "Fragment could not be found")
+                        throw Abort(.badRequest, reason: "Fragment could not be found")
                     }
 
                     guard !fragment.subtitles.contains(where: { $0.translation.id == translation.id }) else {
-                        throw Abort(.unauthorized, reason: "Duplicate subtitle found")
+                        throw Abort(.badRequest, reason: "Duplicate subtitle found")
                     }
 
                     let subtitle = Subtitle(translationID: try translation.requireID(), fragmentID: try fragment.requireID(), text: object.text)

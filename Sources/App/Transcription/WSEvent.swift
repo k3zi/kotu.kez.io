@@ -31,6 +31,7 @@ struct Hello: WSEvent {
     let id: String
     let color: String
     let canWrite: Bool
+    let project: Project
 
 }
 

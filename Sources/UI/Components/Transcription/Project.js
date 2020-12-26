@@ -68,7 +68,6 @@ class Project extends React.Component {
     }
 
     componentDidMount() {
-        this.loadProject();
         this.setupSocket();
     }
 
@@ -92,7 +91,22 @@ class Project extends React.Component {
            const name = message.name;
            const data = message.data;
            if (name === "hello") {
-               this.setState({ isReady: true, color: data.color, connectionID: data.id, canWrite: data.canWrite });
+               let selectedBaseTranslation = this.state.selectedBaseTranslation;
+               let selectedTargetTranslation = this.state.selectedTargetTranslation;
+
+               const project = data.project;
+               selectedBaseTranslation = project.translations.filter(t => selectedBaseTranslation && t.id == selectedBaseTranslation.id)[0] || project.translations.filter(t => t.isOriginal)[0];
+               selectedTargetTranslation = project.translations.filter(t => selectedTargetTranslation && t.id == selectedTargetTranslation.id)[0];
+               this.setState({
+                   project,
+                   fragments: project.fragments,
+                   selectedBaseTranslation,
+                   selectedTargetTranslation,
+                   isReady: true,
+                   color: data.color,
+                   connectionID: data.id,
+                   canWrite: data.canWrite
+               });
            } else if (name === "usersList") {
                for (let fragment of this.state.fragments) {
                    for (let subtitle of fragment.subtitles) {
