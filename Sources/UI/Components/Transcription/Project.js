@@ -408,7 +408,9 @@ class Project extends React.Component {
     async deleteFragment(fragment) {
         const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/${fragment.id}`, {
             method: "DELETE",
-            "X-Kotu-Share-Hash": this.getShareHash(false)
+            headers: {
+                "X-Kotu-Share-Hash": this.getShareHash(false)
+            }
         });
 
         if (!response.ok) return this.handleError(response);
