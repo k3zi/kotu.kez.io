@@ -77,6 +77,10 @@ class Project extends React.Component {
         return shouldEncode ? encodeURIComponent(shareHash) : shareHash;
     }
 
+    sortFragments(fragments) {
+        return fragments.sort((a, b) => a.startTime - b.startTime);
+    }
+
     setupSocket() {
         const id = this.props.match.params.id;
         const self = this;
@@ -99,7 +103,7 @@ class Project extends React.Component {
                selectedTargetTranslation = project.translations.filter(t => selectedTargetTranslation && t.id == selectedTargetTranslation.id)[0];
                this.setState({
                    project,
-                   fragments: project.fragments,
+                   fragments: this.sortFragments(project.fragments),
                    selectedBaseTranslation,
                    selectedTargetTranslation,
                    isReady: true,
@@ -176,7 +180,7 @@ class Project extends React.Component {
             selectedTargetTranslation = project.translations.filter(t => selectedTargetTranslation && t.id == selectedTargetTranslation.id)[0];
             this.setState({
                 project,
-                fragments: project.fragments,
+                fragments: this.sortFragments(project.fragments),
                 selectedBaseTranslation,
                 selectedTargetTranslation
             });
@@ -375,7 +379,7 @@ class Project extends React.Component {
             if (!response.ok) return this.handleError(response);
             subtitle = await response.json();
             fragment.subtitles.push(subtitle);
-            this.setState({ fragments: this.state.fragments });
+            this.setState({ fragments: this.sortFragments(this.state.fragments) });
             this.ws.send(JSON.stringify({
                 name: 'newSubtitle',
                 data: subtitle,
