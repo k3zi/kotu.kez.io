@@ -107,10 +107,10 @@ class App extends React.Component {
             <UserContext.Provider value={this.state.user}>
                 <Router>
                     <Navbar bg="dark" variant="dark">
-                        <LinkContainer to="/">
+                        <LinkContainer to="/" className="order-0">
                             <Navbar.Brand>コツ</Navbar.Brand>
                         </LinkContainer>
-                        {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
+                        {this.state.user && <Nav className="mr-auto order-1" activeKey={window.location.pathname}>
                             <LinkContainer to="/transcription">
                                 <Nav.Link eventKey="/transcription">Transcription</Nav.Link>
                             </LinkContainer>
@@ -129,7 +129,7 @@ class App extends React.Component {
                                 <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Create Note</NavDropdown.Item>
                             </NavDropdown>
                         </Nav>}
-                        {this.state.user && <Form as="div" className="mr-auto w-50 d-inline">
+                        {this.state.user && <Form as="div" className="mr-auto w-100 mt-1 mt-xl-0 w-xl-50 d-inline order-4 order-xl-2">
                             <Dropdown>
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ "display": (!this.state.selectedResult && this.state.query.length > 0) ? "block" : "none"}}>
@@ -139,13 +139,14 @@ class App extends React.Component {
                                 </Dropdown.Menu>
                             </Dropdown>
                         </Form>}
-                        {!this.state.user && <Nav>
+                        <div className="w-100 d-block d-xl-none order-3 order-xl-5"></div>
+                        {!this.state.user && <Nav className="order-2 order-xl-4">
                             <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                             <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                         </Nav>}
 
-                        {this.state.user && <Nav>
-                            <Navbar.Text>
+                        {this.state.user && <Nav className="order-2 order-xl-4">
+                            <Navbar.Text className="d-sm-block d-none">
                                 Logged in as: <strong>{this.state.user.username}</strong>
                             </Navbar.Text>
                             <Nav.Link href="#" onClick={() => this.logout()}>Logout</Nav.Link>

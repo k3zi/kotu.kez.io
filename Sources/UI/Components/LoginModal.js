@@ -45,7 +45,7 @@ class LoginModal extends React.Component {
          if (success) {
              setTimeout(() => {
                  location.reload();
-             }, 3000);
+             }, 1000);
          }
     }
 
