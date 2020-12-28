@@ -3,7 +3,6 @@ import FluentPostgresDriver
 import Leaf
 import Redis
 import Vapor
-import VaporSecurityHeaders
 
 public func configure(_ app: Application) throws {
 
