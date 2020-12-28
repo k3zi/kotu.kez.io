@@ -31,6 +31,34 @@ class Decks extends React.Component {
         const response = await fetch(`/api/flashcard/decks`);
         if (response.ok) {
             const decks = await response.json();
+            const formatter = new Intl.RelativeTimeFormat({ numeric: 'always', style: 'long' });
+            for (let deck of decks) {
+                const newCardsCount = deck.sm.queue.filter(i => i.repetition === -1 && (new Date(i.dueDate) < new Date())).length;
+                const reviewCardsCount = deck.sm.queue.filter(i => i.repetition > -1 && (new Date(i.dueDate) < new Date())).length;
+                const nextCard = deck.sm.queue[0];
+                const seconds = (new Date(nextCard.dueDate) - new Date()) / 1000;
+                const absSeconds = Math.abs(seconds);
+                const durationLookup = [
+                    [0, 'second'],
+                    [60, 'minute'],
+                    [60 * 60, 'hour'],
+                    [60 * 60 * 24, 'day'],
+                    [60 * 60 * 24 * 7, 'week']
+                ];
+                let matchingLookup = durationLookup[0];
+                for (let d of durationLookup) {
+                    if (d[0] < absSeconds) {
+                        matchingLookup = d;
+                    } else {
+                        break;
+                    }
+                }
+
+                const nextCardDueData = formatter.format(Math.round(seconds / matchingLookup[0]), matchingLookup[1]);
+                deck.newCardsCount = newCardsCount;
+                deck.reviewCardsCount = reviewCardsCount;
+                deck.nextCardDueData = nextCardDueData;
+            }
             this.setState({ decks });
         }
     }
@@ -61,6 +89,7 @@ class Decks extends React.Component {
                             <th>Name</th>
                             <th className="text-center">New</th>
                             <th className="text-center">To Review</th>
+                            <th className="text-center">Next Due Date</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -68,8 +97,9 @@ class Decks extends React.Component {
                         {this.state.decks.map(deck => {
                             return (<tr>
                                 <td className="align-middle">{deck.name}</td>
-                                <td className="align-middle text-center text-success">{deck.sm.queue.filter(i => i.repetition === -1 && (new Date(i.dueDate) < new Date())).length}</td>
-                                <td className="align-middle text-center text-primary">{deck.sm.queue.filter(i => i.repetition > -1 && (new Date(i.dueDate) < new Date())).length}</td>
+                                <td className="align-middle text-center text-success">{deck.newCardsCount}</td>
+                                <td className="align-middle text-center text-primary">{deck.reviewCardsCount}</td>
+                                <td className="align-middle text-center text-primary">{deck.nextCardDueData}</td>
                                 <td className="align-middle text-center">
                                     <LinkContainer to={`/flashcard/deck/${deck.id}`}>
                                         <Button variant="primary"><i class="bi bi-arrow-right"></i></Button>

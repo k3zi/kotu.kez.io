@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import "bootstrap";
+import "intl-relative-time-format";
+import "intl-relative-time-format/locale-data/en";
+import "intl-relative-time-format/locale-data/ja";
 import "../Styles/Custom.scss";
 
 import Container from 'react-bootstrap/Container';
