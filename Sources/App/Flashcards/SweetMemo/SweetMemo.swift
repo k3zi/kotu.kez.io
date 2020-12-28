@@ -43,6 +43,7 @@ class SweetMemo: Codable {
 
     public func nextItem(isAdvanceable: Bool = false) -> Item? {
         guard queue.count > 0 else { return nil }
+        queue.sort(by: { $0.dueDate < $1.dueDate })
         let first = queue[0]
         return (isAdvanceable || first.dueDate < Date()) ? first : nil
     }
@@ -58,6 +59,7 @@ class SweetMemo: Codable {
             forgettingIndexGraph.update(sm: self, grade: grade, item: item, now: now)
         }
         item.answer(sm: self, grade: grade, now: now)
+        queue.sort(by: { $0.dueDate < $1.dueDate })
     }
 
 }
