@@ -39,7 +39,7 @@ class Decks extends React.Component {
                 const seconds = (new Date(nextCard.dueDate) - new Date()) / 1000;
                 const absSeconds = Math.abs(seconds);
                 const durationLookup = [
-                    [0, 'second'],
+                    [1, 'second'],
                     [60, 'minute'],
                     [60 * 60, 'hour'],
                     [60 * 60 * 24, 'day'],

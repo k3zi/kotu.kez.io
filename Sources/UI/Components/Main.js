@@ -42,6 +42,7 @@ class App extends React.Component {
             showLoginModal: false,
             showCreateNoteModal: false,
             user: null,
+            isReady: false,
 
             query: "",
             results: [],
@@ -61,6 +62,7 @@ class App extends React.Component {
         if (!user.error) {
             this.setState({ user });
         }
+        this.setState({ isReady: true });
     }
 
     toggleRegisterModal(show) {
@@ -157,7 +159,8 @@ class App extends React.Component {
                     </Navbar>
 
                     <Container>
-                        <Switch>
+                        {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+                        {this.state.isReady && <Switch>
                             <Route exact path="/">
                                 <Home />
                             </Route>
@@ -185,7 +188,7 @@ class App extends React.Component {
                             <Route path="/flashcard/type/:id">
                                 {this.loginProtect(<FlashcardNoteType />)}
                             </Route>
-                        </Switch>
+                        </Switch>}
                     </Container>
 
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
