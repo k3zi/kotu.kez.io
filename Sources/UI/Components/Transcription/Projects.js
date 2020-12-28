@@ -115,6 +115,11 @@ class Projects extends React.Component {
                         </tr>
                     </thead>
                     <tbody>
+                        {this.state.invites.length === 0 && <tr>
+                            <td colspan="4" className="text-center">
+                                No Invites :(
+                            </td>
+                        </tr>}
                         {this.state.invites.map(invite => {
                             return (<tr>
                                 <td className="align-middle">{invite.project.owner.username}</td>

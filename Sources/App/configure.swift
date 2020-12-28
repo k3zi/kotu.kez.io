@@ -29,9 +29,19 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Project.Migration1())
     app.migrations.add(Invite.Migration())
     app.migrations.add(Share.Migration())
+
     app.migrations.add(Headword.Migration())
     app.migrations.add(Dictionary.Migration())
     app.migrations.add(Headword.Migration1())
+
+    app.migrations.add(Deck.Migration())
+    app.migrations.add(NoteType.Migration())
+    app.migrations.add(Note.Migration())
+    app.migrations.add(NoteField.Migration())
+    app.migrations.add(NoteFieldValue.Migration())
+    app.migrations.add(CardType.Migration())
+    app.migrations.add(Card.Migration())
+
     try app.autoMigrate().wait()
 
 //    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
@@ -45,7 +55,7 @@ public func configure(_ app: Application) throws {
 //
 //    let oldDictionary = try Dictionary.query(on: app.db)
 //        .filter(\.$name == "大辞林 4.0")
-//        .first()
+//        .delete()
 //        .wait()
 //    let dictionary = oldDictionary ?? Dictionary(name: "大辞林 4.0", directoryName: directoryName)
 //    if dictionary.id == nil {
@@ -78,7 +88,7 @@ public func configure(_ app: Application) throws {
 //        .chunked(into: 127)
 //        .forEach { try $0.create(on: app.db).wait() }
 
-    try DictionaryManager.configure(app: app).wait()
+    //try DictionaryManager.configure(app: app).wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
 

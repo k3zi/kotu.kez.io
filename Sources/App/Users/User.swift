@@ -17,6 +17,8 @@ final class User: Model, Content {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    // MARK: Transcription
+
     @Children(for: \.$owner)
     var projects: [Project]
 
@@ -25,6 +27,14 @@ final class User: Model, Content {
 
     @Children(for: \.$sharedUser)
     var shares: [Share]
+
+    // MARK: Flashcards
+
+    @Children(for: \.$owner)
+    var decks: [Deck]
+
+    @Children(for: \.$owner)
+    var noteTypes: [NoteType]
 
     init() { }
 

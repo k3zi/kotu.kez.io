@@ -11,13 +11,22 @@ import { LinkContainer } from 'react-router-bootstrap';
 import Modal from 'react-bootstrap/Modal';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
+import NavDropdown from 'react-bootstrap/NavDropdown';
 import Spinner from 'react-bootstrap/Spinner';
 
 import Home from "./Home";
+
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
+
 import TranscriptionProjects from "./Transcription/Projects";
 import TranscriptionProject from "./Transcription/Project";
+
+import FlashcardDeck from "./Flashcard/Deck";
+import FlashcardDecks from "./Flashcard/Decks";
+import FlashcardNoteTypes from "./Flashcard/NoteTypes";
+import FlashcardNoteType from "./Flashcard/NoteType";
+import FlashcardCreateNoteModal from "./Flashcard/Modals/CreateNoteModal";
 
 const UserContext = React.createContext(null);
 
@@ -28,6 +37,7 @@ class App extends React.Component {
         this.state = {
             showRegisterModal: false,
             showLoginModal: false,
+            showCreateNoteModal: false,
             user: null,
 
             query: "",
@@ -56,6 +66,10 @@ class App extends React.Component {
 
     toggleLoginModal(show) {
         this.setState({ showLoginModal: show });
+    }
+
+    toggleCreateNoteModal(show) {
+        this.setState({ showCreateNoteModal: show });
     }
 
     async logout() {
@@ -96,11 +110,25 @@ class App extends React.Component {
                         <LinkContainer to="/">
                             <Navbar.Brand>コツ</Navbar.Brand>
                         </LinkContainer>
-                        <Nav className="mr-auto" activeKey={window.location.pathname}>
+                        {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
                             <LinkContainer to="/transcription">
                                 <Nav.Link eventKey="/transcription">Transcription</Nav.Link>
                             </LinkContainer>
-                        </Nav>
+
+                            <NavDropdown title="Flashcard" id="basic-nav-dropdown">
+                                <LinkContainer to="/flashcard/decks">
+                                    <NavDropdown.Item eventKey="/flashcard/decks">Decks</NavDropdown.Item>
+                                </LinkContainer>
+                                <LinkContainer to="/flashcard/types">
+                                    <NavDropdown.Item eventKey="/flashcard/types">Note Types</NavDropdown.Item>
+                                </LinkContainer>
+                                <LinkContainer to="/flashcard/cards">
+                                    <NavDropdown.Item eventKey="/flashcard/cards">Browse Cards</NavDropdown.Item>
+                                </LinkContainer>
+                                <NavDropdown.Divider />
+                                <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Create Note</NavDropdown.Item>
+                            </NavDropdown>
+                        </Nav>}
                         {this.state.user && <Form as="div" className="mr-auto w-50 d-inline">
                             <Dropdown>
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} />
@@ -137,11 +165,28 @@ class App extends React.Component {
                             <Route path="/transcription/:id">
                                 <TranscriptionProject />
                             </Route>
+
+                            <Route path="/flashcard/decks">
+                                {this.loginProtect(<FlashcardDecks />)}
+                            </Route>
+
+                            <Route path="/flashcard/deck/:id">
+                                {this.loginProtect(<FlashcardDeck />)}
+                            </Route>
+
+                            <Route path="/flashcard/types">
+                                {this.loginProtect(<FlashcardNoteTypes />)}
+                            </Route>
+
+                            <Route path="/flashcard/type/:id">
+                                {this.loginProtect(<FlashcardNoteType />)}
+                            </Route>
                         </Switch>
                     </Container>
 
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
+                    <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
 
                     {this.state.selectedResult && <Modal size="lg" show={!!this.state.selectedResult} onHide={() => this.setState({ selectedResult: null, selectedResultHTML: "" })} centered>
                         <Modal.Header closeButton>

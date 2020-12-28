@@ -21,7 +21,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 import YouTube from 'react-youtube';
 
 import AddTargetLanguageModal from "./AddTargetLanguageModal";
-import ContentEditable from "./ContentEditable";
+import ContentEditable from './../Common/ContentEditable';
 import InviteUserModal from "./InviteUserModal";
 import ShareURLModal from "./ShareURLModal";
 

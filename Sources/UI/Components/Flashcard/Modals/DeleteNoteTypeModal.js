@@ -7,9 +7,8 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import Row from 'react-bootstrap/Row';
-import YouTube from 'react-youtube';
 
-class DeleteProjectModal extends React.Component {
+class DeleteNoteTypeModal extends React.Component {
 
     constructor(props) {
         super(props);
@@ -27,7 +26,7 @@ class DeleteProjectModal extends React.Component {
             return;
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
-        const response = await fetch(`/api/transcription/project/${this.props.project.id}`, {
+        const response = await fetch(`/api/flashcard/noteType/${this.props.noteType.id}`, {
             method: "DELETE"
         });
         const success = response.ok;
@@ -37,22 +36,20 @@ class DeleteProjectModal extends React.Component {
          });
 
          if (success) {
-             this.setState({ message: 'Deleted.'  });
-             setTimeout(() => {
-                 this.props.didDelete();
-             }, 2000);
+            this.setState({ message: 'Deleted.'  });
+            this.props.didDelete();
          } else {
-             const result = response.json();
-             this.setState({
-                 didError: result.error,
-                 message: result.reason,
-             })
+            const result = await response.json();
+            this.setState({
+                didError: result.error,
+                message: result.reason,
+            });
          }
     }
 
     render() {
         return (
-            <Modal {...this.props} show={this.props.project != null} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
+            <Modal {...this.props} show={this.props.noteType != null} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
                         Confirm Deletion
@@ -60,7 +57,7 @@ class DeleteProjectModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete: {this.props.project ? this.props.project.name : ""}</p>
+                    <p>Are you sure you wish to delete: {this.props.noteType ? this.props.noteType.name : ""}. This will delete all cards under this note type.</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">
@@ -80,4 +77,4 @@ class DeleteProjectModal extends React.Component {
     }
 }
 
-export default DeleteProjectModal;
+export default DeleteNoteTypeModal;
