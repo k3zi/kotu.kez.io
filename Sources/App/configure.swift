@@ -87,7 +87,7 @@ public func configure(_ app: Application) throws {
 //        .chunked(into: 127)
 //        .forEach { try $0.create(on: app.db).wait() }
 
-    //try DictionaryManager.configure(app: app).wait()
+    try DictionaryManager.configure(app: app).wait()
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
 
