@@ -16,14 +16,14 @@ final class Deck: Model, Content {
 
     // The UUID of the individual `Card`s is used.
     @Field(key: "sweet_memo")
-    var sm: SweetMemo<UUID>
+    var sm: SweetMemo
 
     @Children(for: \.$deck)
     var cards: [Card]
 
     init() { }
 
-    init(id: UUID? = nil, ownerID: UUID, name: String, sm: SweetMemo<UUID>) {
+    init(id: UUID? = nil, ownerID: UUID, name: String, sm: SweetMemo) {
         self.id = id
         self.$owner.id = ownerID
         self.name = name

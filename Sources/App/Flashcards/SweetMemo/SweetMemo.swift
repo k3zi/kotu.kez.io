@@ -18,7 +18,7 @@ fileprivate let maxPointsCount = 500
 fileprivate let maxPoints = 5000
 fileprivate let gradeOffset: Double = 1
 
-class SweetMemo<Card: Codable>: Codable {
+class SweetMemo: Codable {
 
     var requestedFI: Double = 10
     var intervalBase: Double = 3 * 60 * 60
@@ -27,7 +27,7 @@ class SweetMemo<Card: Codable>: Codable {
     lazy var rfm = RFactorMatrix(sm: self)
     lazy var ofm = OptimumFactorMatrix(sm: self)
 
-    var queue: [Item<Card>]
+    var queue: [Item]
 
     init() {
         queue = []
@@ -35,23 +35,23 @@ class SweetMemo<Card: Codable>: Codable {
         forgettingIndexGraph = ForgettingIndexGraph()
     }
 
-    public func addItem(card: Card) {
+    public func addItem(card: UUID) {
         let item = Item(sm: self, card: card)
         queue.append(item)
         queue.sort(by: { $0.dueDate < $1.dueDate })
     }
 
-    public func nextItem(isAdvanceable: Bool = false) -> Item<Card>? {
+    public func nextItem(isAdvanceable: Bool = false) -> Item? {
         guard queue.count > 0 else { return nil }
         let first = queue[0]
         return (isAdvanceable || first.dueDate < Date()) ? first : nil
     }
 
-    public func answer(grade: Double, item: inout Item<Card>, now: Date = .init()) {
+    public func answer(grade: Double, item: inout Item, now: Date = .init()) {
         update(grade: grade, item: &item, now: now)
     }
 
-    private func update(grade: Double, item: inout Item<Card>, now: Date = .init()) {
+    private func update(grade: Double, item: inout Item, now: Date = .init()) {
         if item.repetition > 0 {
             forgettingCurves.registerPoint(sm: self, grade: grade, item: &item, now: now)
             ofm.update()
@@ -62,31 +62,11 @@ class SweetMemo<Card: Codable>: Codable {
 
 }
 
-protocol Itemizable {
-
-    associatedtype Card: Codable
-    var lapse: Int { get }
-    var repetition: Int { get }
-    var of: Double { get }
-
-    mutating func afIndex() -> Int
-    func uf(sm: SweetMemo<Card>, now: Date) -> Double
-
-}
-
-extension Itemizable {
-
-    func uf(sm: SweetMemo<Card>) -> Double {
-        uf(sm: sm, now: .init())
-    }
-
-}
-
 extension SweetMemo {
 
-    class Item<Card: Codable>: Itemizable, Codable {
+    class Item: Codable {
 
-        let card: Card
+        let card: UUID
 
         var lapse = 0
         var repetition = -1
@@ -97,12 +77,12 @@ extension SweetMemo {
         private var af: Double?
         private var afs = [Double]()
 
-        init(sm: SweetMemo<Card>, card: Card) {
+        init(sm: SweetMemo, card: UUID) {
             self.card = card
             self.optimumInterval = sm.intervalBase
         }
 
-        func interval(sm: SweetMemo<Card>, now: Date = .init()) -> TimeInterval {
+        func interval(sm: SweetMemo, now: Date = .init()) -> TimeInterval {
             guard let previousDate = previousDate else {
                 return sm.intervalBase
             }
@@ -110,7 +90,7 @@ extension SweetMemo {
             return now.timeIntervalSince(previousDate)
         }
 
-        func uf(sm: SweetMemo<Card>, now: Date = .init()) -> Double {
+        func uf(sm: SweetMemo, now: Date = .init()) -> Double {
             interval(sm: sm, now: now) / (optimumInterval / of)
         }
 
@@ -132,7 +112,7 @@ extension SweetMemo {
             })
         }
 
-        private func I(sm: SweetMemo<Card>, now: Date = .init()) {
+        private func I(sm: SweetMemo, now: Date = .init()) {
             let of = sm.ofm.of(repetition: repetition, afIndex: repetition == 0 ? lapse : afIndex())
             self.of = max(1, (of - 1) * (interval(sm: sm, now: now) / optimumInterval) + 1)
             optimumInterval = round(optimumInterval * self.of)
@@ -141,7 +121,7 @@ extension SweetMemo {
             dueDate = Date(timeIntervalSinceNow: optimumInterval)
         }
 
-        private func updateAF(sm: SweetMemo<Card>, grade: Double, now: Date = .init()) {
+        private func updateAF(sm: SweetMemo, grade: Double, now: Date = .init()) {
             let estimatedFI = max(1, sm.forgettingIndexGraph.forgettingIndex(grade: grade))
             let correctedUF = uf(sm: sm, now: now) * (sm.requestedFI / estimatedFI)
             let estimatedAF = repetition > 0
@@ -155,7 +135,7 @@ extension SweetMemo {
             _ = af(value: x / Double(y))
         }
 
-        func answer(sm: SweetMemo<Card>, grade: Double, now: Date = .init()) {
+        func answer(sm: SweetMemo, grade: Double, now: Date = .init()) {
             if repetition >= 0 {
                 updateAF(sm: sm, grade: grade, now: now)
             }
@@ -350,7 +330,7 @@ extension SweetMemo {
             return .init(curves: curves)
         }
 
-        mutating func registerPoint<Item: Itemizable>(sm: SweetMemo<Item.Card>, grade: Double, item: inout Item, now: Date = .init()) {
+        mutating func registerPoint(sm: SweetMemo, grade: Double, item: inout Item, now: Date = .init()) {
             let afIndex = item.repetition > 0 ? item.afIndex() : item.lapse
             curves[item.repetition][afIndex].registerPoint(grade: grade, uf: item.uf(sm: sm, now: now))
         }
@@ -503,7 +483,7 @@ extension SweetMemo {
             points = points.suffix(maxPoints)
         }
 
-        mutating func update<Item: Itemizable>(sm: SweetMemo<Item.Card>, grade: Double, item: Item, now: Date = .init()) {
+        mutating func update(sm: SweetMemo, grade: Double, item: Item, now: Date = .init()) {
             let expectedFI = (item.uf(sm: sm, now: now) / item.of) * sm.requestedFI
             registerPoint(fi: expectedFI, g: grade)
             graph = nil
