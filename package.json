@@ -6,7 +6,7 @@
         "start": "vapor run",
         "run": "vapor run",
         "build": "webpack --config webpack.config.js",
-        "postinstall": "cd ./node_modules/react-bootstrap && npm i && npm run build && rm -rf node_modules/ && rm -rf ./types && rsync -a ./lib ./"
+        "postinstall": "cd ./node_modules/react-bootstrap && npm i --force && npm run build && rm -rf node_modules/ && rm -rf ./types && rsync -a ./lib ./"
     },
     "repository": {
         "type": "git",
