@@ -36,7 +36,7 @@ let app = Application(env)
 
 
 let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-shell(currentDirectoryURL: directoryURL, args: "npm", "install")
+shell(currentDirectoryURL: directoryURL, args: "npm", "install", "--force")
 shell(currentDirectoryURL: directoryURL, args: "webpack")
 
 defer { app.shutdown() }
