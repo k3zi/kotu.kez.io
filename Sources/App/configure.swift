@@ -40,6 +40,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(NoteFieldValue.Migration())
     app.migrations.add(CardType.Migration())
     app.migrations.add(Card.Migration())
+    app.migrations.add(File.Migration())
 
     try app.autoMigrate().wait()
 

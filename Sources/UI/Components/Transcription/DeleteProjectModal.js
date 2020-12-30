@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -28,26 +28,26 @@ class DeleteProjectModal extends React.Component {
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
         const response = await fetch(`/api/transcription/project/${this.props.project.id}`, {
-            method: "DELETE"
+            method: 'DELETE'
         });
         const success = response.ok;
         this.setState({
             isSubmitting: false,
             success
-         });
+        });
 
-         if (success) {
-             this.setState({ message: 'Deleted.'  });
-             setTimeout(() => {
-                 this.props.didDelete();
-             }, 2000);
-         } else {
-             const result = response.json();
-             this.setState({
-                 didError: result.error,
-                 message: result.reason,
-             })
-         }
+        if (success) {
+            this.setState({ message: 'Deleted.'  });
+            setTimeout(() => {
+                this.props.didDelete();
+            }, 2000);
+        } else {
+            const result = response.json();
+            this.setState({
+                didError: result.error,
+                message: result.reason,
+            });
+        }
     }
 
     render() {
@@ -60,7 +60,7 @@ class DeleteProjectModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete: {this.props.project ? this.props.project.name : ""}</p>
+                    <p>Are you sure you wish to delete: {this.props.project ? this.props.project.name : ''}</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">

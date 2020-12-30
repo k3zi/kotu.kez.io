@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -6,7 +6,7 @@ import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
-import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
+import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 
 class InviteUserModal extends React.Component {
@@ -30,23 +30,23 @@ class InviteUserModal extends React.Component {
 
         const data = Object.fromEntries(new FormData(event.target));
         const response = await fetch(`/api/transcription/project/${this.props.project.id}/invite/${data.username}`, {
-            method: "POST"
+            method: 'POST'
         });
         const result = await response.json();
         const success = !result.error;
         this.setState({
             isSubmitting: false,
             success
-         });
+        });
 
-         if (response.ok) {
-             this.props.onFinish(result);
-         } else {
-             this.setState({
-                 didError: result.error,
-                 message: result.reason
-              });
-         }
+        if (response.ok) {
+            this.props.onFinish(result);
+        } else {
+            this.setState({
+                didError: result.error,
+                message: result.reason
+            });
+        }
     }
 
     render() {
@@ -73,7 +73,7 @@ class InviteUserModal extends React.Component {
                         </Alert>}
 
                         {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
-                        {" "}
+                        {' '}
                         {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Inviting...' : 'Invite'}
                         </Button>}

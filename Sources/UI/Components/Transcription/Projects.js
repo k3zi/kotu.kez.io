@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 
 import Alert from 'react-bootstrap/Alert';
@@ -7,13 +7,13 @@ import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
-import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
+import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import YouTube from 'react-youtube';
 
-import DeleteProjectModal from "./DeleteProjectModal";
-import CreateProjectModal from "./CreateProjectModal";
+import DeleteProjectModal from './DeleteProjectModal';
+import CreateProjectModal from './CreateProjectModal';
 
 class Projects extends React.Component {
 
@@ -32,13 +32,13 @@ class Projects extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/transcription/projects`);
+        const response = await fetch('/api/transcription/projects');
         if (response.ok) {
             const projects = await response.json();
             this.setState({ projects });
         }
 
-        const response2 = await fetch(`/api/transcription/invites`);
+        const response2 = await fetch('/api/transcription/invites');
         if (response2.ok) {
             const invites = await response2.json();
             this.setState({ invites });
@@ -60,14 +60,14 @@ class Projects extends React.Component {
 
     async acceptInvite(invite) {
         await fetch(`/api/transcription/project/${invite.project.id}/invite/accept`, {
-            method: "POST"
+            method: 'POST'
         });
         await this.load();
     }
 
     async declineInvite(invite) {
         await fetch(`/api/transcription/project/${invite.project.id}/invite/decline`, {
-            method: "POST"
+            method: 'POST'
         });
         await this.load();
     }
@@ -93,12 +93,12 @@ class Projects extends React.Component {
                                 <td className="align-middle">{project.translations.filter(t => t.isOriginal)[0].language.name}</td>
                                 <td className="align-middle text-center">
                                     <LinkContainer to={`/transcription/${project.id}`}>
-                                        <Button variant="primary"><i class="bi bi-arrow-right"></i></Button>
+                                        <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
                                     </LinkContainer>
-                                    {" "}
-                                    <Button variant="danger" onClick={() => this.showDeleteProjectModal(project)}><i class="bi bi-trash"></i></Button>
+                                    {' '}
+                                    <Button variant="danger" onClick={() => this.showDeleteProjectModal(project)}><i className="bi bi-trash"></i></Button>
                                 </td>
-                            </tr>)
+                            </tr>);
                         })}
                     </tbody>
                 </Table>
@@ -116,7 +116,7 @@ class Projects extends React.Component {
                     </thead>
                     <tbody>
                         {this.state.invites.length === 0 && <tr>
-                            <td colspan="4" className="text-center">
+                            <td colSpan="4" className="text-center">
                                 No Invites :(
                             </td>
                         </tr>}
@@ -126,11 +126,11 @@ class Projects extends React.Component {
                                 <td className="align-middle">{invite.project.name}</td>
                                 <td className="align-middle">{invite.project.translations.filter(t => t.isOriginal)[0].language.name}</td>
                                 <td className="align-middle text-center">
-                                    <Button variant="success" onClick={() => this.acceptInvite(invite)}><i class="bi bi-check"></i></Button>
-                                    {" "}
-                                    <Button variant="danger" onClick={() => this.declineInvite(invite)}><i class="bi bi-x"></i></Button>
+                                    <Button variant="success" onClick={() => this.acceptInvite(invite)}><i className="bi bi-check"></i></Button>
+                                    {' '}
+                                    <Button variant="danger" onClick={() => this.declineInvite(invite)}><i className="bi bi-x"></i></Button>
                                 </td>
-                            </tr>)
+                            </tr>);
                         })}
                     </tbody>
                 </Table>
@@ -138,7 +138,7 @@ class Projects extends React.Component {
                 <CreateProjectModal show={this.state.showCreateProjectModal} onHide={() => this.toggleCreateProjectModal(false)} />
                 <DeleteProjectModal project={this.state.showDeleteProjectModal} didDelete={() => this.showDeleteProjectModal(null)} didCancel={() => this.showDeleteProjectModal(null)} onHide={() => this.showDeleteProjectModal(null)} />
             </div>
-        )
+        );
     }
 }
 

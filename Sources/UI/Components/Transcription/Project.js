@@ -1,4 +1,4 @@
-import { withRouter } from "react-router";
+import { withRouter } from 'react-router';
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 
@@ -13,17 +13,17 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
+import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
 import Table from 'react-bootstrap/Table';
 import Tooltip from 'react-bootstrap/Tooltip';
 import YouTube from 'react-youtube';
 
-import AddTargetLanguageModal from "./AddTargetLanguageModal";
+import AddTargetLanguageModal from './AddTargetLanguageModal';
 import ContentEditable from './../Common/ContentEditable';
-import InviteUserModal from "./InviteUserModal";
-import ShareURLModal from "./ShareURLModal";
+import InviteUserModal from './InviteUserModal';
+import ShareURLModal from './ShareURLModal';
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -51,8 +51,8 @@ class Project extends React.Component {
             showShareURLModal: false,
             videoDuration: 0,
             currentTime: 0,
-            baseLanguageText: "",
-            targetLanguageText: "",
+            baseLanguageText: '',
+            targetLanguageText: '',
             player: null,
             updateQueue: [],
             isSubmittingUpdate: false,
@@ -91,85 +91,85 @@ class Project extends React.Component {
         };
 
         this.ws.onmessage = (evt) => {
-           const message = JSON.parse(evt.data);
-           const name = message.name;
-           const data = message.data;
-           if (name === "hello") {
-               let selectedBaseTranslation = this.state.selectedBaseTranslation;
-               let selectedTargetTranslation = this.state.selectedTargetTranslation;
+            const message = JSON.parse(evt.data);
+            const name = message.name;
+            const data = message.data;
+            if (name === 'hello') {
+                let selectedBaseTranslation = this.state.selectedBaseTranslation;
+                let selectedTargetTranslation = this.state.selectedTargetTranslation;
 
-               const project = data.project;
-               selectedBaseTranslation = project.translations.filter(t => selectedBaseTranslation && t.id == selectedBaseTranslation.id)[0] || project.translations.filter(t => t.isOriginal)[0];
-               selectedTargetTranslation = project.translations.filter(t => selectedTargetTranslation && t.id == selectedTargetTranslation.id)[0];
-               this.setState({
-                   project,
-                   fragments: this.sortFragments(project.fragments),
-                   selectedBaseTranslation,
-                   selectedTargetTranslation,
-                   isReady: true,
-                   color: data.color,
-                   connectionID: data.id,
-                   canWrite: data.canWrite
-               });
-           } else if (name === "usersList") {
-               for (let fragment of this.state.fragments) {
-                   for (let subtitle of fragment.subtitles) {
-                       subtitle.html = null;
-                   }
-               }
-               for (let user of data) {
-                   if (user.edit) {
-                       let subtitle = this.state.fragments.map(f => f.subtitles.filter(s => s.id === user.edit.subtitleID)[0]).filter(s => s)[0];
-                       if (subtitle) {
-                           subtitle.text = user.edit.lastText;
-                           if (user.edit.selectionStart != null && user.edit.selectionEnd != null && user.edit.selectionStart != user.edit.selectionEnd) {
-                               subtitle.html = `${subtitle.text.slice(0, user.edit.selectionEnd)}</mark-${user.color}>${subtitle.text.slice(user.edit.selectionEnd)}`;
-                               subtitle.html = `${subtitle.html.slice(0, user.edit.selectionStart)}<mark-${user.color}>${subtitle.html.slice(user.edit.selectionStart)}`;
-                           } else if (user.edit.selectionStart != null) {
-                               subtitle.html = `${subtitle.text.slice(0, user.edit.selectionStart)}<span class="fake-caret fake-caret-${user.color}"></span>${subtitle.text.slice(user.edit.selectionStart)}`;
-                           } else {
-                               subtitle.html = null;
-                           }
-                       }
-                   }
-               }
-               this.setState({ otherUsers: data, fragments: this.state.fragments });
-           } else if (name === "updateSubtitle") {
-               if (this.state.focusedSubtitle && data.id === this.state.focusedSubtitle.id) {
-                   document.activeElement.blur();
-                   this.setState({ focusedSubtitle: null });
-               }
-           } else if (name === "newSubtitle") {
-               for (let fragment of this.state.fragments) {
-                   if (fragment.id === data.fragment.id && fragment.subtitles.filter(s => s.id === data.id).length === 0) {
-                       fragment.subtitles.push(data);
-                       break;
-                   }
-               }
-               this.setState({ fragments: this.state.fragments });
-           } else if (name === "newFragment") {
-               const fragments = this.state.fragments;
-               fragments.push(data);
-               this.setState({ fragments });
-           } else if (name === "deleteFragment") {
-               const fragments = this.state.fragments.filter(f => f.id != data.id);
-               this.setState({ fragments });
-           }
-       };
+                const project = data.project;
+                selectedBaseTranslation = project.translations.filter(t => selectedBaseTranslation && t.id == selectedBaseTranslation.id)[0] || project.translations.filter(t => t.isOriginal)[0];
+                selectedTargetTranslation = project.translations.filter(t => selectedTargetTranslation && t.id == selectedTargetTranslation.id)[0];
+                this.setState({
+                    project,
+                    fragments: this.sortFragments(project.fragments),
+                    selectedBaseTranslation,
+                    selectedTargetTranslation,
+                    isReady: true,
+                    color: data.color,
+                    connectionID: data.id,
+                    canWrite: data.canWrite
+                });
+            } else if (name === 'usersList') {
+                for (let fragment of this.state.fragments) {
+                    for (let subtitle of fragment.subtitles) {
+                        subtitle.html = null;
+                    }
+                }
+                for (let user of data) {
+                    if (user.edit) {
+                        let subtitle = this.state.fragments.map(f => f.subtitles.filter(s => s.id === user.edit.subtitleID)[0]).filter(s => s)[0];
+                        if (subtitle) {
+                            subtitle.text = user.edit.lastText;
+                            if (user.edit.selectionStart != null && user.edit.selectionEnd != null && user.edit.selectionStart != user.edit.selectionEnd) {
+                                subtitle.html = `${subtitle.text.slice(0, user.edit.selectionEnd)}</mark-${user.color}>${subtitle.text.slice(user.edit.selectionEnd)}`;
+                                subtitle.html = `${subtitle.html.slice(0, user.edit.selectionStart)}<mark-${user.color}>${subtitle.html.slice(user.edit.selectionStart)}`;
+                            } else if (user.edit.selectionStart != null) {
+                                subtitle.html = `${subtitle.text.slice(0, user.edit.selectionStart)}<span class="fake-caret fake-caret-${user.color}"></span>${subtitle.text.slice(user.edit.selectionStart)}`;
+                            } else {
+                                subtitle.html = null;
+                            }
+                        }
+                    }
+                }
+                this.setState({ otherUsers: data, fragments: this.state.fragments });
+            } else if (name === 'updateSubtitle') {
+                if (this.state.focusedSubtitle && data.id === this.state.focusedSubtitle.id) {
+                    document.activeElement.blur();
+                    this.setState({ focusedSubtitle: null });
+                }
+            } else if (name === 'newSubtitle') {
+                for (let fragment of this.state.fragments) {
+                    if (fragment.id === data.fragment.id && fragment.subtitles.filter(s => s.id === data.id).length === 0) {
+                        fragment.subtitles.push(data);
+                        break;
+                    }
+                }
+                this.setState({ fragments: this.state.fragments });
+            } else if (name === 'newFragment') {
+                const fragments = this.state.fragments;
+                fragments.push(data);
+                this.setState({ fragments });
+            } else if (name === 'deleteFragment') {
+                const fragments = this.state.fragments.filter(f => f.id != data.id);
+                this.setState({ fragments });
+            }
+        };
 
-       this.ws.onclose = () => {
-           this.setState({ isReady: false });
-           setTimeout(function() {
-               self.setupSocket();
-           }, 1000);
-       };
+        this.ws.onclose = () => {
+            this.setState({ isReady: false });
+            setTimeout(function() {
+                self.setupSocket();
+            }, 1000);
+        };
     }
 
     async loadProject(targetTranslation) {
         const id = this.props.match.params.id;
         const response = await fetch(`/api/transcription/project/${id}`, {
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash(false)
+                'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
         let selectedBaseTranslation = this.state.selectedBaseTranslation;
@@ -256,32 +256,32 @@ class Project extends React.Component {
         };
 
         const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/create`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json",
-                "X-Kotu-Share-Hash": this.getShareHash(false)
+                'Content-Type': 'application/json',
+                'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
-         if (response.ok) {
-             await this.loadProject();
-             this.setState({
-                 baseLanguageText: "",
-                 targetLanguageText: ""
-             });
-             this.bottomOfFragments.scrollIntoView({ behavior: "smooth" });
-             this.ws.send(JSON.stringify({
-                 name: 'newFragment',
-                 data: await response.json(),
-                 connectionID: this.state.connectionID
-             }));
-         } else {
-             const result = await response.json();
-             this.setState({
-                 didError: result.error,
-                 message: result.reason
-             });
-         }
+        if (response.ok) {
+            await this.loadProject();
+            this.setState({
+                baseLanguageText: '',
+                targetLanguageText: ''
+            });
+            this.bottomOfFragments.scrollIntoView({ behavior: 'smooth' });
+            this.ws.send(JSON.stringify({
+                name: 'newFragment',
+                data: await response.json(),
+                connectionID: this.state.connectionID
+            }));
+        } else {
+            const result = await response.json();
+            this.setState({
+                didError: result.error,
+                message: result.reason
+            });
+        }
     }
 
     async updateSubtitle(fragment, translation, text) {
@@ -291,11 +291,11 @@ class Project extends React.Component {
         let subtitle = fragment.subtitles.filter(s => s.translation.id == translation.id)[0];
         if (subtitle && this.state.canWrite) {
             await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/${subtitle.id}`, {
-                method: "PUT",
+                method: 'PUT',
                 body: JSON.stringify({ text }),
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash(false)
+                    'Content-Type': 'application/json',
+                    'X-Kotu-Share-Hash': this.getShareHash(false)
                 }
             });
         }
@@ -364,15 +364,15 @@ class Project extends React.Component {
             subtitle.html = null;
         } else if (!subtitle) {
             const response = await fetch(`/api/transcription/project/${this.state.project.id}/subtitle/create`, {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify({
                     translationID: translation.id,
                     fragmentID: fragment.id,
-                    text: ""
-                 }),
+                    text: ''
+                }),
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-Kotu-Share-Hash": this.getShareHash(false)
+                    'Content-Type': 'application/json',
+                    'X-Kotu-Share-Hash': this.getShareHash(false)
                 }
             });
 
@@ -407,9 +407,9 @@ class Project extends React.Component {
 
     async deleteFragment(fragment) {
         const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/${fragment.id}`, {
-            method: "DELETE",
+            method: 'DELETE',
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash(false)
+                'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
 
@@ -456,38 +456,38 @@ class Project extends React.Component {
                             </p>
                             {this.state.canWrite && <div className="float-right">
                                 <Button variant="primary" onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                {" "}
+                                {' '}
                                 <Button variant="primary" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                             </div>}
                         </Col>
                     </Row>
-                    <Form.Row className="align-items-center justify-content-center" inline>
-                        <Col sm={4}>
+                    <Row className="align-items-center justify-content-center">
+                        <Col xs={5}>
                             <InputGroup>
-                                <DropdownButton as={InputGroup.Prepend} variant="outline-secondary" title="Base Language" id="input-group-dropdown-1">
-                                    {this.state.project.translations.map(translation => {
-                                        return <Dropdown.Item active={this.state.selectedBaseTranslation && translation.id == this.state.selectedBaseTranslation.id} onSelect={() => this.setState({ selectedBaseTranslation: translation })} href="#">{translation.language.name}</Dropdown.Item>;
+                                <DropdownButton variant="outline-secondary" title="Base Language" id="input-group-dropdown-1">
+                                    {this.state.project.translations.map((translation, i) => {
+                                        return <Dropdown.Item key={i} active={this.state.selectedBaseTranslation && translation.id == this.state.selectedBaseTranslation.id} onSelect={() => this.setState({ selectedBaseTranslation: translation })} href="#">{translation.language.name}</Dropdown.Item>;
                                     })}
                                 </DropdownButton>
                                 <Form.Control value={this.state.selectedBaseTranslation.language.name} readOnly />
                             </InputGroup>
                         </Col>
-                        <i className="bi bi-arrow-bar-right"></i>
-                        <Col sm={4}>
+                        <i className="bi bi-arrow-bar-right text-center w-auto px-0"></i>
+                        <Col xs={5}>
                             <InputGroup>
-                                <DropdownButton as={InputGroup.Prepend} variant="outline-secondary" title="Target Language" id="input-group-dropdown-1">
-                                    <Dropdown.Item active={!this.state.selectedBaseTranslation}  onSelect={() => this.setState({ selectedTargetTranslation: null })}>None</Dropdown.Item>
+                                <DropdownButton variant="outline-secondary" title="Target Language" id="input-group-dropdown-1">
+                                    <Dropdown.Item key={-1} active={!this.state.selectedBaseTranslation}  onSelect={() => this.setState({ selectedTargetTranslation: null })}>None</Dropdown.Item>
                                     <Dropdown.Divider />
-                                    {this.state.project.translations.map(translation => {
-                                        return <Dropdown.Item active={this.state.selectedTargetTranslation && translation.id == this.state.selectedTargetTranslation.id} onSelect={() => this.setState({ selectedTargetTranslation: translation })}>{translation.language.name}</Dropdown.Item>;
+                                    {this.state.project.translations.map((translation, i) => {
+                                        return <Dropdown.Item key={i} active={this.state.selectedTargetTranslation && translation.id == this.state.selectedTargetTranslation.id} onSelect={() => this.setState({ selectedTargetTranslation: translation })}>{translation.language.name}</Dropdown.Item>;
                                     })}
                                     <Dropdown.Divider />
-                                    <Dropdown.Item onSelect={() => this.toggleAddTargetLanguageModal(true)}>Add Translation</Dropdown.Item>
+                                    <Dropdown.Item key={-2} onSelect={() => this.toggleAddTargetLanguageModal(true)}>Add Translation</Dropdown.Item>
                                 </DropdownButton>
-                                <Form.Control value={this.state.selectedTargetTranslation ? this.state.selectedTargetTranslation.language.name : "(None)"} readOnly />
+                                <Form.Control value={this.state.selectedTargetTranslation ? this.state.selectedTargetTranslation.language.name : '(None)'} readOnly />
                             </InputGroup>
                         </Col>
-                    </Form.Row>
+                    </Row>
                     <hr className="mb-2" />
                     <Container className="py-0">
                         <Row>
@@ -512,59 +512,59 @@ class Project extends React.Component {
                     <hr className="mt-2" />
                     <Container className="py-0" fluid>
                         <Row>
-                            <Col className="col-6">
+                            <Col xs={6}>
                                 <div className="position-relative">
-                                    <div className="position-absolute w-100" style={{ height: "27px", "pointer-events": "none", background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, "z-index": "1", "top": "0" }}></div>
+                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
                                     <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
                                         <Container className="mb-0 py-0" fluid>
                                             {this.state.fragments.map((fragment, id) => {
                                                 return <div key={id}>
-                                                    <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
+                                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                                     <Row className="bg-light py-3 align-items-center position-relative">
                                                         <Col xs="auto" className="text-center align-self-center">
-                                                            <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
+                                                            <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className="bg-secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                         </Col>
                                                         <Col className="px-0">
                                                             <ContentEditable disabled={!this.state.canWrite} onHTMLClick={() => this.onHTMLClick(this.baseSubtitleForFragment(fragment))} value={this.baseSubtitleForFragment(fragment).text} html={this.baseSubtitleForFragment(fragment).html} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedBaseTranslation, e.target)} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && o.edit.subtitleID === this.baseSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />
-                                                            {this.state.selectedTargetTranslation && <ContentEditable disabled={!this.state.canWrite} onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ""} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
+                                                            {this.state.selectedTargetTranslation && <ContentEditable disabled={!this.state.canWrite} onHTMLClick={() => this.onHTMLClick(this.targetSubtitleForFragment(fragment))} value={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).text : ''} html={this.targetSubtitleForFragment(fragment) ? this.targetSubtitleForFragment(fragment).html : null} onChange={(e) => this.addToUpdateQueue(fragment, this.state.selectedTargetTranslation, e.target)}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color} ${this.state.otherUsers.filter(o => o.edit && this.targetSubtitleForFragment(fragment) && o.edit.subtitleID === this.targetSubtitleForFragment(fragment).id).map(o => `border-${o.color}`)[0] || ''}`} />}
                                                         </Col>
                                                         <Col xs="auto" className="text-center align-self-center">
-                                                            <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: "pointer" }} variant="secondary-inverted">{this.formatTime(fragment.endTime)}</Badge>
+                                                            <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className='bg-secondary-inverted'>{this.formatTime(fragment.endTime)}</Badge>
                                                         </Col>
-                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: "5px", top: "0px", cursor: "pointer" }} onClick={() => this.deleteFragment(fragment)}><i class="bi bi-trash text-danger"></i></a>}
+                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: 0, top: 0, cursor: 'pointer', width: 'auto' }} onClick={() => this.deleteFragment(fragment)}><i className="bi bi-trash text-danger"></i></a>}
                                                     </Row>
                                                 </div>;
                                             })}
-                                            <div style={{ float:"left", clear: "both" }}
+                                            <div style={{ float:'left', clear: 'both' }}
                                                 ref={(el) => { this.bottomOfFragments = el; }}>
                                             </div>
                                         </Container>
                                     </div>
-                                    <div className="position-absolute w-100" style={{ height: "27px", "pointer-events": "none", background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.fragmentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, "z-index": "1", "bottom": "0" }}></div>
+                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.fragmentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
                                 </div>
 
                                 <Container className="mb-2 py-0" fluid>
-                                    <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
+                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                     {this.state.canWrite && <Row className="bg-white py-3 align-items-center">
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime()) && this.state.player.playVideo()} style={{ cursor: "pointer" }}  variant="secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
+                                            <Badge onClick={() => this.state.player.seekTo(this.nextStartTime()) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className="bg-secondary-inverted">{this.formatTime(this.nextStartTime())}</Badge>
                                         </Col>
                                         <Col className="px-0">
                                             <ContentEditable value={this.state.baseLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ baseLanguageText: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />
                                             {this.state.selectedTargetTranslation && <ContentEditable value={this.state.targetLanguageText} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ targetLanguageText: e.target.value })}  className={`form-control h-auto text-break mt-2 no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />}
                                         </Col>
                                         <Col xs="auto" className="text-center align-self-center">
-                                            <Badge variant="secondary-inverted">{this.formatTime(Math.max(this.state.currentTime, this.nextStartTime()))}</Badge>
+                                            <Badge className="bg-secondary-inverted">{this.formatTime(Math.max(this.state.currentTime, this.nextStartTime()))}</Badge>
                                         </Col>
                                     </Row>}
-                                    <hr className="row" style={{"margin-block-start": 0, "margin-block-end": 0}} />
+                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                 </Container>
-                                {this.state.canWrite && <>
+                                {this.state.canWrite && <div className="d-grid gap-2">
                                     {this.state.selectedBaseTranslation && !this.state.selectedBaseTranslation.isOriginal && <Alert className="mt-1 mb-2" variant="secondary">Switch to the original transcription to add more fragments.</Alert>}
-                                    <Button variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0} block>Add Fragment</Button>
-                                </>}
+                                    <Button variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0}>Add Fragment</Button>
+                                </div>}
                             </Col>
-                            <Col>
+                            <Col xs={6}>
                                 <ResponsiveEmbed aspectRatio="16by9">
                                     <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0 }}} />
                                 </ResponsiveEmbed>
@@ -580,19 +580,19 @@ class Project extends React.Component {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {['srt'].map(ext => {
-                                            return <tr>
+                                        {['srt'].map((ext, i) => {
+                                            return <tr key={i}>
                                                 <td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
+                                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>
-                                                {this.state.selectedTargetTranslation &&<td>
-                                                    <Button href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
+                                                {this.state.selectedTargetTranslation &&<td >
+                                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
                                                         Download .{ext}
                                                     </Button>
                                                 </td>}
-                                            </tr>
+                                            </tr>;
                                         })}
                                     </tbody>
                                 </Table>
@@ -604,7 +604,7 @@ class Project extends React.Component {
                     {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}
             </div>
-        )
+        );
     }
 }
 

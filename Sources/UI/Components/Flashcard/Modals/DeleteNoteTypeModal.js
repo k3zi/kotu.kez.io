@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -27,24 +27,24 @@ class DeleteNoteTypeModal extends React.Component {
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
         const response = await fetch(`/api/flashcard/noteType/${this.props.noteType.id}`, {
-            method: "DELETE"
+            method: 'DELETE'
         });
         const success = response.ok;
         this.setState({
             isSubmitting: false,
             success
-         });
+        });
 
-         if (success) {
+        if (success) {
             this.setState({ message: 'Deleted.'  });
             this.props.didDelete();
-         } else {
+        } else {
             const result = await response.json();
             this.setState({
                 didError: result.error,
                 message: result.reason,
             });
-         }
+        }
     }
 
     render() {
@@ -57,7 +57,7 @@ class DeleteNoteTypeModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete: {this.props.noteType ? this.props.noteType.name : ""}. This will delete all cards under this note type.</p>
+                    <p>Are you sure you wish to delete: {this.props.noteType ? this.props.noteType.name : ''}. This will delete all cards under this note type.</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">

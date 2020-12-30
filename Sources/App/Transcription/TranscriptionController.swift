@@ -167,7 +167,7 @@ class TranscriptionController: RouteCollection {
                     let genericSubtitleFile = GenericSubtitleFile(subtitles: genericSubtitles)
                     let file = try SubtitleFile(file: genericSubtitleFile, kind: kind)
                     let string = file.asString()
-                    guard let data = string.data(using: .unicode) else {
+                    guard let data = string.data(using: .utf8) else {
                         throw Abort(.internalServerError)
                     }
 

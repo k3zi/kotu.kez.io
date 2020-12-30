@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
@@ -25,11 +25,11 @@ class RegisterModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        const response = await fetch(`/api/auth/register`, {
-            method: "POST",
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             }
         });
         const result = await response.json();
@@ -39,13 +39,13 @@ class RegisterModal extends React.Component {
             didError: result.error,
             message: result.error ? result.reason : 'Logging in...',
             success
-         });
+        });
 
-         if (success) {
-             setTimeout(() => {
-                 location.reload();
-             }, 3000);
-         }
+        if (success) {
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        }
     }
 
     render() {

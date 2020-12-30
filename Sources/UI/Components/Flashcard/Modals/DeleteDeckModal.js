@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -6,7 +6,7 @@ import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
-import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
+import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import YouTube from 'react-youtube';
 
@@ -29,24 +29,24 @@ class DeleteDeckModal extends React.Component {
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
         const response = await fetch(`/api/flashcard/deck/${this.props.deck.id}`, {
-            method: "DELETE"
+            method: 'DELETE'
         });
         const success = response.ok;
         this.setState({
             isSubmitting: false,
             success
-         });
+        });
 
-         if (success) {
-             this.setState({ message: 'Deleted.'  });
-             this.props.didDelete();
-         } else {
-             const result = await response.json();
-             this.setState({
-                 didError: result.error,
-                 message: result.reason,
-             });
-         }
+        if (success) {
+            this.setState({ message: 'Deleted.'  });
+            this.props.didDelete();
+        } else {
+            const result = await response.json();
+            this.setState({
+                didError: result.error,
+                message: result.reason,
+            });
+        }
     }
 
     render() {
@@ -59,7 +59,7 @@ class DeleteDeckModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete: {this.props.deck ? this.props.deck.name : ""}. This will delete all cards under this deck.</p>
+                    <p>Are you sure you wish to delete: {this.props.deck ? this.props.deck.name : ''}. This will delete all cards under this deck.</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">

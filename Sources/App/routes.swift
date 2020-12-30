@@ -9,6 +9,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: TranscriptionController())
     try api.register(collection: DictionaryController())
     try api.register(collection: FlashcardController())
+    try api.register(collection: MediaController())
 
     api.get("me") { req -> User in
         return try req.auth.require(User.self)

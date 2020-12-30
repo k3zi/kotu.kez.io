@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -20,13 +20,13 @@ class CreateProjectModal extends React.Component {
             message: null,
             success: false,
             languages: [],
-            youtubeID: "",
+            youtubeID: '',
             youtubeVideoInfo: {}
         };
     }
 
     async componentDidMount() {
-        const response = await fetch(`/api/settings/languages`);
+        const response = await fetch('/api/settings/languages');
         if (response.ok) {
             const languages = await response.json();
             this.setState({ languages });
@@ -42,11 +42,11 @@ class CreateProjectModal extends React.Component {
 
         const data = Object.fromEntries(new FormData(event.target));
         data.youtubeID = this.state.youtubeVideoInfo.videoID;
-        const response = await fetch(`/api/transcription/project/create`, {
-            method: "POST",
+        const response = await fetch('/api/transcription/project/create', {
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             }
         });
         const result = await response.json();
@@ -56,30 +56,30 @@ class CreateProjectModal extends React.Component {
             didError: result.error,
             message: result.error ? result.reason : 'Loading new project...',
             success
-         });
+        });
 
-         if (success) {
-             setTimeout(() => {
-                 location.reload();
-                 window.location.href = `/transcription/${result.id}`;
-             }, 3000);
-         }
+        if (success) {
+            setTimeout(() => {
+                location.reload();
+                window.location.href = `/transcription/${result.id}`;
+            }, 3000);
+        }
     }
 
     loadVideo(e) {
         const url = e.target.value;
         let id = url.split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
         id = (id[2] !== undefined) ? id[2].split(/[^0-9a-z_\-]/i)[0] : id[0];
-        this.setState({ youtubeID: id, youtubeVideoInfo: {} })
+        this.setState({ youtubeID: id, youtubeVideoInfo: {} });
     }
 
     videoOnReady(e) {
         const info = e.target.getVideoData();
         this.setState({ youtubeVideoInfo: {
-                author: info.author,
-                videoID: info.video_id,
-                title: info.title
-            }
+            author: info.author,
+            videoID: info.video_id,
+            title: info.title
+        }
         });
     }
 
@@ -99,7 +99,7 @@ class CreateProjectModal extends React.Component {
                             <Form.Control type="text" name="youtubeID" onChange={(e) => this.loadVideo(e)} placeholder="Enter the ID of the YouTube video" />
                         </Form.Group>
 
-                        {this.state.youtubeID.length > 0 && <Row>
+                        {this.state.youtubeID.length > 0 && <Row className='mt-3'>
                             <Col>
                                 <ResponsiveEmbed aspectRatio="16by9">
                                     <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} />
@@ -121,7 +121,7 @@ class CreateProjectModal extends React.Component {
                             <Form.Label>Original Language</Form.Label>
                             <Form.Control as="select" name="languageID" placeholder="Select content original language" >
                                 {this.state.languages.map(language => {
-                                    return <option key={language.id} value={language.id}>{language.name}</option>
+                                    return <option key={language.id} value={language.id}>{language.name}</option>;
                                 })}
                             </Form.Control>
                         </Form.Group>}
@@ -133,7 +133,7 @@ class CreateProjectModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {this.state.youtubeVideoInfo.videoID && this.state.languages.length > 0 && !this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {this.state.youtubeVideoInfo.videoID && this.state.languages.length > 0 && !this.state.success && <Button className='mt-3 col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Loading...' : 'Create'}
                         </Button>}
                     </Form>

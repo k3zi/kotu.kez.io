@@ -9,6 +9,15 @@ class FlashcardController: RouteCollection {
         let guardedFlashcards = flashcards
             .grouped(User.guardMiddleware())
 
+        guardedFlashcards.get("numberOfReviews") { req -> EventLoopFuture<Int> in
+            let user = try req.auth.require(User.self)
+            let now = Date()
+            return user.$decks
+                .query(on: req.db)
+                .all()
+                .map { $0.map { $0.sm.queue.filter { $0.dueDate <= now }.count }.reduce(0, +) }
+        }
+
         // MARK: Card
         let guardedCard = guardedFlashcards.grouped("card")
         let guardedCardID = guardedCard.grouped(":cardID")

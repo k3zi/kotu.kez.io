@@ -1,15 +1,15 @@
-import { withRouter } from "react-router";
-import React from "react";
+import { withRouter } from 'react-router';
+import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 
-import AceEditor from "react-ace";
-import "ace-builds/webpack-resolver";
-import "ace-builds/src-noconflict/mode-css";
-import "ace-builds/src-noconflict/mode-html";
-import "ace-builds/src-noconflict/theme-github";
-import "ace-builds/src-noconflict/ext-language_tools";
+import AceEditor from 'react-ace';
+import 'ace-builds/webpack-resolver';
+import 'ace-builds/src-noconflict/mode-css';
+import 'ace-builds/src-noconflict/mode-html';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/ext-language_tools';
 
-ace.config.set("basePath", "/generated");
+ace.config.set('basePath', '/generated');
 
 import _ from 'underscore';
 import Alert from 'react-bootstrap/Alert';
@@ -59,7 +59,7 @@ class Deck extends React.Component {
         const availableQueue = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
         const item = availableQueue[0];
         if (!item) {
-            this.props.history.push("/flashcard/decks");
+            this.props.history.push('/flashcard/decks');
             return;
         }
         const response = await fetch(`/api/flashcard/card/${item.card}`);
@@ -71,11 +71,28 @@ class Deck extends React.Component {
     }
 
     loadFront() {
-        this.loadHTML(this.state.nextCard.cardType.frontHTML, this.state.nextCard.cardType.css, "front");
+        this.loadHTML(this.state.nextCard.cardType.frontHTML, this.state.nextCard.cardType.css, 'front');
     }
 
     loadBack() {
-        this.loadHTML(this.state.nextCard.cardType.backHTML, this.state.nextCard.cardType.css, "back");
+        this.loadHTML(this.state.nextCard.cardType.backHTML, this.state.nextCard.cardType.css, 'back');
+    }
+
+    replaceFieldsFor(html, autoplay) {
+        let result = html;
+        // Replace fields.
+        for (let fieldValue of this.state.nextCard.note.fieldValues) {
+            const fieldName = fieldValue.field.name;
+            const value = fieldValue.value;
+            const replace = `{{${fieldName}}}`;
+            result = result.replace(new RegExp(replace, 'g'), value);
+        }
+
+        // Handle media for front / back.
+        let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
+        let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+        result = result.replace(regex, subst);
+        return result;
     }
 
     loadHTML(html, css, id) {
@@ -93,16 +110,13 @@ class Deck extends React.Component {
         </div>
         `;
 
-        if (id !== "front") {
+        result = this.replaceFieldsFor(result, true);
+
+        if (id !== 'front') {
             result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
         }
 
-        for (let fieldValue of this.state.nextCard.note.fieldValues) {
-            const fieldName = fieldValue.field.name;
-            const value = fieldValue.value;
-            const replace = `{{${fieldName}}}`;
-            result = result.replace(new RegExp(replace, 'g'), value);
-        }
+        result = this.replaceFieldsFor(result, false);
 
         this.setState({ loadedHTML: result });
     }
@@ -115,7 +129,7 @@ class Deck extends React.Component {
     async selectGrade(grade) {
         this.setState({ showGradeButtons: false, loadedHTML: null });
         await fetch(`/api/flashcard/card/${this.state.nextCard.id}/grade/${grade}`, {
-            method: "POST"
+            method: 'POST'
         });
         await this.load();
     }
@@ -131,18 +145,26 @@ class Deck extends React.Component {
                         <Col xs={6}>
                             <div dangerouslySetInnerHTML={{ __html: this.state.loadedHTML }}></div>
                             <hr />
-                            {!this.state.showGradeButtons && <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>}
-                            {this.state.showGradeButtons && <ButtonGroup style={{ display: 'block', 'text-align': 'center' }} className="mb-2　d-block">
-                                <Button onClick={() => this.selectGrade(1)}>Again</Button>
-                                <Button onClick={() => this.selectGrade(3)}>Good</Button>
-                                <Button onClick={() => this.selectGrade(5)}>Easy</Button>
-                            </ButtonGroup>}
+                            {!this.state.showGradeButtons && <div className="d-grid">
+                                <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>
+                            </div>}
+                            {this.state.showGradeButtons && <div className="text-center">
+                                <span className='px-2'>Again</span>
+                                <ButtonGroup className="mb-2　d-block">
+                                    <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>
+                                    <Button variant='warning' onClick={() => this.selectGrade(2)}>2</Button>
+                                    <Button variant='warning' onClick={() => this.selectGrade(3)}>3</Button>
+                                    <Button variant='warning' onClick={() => this.selectGrade(4)}>4</Button>
+                                    <Button variant='success' onClick={() => this.selectGrade(5)}>5</Button>
+                                </ButtonGroup>
+                                <span className='px-2'>Easy</span>
+                            </div>}
                         </Col>
                         <Col xs={3}></Col>
                     </Row>
                 </div>}
             </div>
-        )
+        );
     }
 }
 

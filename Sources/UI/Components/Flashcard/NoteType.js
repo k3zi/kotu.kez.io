@@ -1,15 +1,15 @@
-import { withRouter } from "react-router";
-import React from "react";
+import { withRouter } from 'react-router';
+import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 
-import AceEditor from "react-ace";
-import "ace-builds/webpack-resolver";
-import "ace-builds/src-noconflict/mode-css";
-import "ace-builds/src-noconflict/mode-html";
-import "ace-builds/src-noconflict/theme-github";
-import "ace-builds/src-noconflict/ext-language_tools";
+import AceEditor from 'react-ace';
+import 'ace-builds/webpack-resolver';
+import 'ace-builds/src-noconflict/mode-css';
+import 'ace-builds/src-noconflict/mode-html';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/ext-language_tools';
 
-ace.config.set("basePath", "/generated");
+ace.config.set('basePath', '/generated');
 
 import _ from 'underscore';
 import Alert from 'react-bootstrap/Alert';
@@ -26,8 +26,8 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Table from 'react-bootstrap/Table';
 
-import DeleteFieldModal from "./Modals/DeleteFieldModal";
-import CreateFieldModal from "./Modals/CreateFieldModal";
+import DeleteFieldModal from './Modals/DeleteFieldModal';
+import CreateFieldModal from './Modals/CreateFieldModal';
 
 import scoper from './scoper';
 
@@ -86,10 +86,10 @@ class NoteType extends React.Component {
     async handleChange(item, text) {
         this.state.selectedCardType[item] = text;
         await fetch(`/api/flashcard/noteType/${this.state.noteType.id}/cardType/${this.state.selectedCardType.id}`, {
-            method: "PUT",
+            method: 'PUT',
             body: JSON.stringify(this.state.selectedCardType),
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             }
         });
         this.setState({ selectedCardType: this.state.selectedCardType });
@@ -110,7 +110,7 @@ class NoteType extends React.Component {
         </div>
         `;
 
-        if (id !== "front") {
+        if (id !== 'front') {
             result = result.replace(/{{FrontSide}}/g, cardType.frontHTML);
         }
 
@@ -129,7 +129,7 @@ class NoteType extends React.Component {
                         <Col>
                             <h4>Card Template</h4>
                             <InputGroup className="mb-3">
-                                <Form.Control value={this.state.selectedCardType ? this.state.selectedCardType.name : "(None)"} readOnly />
+                                <Form.Control value={this.state.selectedCardType ? this.state.selectedCardType.name : '(None)'} readOnly />
                                 <DropdownButton as={InputGroup.Append} variant="outline-secondary" title="Card Type" id="input-group-dropdown-1">
                                     {this.state.cardTypes.map(cardType => {
                                         return <Dropdown.Item active={this.state.selectedCardType && cardType.id == this.state.selectedCardType.id} onSelect={() => this.setState({ selectedCardType: cardType })}>{cardType.name}</Dropdown.Item>;
@@ -221,9 +221,9 @@ class NoteType extends React.Component {
                                         return (<tr>
                                             <td className="align-middle">{field.name}</td>
                                             <td className="align-middle text-center">
-                                                <Button variant="danger" onClick={() => this.showDeleteFieldModal(field)}><i class="bi bi-trash"></i></Button>
+                                                <Button variant="danger" onClick={() => this.showDeleteFieldModal(field)}><i className="bi bi-trash"></i></Button>
                                             </td>
-                                        </tr>)
+                                        </tr>);
                                     })}
                                 </tbody>
                             </Table>
@@ -234,7 +234,7 @@ class NoteType extends React.Component {
                 <CreateFieldModal noteType={this.state.noteType} show={this.state.showCreateFieldModal} onHide={() => this.toggleCreateFieldModal(false)} onSuccess={() => this.toggleCreateFieldModal(false)} />
                 <DeleteFieldModal noteType={this.state.noteType} field={this.state.showDeleteFieldModal} didDelete={() => this.showDeleteFieldModal(null)} didCancel={() => this.showDeleteFieldModal(null)} onHide={() => this.showDeleteFieldModal(null)} />
             </div>
-        )
+        );
     }
 }
 

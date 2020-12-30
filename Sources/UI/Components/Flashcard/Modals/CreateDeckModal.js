@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -28,11 +28,11 @@ class CreateDeckModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        const response = await fetch(`/api/flashcard/deck/create`, {
-            method: "POST",
+        const response = await fetch('/api/flashcard/deck/create', {
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             }
         });
         const result = await response.json();
@@ -42,11 +42,11 @@ class CreateDeckModal extends React.Component {
             didError: result.error,
             message: result.error ? result.reason : 'Loading new deck...',
             success
-         });
+        });
 
-         if (success) {
-             this.props.onSuccess();
-         }
+        if (success) {
+            this.props.onSuccess();
+        }
     }
 
     render() {

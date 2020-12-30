@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 
 import Alert from 'react-bootstrap/Alert';
@@ -8,8 +8,8 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
-import DeleteNoteTypeModal from "./Modals/DeleteNoteTypeModal";
-import CreateNoteTypeModal from "./Modals/CreateNoteTypeModal";
+import DeleteNoteTypeModal from './Modals/DeleteNoteTypeModal';
+import CreateNoteTypeModal from './Modals/CreateNoteTypeModal';
 
 class NoteTypes extends React.Component {
 
@@ -28,7 +28,7 @@ class NoteTypes extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/flashcard/noteTypes`);
+        const response = await fetch('/api/flashcard/noteTypes');
         if (response.ok) {
             const noteTypes = await response.json();
             this.setState({ noteTypes });
@@ -52,7 +52,7 @@ class NoteTypes extends React.Component {
     render() {
         return (
             <div>
-                <h2>Flashcard <small className="text-muted">{this.state.noteTypes.length} Note Types(s)</small></h2>
+                <h2>Anki <small className="text-muted">{this.state.noteTypes.length} Note Type(s)</small></h2>
                 <Button variant="primary" onClick={() => this.toggleCreateNoteTypeModal(true)}>Create Note Type</Button>
                 <hr/>
                 <Table striped bordered hover>
@@ -70,12 +70,12 @@ class NoteTypes extends React.Component {
                                 <td className="align-middle">{noteType.fields.map(f => f.name).join(', ')}</td>
                                 <td className="align-middle text-center">
                                     <LinkContainer to={`/flashcard/type/${noteType.id}`}>
-                                        <Button variant="primary"><i class="bi bi-arrow-right"></i></Button>
+                                        <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
                                     </LinkContainer>
-                                    {" "}
-                                    <Button variant="danger" onClick={() => this.showDeleteNoteTypeModal(noteType)}><i class="bi bi-trash"></i></Button>
+                                    {' '}
+                                    <Button variant="danger" onClick={() => this.showDeleteNoteTypeModal(noteType)}><i className="bi bi-trash"></i></Button>
                                 </td>
-                            </tr>)
+                            </tr>);
                         })}
                     </tbody>
                 </Table>
@@ -83,7 +83,7 @@ class NoteTypes extends React.Component {
                 <CreateNoteTypeModal show={this.state.showCreateNoteTypeModal} onHide={() => this.toggleCreateNoteTypeModal(false)} onSuccess={() => this.toggleCreateNoteTypeModal(false)} />
                 <DeleteNoteTypeModal noteType={this.state.showDeleteNoteTypeModal} didDelete={() => this.showDeleteNoteTypeModal(null)} didCancel={() => this.showDeleteNoteTypeModal(null)} onHide={() => this.showDeleteNoteTypeModal(null)} />
             </div>
-        )
+        );
     }
 }
 

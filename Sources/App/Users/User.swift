@@ -36,6 +36,11 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var noteTypes: [NoteType]
 
+    // MARK: Media
+
+    @Children(for: \.$owner)
+    var files: [File]
+
     init() { }
 
     init(id: UUID? = nil, username: String, passwordHash: String) {

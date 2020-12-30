@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -29,10 +29,10 @@ class CreateFieldModal extends React.Component {
 
         const data = Object.fromEntries(new FormData(event.target));
         const response = await fetch(`/api/flashcard/noteType/${this.props.noteType.id}/field`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             }
         });
         const result = await response.json();
@@ -42,16 +42,16 @@ class CreateFieldModal extends React.Component {
             didError: result.error,
             message: result.error ? result.reason : 'Loading new field...',
             success
-         });
+        });
 
-         if (success) {
-             this.props.onSuccess();
-             this.setState({
-                 success: false,
-                 message: null,
-                 didError: false
-             });
-         }
+        if (success) {
+            this.props.onSuccess();
+            this.setState({
+                success: false,
+                message: null,
+                didError: false
+            });
+        }
     }
 
     render() {

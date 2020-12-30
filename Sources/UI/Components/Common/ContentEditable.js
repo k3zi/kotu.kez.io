@@ -14,7 +14,7 @@ class ContentEditable extends React.Component {
             };
         } else {
             return null;
-        };
+        }
     }
 
     getTextLength(parent, node, offset) {
@@ -59,7 +59,7 @@ class ContentEditable extends React.Component {
     componentDidMount() {
         this.ces = Math.random();
         const self = this;
-        this.getDOMNode().addEventListener("selectstart", (e) => {
+        this.getDOMNode().addEventListener('selectstart', (e) => {
             const target = e.target;
             setTimeout(() => {
                 if (window.getSelection()) {
@@ -86,7 +86,7 @@ class ContentEditable extends React.Component {
 
     componentDidUpdate() {
         if (this.contentFromProps(this.props) !== this.currentContent()) {
-           this.setCurrentContent(this.contentFromProps(this.props));
+            this.setCurrentContent(this.contentFromProps(this.props));
         }
     }
 
@@ -115,7 +115,7 @@ class ContentEditable extends React.Component {
         let value = node.innerText;
         const selection = this.getTextSelection(node);
         const selectionStart = selection ? selection.start : null;
-        const selectionEnd = selection ? selection.end : null
+        const selectionEnd = selection ? selection.end : null;
         if (!this.isUsingHTML() && this.props.onChange && (value !== this.lastText || selectionStart !== this.lastSelectionStart || selectionEnd !== this.lastSelectionEnd)) {
             this.props.onChange({
                 target: {
@@ -140,7 +140,7 @@ class ContentEditable extends React.Component {
 
     render() {
         return <div {...this.props} data-ces={this.ces} onInput={() => this.emitChange()} onBlur={() => this.emitChange()} onFocus={() => this.emitChange()} contentEditable={!this.props.disabled}>
-            {this.props.html || this.props.value || ""}
+            {this.props.html || this.props.value || ''}
         </div>;
     }
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -7,9 +7,9 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
-import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed'
+import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
-InputGroup
+InputGroup;
 class ShareURLModal extends React.Component {
 
     constructor(props) {
@@ -29,7 +29,7 @@ class ShareURLModal extends React.Component {
     async componentDidMount() {
         const response = await fetch(`/api/transcription/project/${this.props.project.id}/shareURLs`, {
             headers: {
-                "X-Kotu-Share-Hash": this.getShareHash(false)
+                'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
         if (response.ok) {
@@ -42,11 +42,11 @@ class ShareURLModal extends React.Component {
         const target = document.getElementById(id);
         target.select();
         target.setSelectionRange(0, 99999);
-        document.execCommand("copy");
+        document.execCommand('copy');
 
-        e.target.innerText = "Copied";
+        e.target.innerText = 'Copied';
         setTimeout(() => {
-            e.target.innerText = "Copy";
+            e.target.innerText = 'Copy';
         }, 3000);
     }
 
@@ -64,18 +64,14 @@ class ShareURLModal extends React.Component {
                         <Form.Label>View Only</Form.Label>
                         <InputGroup className="mb-3">
                             <Form.Control id="share-url-read-only" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${encodeURIComponent(this.state.shareHashes.readOnly)}`} />
-                            <InputGroup.Append>
-                                <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, "share-url-read-only")}>Copy</Button>
-                            </InputGroup.Append>
+                            <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, 'share-url-read-only')}>Copy</Button>
                         </InputGroup>
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>View / Modify</Form.Label>
                         <InputGroup className="mb-3">
                             <Form.Control id="share-url-edit" className="hide-scrollbar" value={`${window.location.origin}/transcription/${this.props.project.id}?shareHash=${encodeURIComponent(this.state.shareHashes.edit)}`} />
-                            <InputGroup.Append>
-                                <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, "share-url-edit")}>Copy</Button>
-                            </InputGroup.Append>
+                            <Button variant="outline-secondary" onClick={(e) => this.onCopy(e, 'share-url-edit')}>Copy</Button>
                         </InputGroup>
                     </Form.Group>
                 </Modal.Body>
