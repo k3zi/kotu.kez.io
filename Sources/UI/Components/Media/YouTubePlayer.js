@@ -45,7 +45,8 @@ class Player extends React.Component {
         });
     }
 
-    startCapture() {
+    startCapture(e) {
+        e.preventDefault();
         this.setState({ isRecording: true, startTime: this.state.playerRef.getCurrentTime() });
         this.state.playerRef.playVideo();
     }
@@ -67,8 +68,25 @@ class Player extends React.Component {
             }
         });
         if (response.ok) {
+            function typeInTextarea(newText) {
+                const element = document.activeElement;
+                const selection = window.getSelection();
+                if (!selection.isCollapsed) return;
+
+                const text = element.innerText;
+                const before = text.substring(0, selection.focusOffset);
+                const after  = text.substring(selection.focusOffset, text.length);
+                element.innerText = before + newText + after;
+                const event = new Event('change');
+                element.dispatchEvent(event);
+            }
             const result = await response.json();
             this.setState({ lastFile: result, isSubmitting: false });
+            if (document.hasFocus() && document.activeElement.contentEditable == 'true') {
+                setTimeout(() => {
+                    typeInTextarea(`[audio: ${result.id}]`);
+                }, 100);
+            }
         } else {
             this.setState({ isSubmitting: false });
         }
@@ -78,14 +96,14 @@ class Player extends React.Component {
         return (
             <Row>
                 <Col xs={7}>
-                    <Form.Control className='text-center' type="text" name="youtubeID" onChange={(e) => this.loadVideo(e)} placeholder="YouTube ID / URL" />
+                    <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.loadVideo(e)} placeholder="YouTube ID / URL" />
                     {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
                         <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
                 </Col>
 
                 <Col xs={5}>
-                    <Button onMouseDown={() => this.startCapture()} onMouseUp={() => this.endCapture()} className='col-12' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
+                    <Button onMouseDown={(e) => this.startCapture(e)} onMouseUp={() => this.endCapture()} className='col-12' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
                         {this.state.isRecording ? 'Release to Capture' : (this.state.isSubmitting ? 'Capturing' : 'Hold to Record')}
                     </Button>
                     {this.state.lastFile && <Alert dismissible onClose={() => this.setState({ lastFile: null })} className='mt-3' variant='primary'>Audio Embed Code: <pre className='mb-0 user-select-all'>[audio: {this.state.lastFile.id}]</pre></Alert>}

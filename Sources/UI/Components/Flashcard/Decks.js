@@ -47,7 +47,9 @@ class Decks extends React.Component {
                             [60, 'minute'],
                             [60 * 60, 'hour'],
                             [60 * 60 * 24, 'day'],
-                            [60 * 60 * 24 * 7, 'week']
+                            [60 * 60 * 24 * 7, 'week'],
+                            [60 * 60 * 24 * 30, 'month'],
+                            [60 * 60 * 24 * 365, 'year']
                         ];
                         let matchingLookup = durationLookup[0];
                         for (let d of durationLookup) {
