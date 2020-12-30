@@ -68,7 +68,7 @@ class MediaController: RouteCollection {
             task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
 
             var env = task.environment ?? [:]
-            env["PATH"] = "/usr/local/bin:/opt/homebrew/bin"
+            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
             task.environment = env
 
             task.arguments = [

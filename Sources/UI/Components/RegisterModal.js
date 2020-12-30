@@ -80,7 +80,7 @@ class RegisterModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Loading...' : 'Register'}
                         </Button>}
                     </Form>

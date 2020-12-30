@@ -77,7 +77,7 @@ class LoginModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />}
                             {this.state.isSubmitting ? ' Loading...' : 'Login'}
                         </Button>}
