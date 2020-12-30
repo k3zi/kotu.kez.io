@@ -36,26 +36,29 @@ class Decks extends React.Component {
                 const newCardsCount = deck.sm.queue.filter(i => i.repetition === -1 && (new Date(i.dueDate) < new Date())).length;
                 const reviewCardsCount = deck.sm.queue.filter(i => i.repetition > -1 && (new Date(i.dueDate) < new Date())).length;
                 const nextCard = deck.sm.queue[0];
-                const seconds = (new Date(nextCard.dueDate) - new Date()) / 1000;
-                let nextCardDueData = 'Now';
-                if (seconds > 0) {
-                    const absSeconds = Math.abs(seconds);
-                    const durationLookup = [
-                        [1, 'second'],
-                        [60, 'minute'],
-                        [60 * 60, 'hour'],
-                        [60 * 60 * 24, 'day'],
-                        [60 * 60 * 24 * 7, 'week']
-                    ];
-                    let matchingLookup = durationLookup[0];
-                    for (let d of durationLookup) {
-                        if (d[0] < absSeconds) {
-                            matchingLookup = d;
-                        } else {
-                            break;
+                let nextCardDueData = 'N/A';
+                if (nextCard) {
+                    const seconds = (new Date(nextCard.dueDate) - new Date()) / 1000;
+                    nextCardDueData = 'Now';
+                    if (seconds > 0) {
+                        const absSeconds = Math.abs(seconds);
+                        const durationLookup = [
+                            [1, 'second'],
+                            [60, 'minute'],
+                            [60 * 60, 'hour'],
+                            [60 * 60 * 24, 'day'],
+                            [60 * 60 * 24 * 7, 'week']
+                        ];
+                        let matchingLookup = durationLookup[0];
+                        for (let d of durationLookup) {
+                            if (d[0] < absSeconds) {
+                                matchingLookup = d;
+                            } else {
+                                break;
+                            }
                         }
+                        nextCardDueData = formatter.format(Math.round(seconds / matchingLookup[0]), matchingLookup[1]);
                     }
-                    nextCardDueData = formatter.format(Math.round(seconds / matchingLookup[0]), matchingLookup[1]);
                 }
                 deck.newCardsCount = newCardsCount;
                 deck.reviewCardsCount = reviewCardsCount;
