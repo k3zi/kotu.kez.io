@@ -174,12 +174,16 @@ class App extends React.Component {
         return (
             <UserContext.Provider value={this.state.user}>
                 <Router>
-                    <Navbar bg="dark" variant="dark" className="justify-content-between px-5">
-                        <div className="d-flex navbar-expand align-items-center">
-                            <LinkContainer to="/" className="order-0">
+                    <Navbar bg="dark" variant="dark" className="justify-content-sm-between justify-content-center px-xl-5 px-2">
+                        <LinkContainer to="/" className='d-block d-sm-none'>
+                            <Navbar.Brand>コツ</Navbar.Brand>
+                        </LinkContainer>
+                        <div className="col-12 d-block d-sm-none"></div>
+                        <div className="d-flex navbar-expand align-items-center  order-0">
+                            <LinkContainer to="/" className='d-none d-sm-block'>
                                 <Navbar.Brand>コツ</Navbar.Brand>
                             </LinkContainer>
-                            {this.state.user && <Nav className="mr-auto order-1" activeKey={window.location.pathname}>
+                            {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
                                 <LinkContainer exact to="/transcription">
                                     <Nav.Link active={false}>Transcription</Nav.Link>
                                 </LinkContainer>
@@ -205,7 +209,7 @@ class App extends React.Component {
                                 </NavDropdown>
                             </Nav>}
                         </div>
-                        {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-6 d-inline order-4 order-xl-2">
+                        {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-6 d-inline order-3 order-xl-1">
                             <Dropdown>
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} onBlur={() => this.setState({ isFocused: false })} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
@@ -215,13 +219,13 @@ class App extends React.Component {
                                 </Dropdown.Menu>
                             </Dropdown>
                         </Form>}
-                        <div className="col-12 d-block d-xl-none order-3 order-xl-5"></div>
+                        <div className="col-12 d-block d-xl-none order-2 order-xl-4"></div>
                         {!this.state.user && <Nav className="order-2 order-xl-4">
                             <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                             <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                         </Nav>}
 
-                        {this.state.user && <Nav className="order-2 order-xl-4">
+                        {this.state.user && <Nav className="order-1 order-xl-3">
                             <Navbar.Text className="d-sm-block d-none">
                                 Logged in as: <strong>{this.state.user.username}</strong>
                             </Navbar.Text>
@@ -229,7 +233,7 @@ class App extends React.Component {
                         </Nav>}
                     </Navbar>
 
-                    <Container>
+                    <Container className='pt-3'>
                         {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                         {this.state.isReady && <Switch>
                             <Route exact path="/">

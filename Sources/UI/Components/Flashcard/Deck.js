@@ -141,8 +141,8 @@ class Deck extends React.Component {
 
                 {this.state.nextCard && this.state.loadedHTML&& <div>
                     <Row>
-                        <Col xs={3}></Col>
-                        <Col xs={6}>
+                        <Col xs={0} lg={3}></Col>
+                        <Col xs={12} lg={6}>
                             <div dangerouslySetInnerHTML={{ __html: this.state.loadedHTML }}></div>
                             <hr />
                             {!this.state.showGradeButtons && <div className="d-grid">
@@ -160,7 +160,7 @@ class Deck extends React.Component {
                                 <span className='px-2'>Easy</span>
                             </div>}
                         </Col>
-                        <Col xs={3}></Col>
+                        <Col xs={0} lg={3}></Col>
                     </Row>
                 </div>}
             </div>

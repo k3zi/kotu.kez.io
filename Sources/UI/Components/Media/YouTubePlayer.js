@@ -95,15 +95,15 @@ class Player extends React.Component {
     render() {
         return (
             <Row>
-                <Col xs={7}>
+                <Col xs={12} md={7}>
                     <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.loadVideo(e)} placeholder="YouTube ID / URL" />
                     {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
                         <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
                 </Col>
 
-                <Col xs={5}>
-                    <Button onMouseDown={(e) => this.startCapture(e)} onMouseUp={() => this.endCapture()} className='col-12' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
+                <Col xs={12} md={5}>
+                    <Button onMouseDown={(e) => this.startCapture(e)} onMouseUp={() => this.endCapture()} className='col-12 mt-3 mt-md-0' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
                         {this.state.isRecording ? 'Release to Capture' : (this.state.isSubmitting ? 'Capturing' : 'Hold to Record')}
                     </Button>
                     {this.state.lastFile && <Alert dismissible onClose={() => this.setState({ lastFile: null })} className='mt-3' variant='primary'>Audio Embed Code: <pre className='mb-0 user-select-all'>[audio: {this.state.lastFile.id}]</pre></Alert>}

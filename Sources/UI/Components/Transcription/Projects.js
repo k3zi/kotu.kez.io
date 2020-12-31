@@ -81,22 +81,22 @@ class Projects extends React.Component {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Base Language</th>
-                            <th className="text-center">Actions</th>
+                            <th className="text-center align-middle">Name</th>
+                            <th className="text-center align-middle">Base Language</th>
+                            <th className="text-center align-middle">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.state.projects.map(project => {
                             return (<tr>
-                                <td className="align-middle">{project.name}</td>
-                                <td className="align-middle">{project.translations.filter(t => t.isOriginal)[0].language.name}</td>
+                                <td className="text-center align-middle">{project.name}</td>
+                                <td className="text-center align-middle">{project.translations.filter(t => t.isOriginal)[0].language.name}</td>
                                 <td className="align-middle text-center">
                                     <LinkContainer to={`/transcription/${project.id}`}>
                                         <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
                                     </LinkContainer>
-                                    {' '}
-                                    <Button variant="danger" onClick={() => this.showDeleteProjectModal(project)}><i className="bi bi-trash"></i></Button>
+                                    <div className='w-100 d-block d-md-none'></div>
+                                    <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteProjectModal(project)}><i className="bi bi-trash"></i></Button>
                                 </td>
                             </tr>);
                         })}
@@ -108,10 +108,10 @@ class Projects extends React.Component {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>From</th>
-                            <th>Name</th>
-                            <th>Base Language</th>
-                            <th className="text-center">Actions</th>
+                            <th className="text-center align-middle">From</th>
+                            <th className="text-center align-middle">Name</th>
+                            <th className="text-center align-middle">Base Language</th>
+                            <th className="text-center align-middle">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

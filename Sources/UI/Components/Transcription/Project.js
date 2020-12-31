@@ -445,24 +445,23 @@ class Project extends React.Component {
 
                 {this.state.project && this.state.isReady  && <div>
                     <Row className="mb-4">
-                        <Col>
+                        <Col xs={12} md={6}>
                             <h2 className="display-4">{this.state.project.name}</h2>
                         </Col>
-                        <Col xs="auto">
+                        <Col xs={12} md={6}>
                             <p className="bg-secondary text-white p-2 rounded">
                                 <strong>Owner</strong>: {this.state.project.owner.username}
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <div className="float-right">
-                                <Button variant="primary" onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                {' '}
-                                <Button variant="primary" onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                            {this.state.canWrite && <div className="float-right text-center gap-2 d-flex justify-content-center">
+                                <Button variant='primary' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                <Button variant='primary' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                             </div>}
                         </Col>
                     </Row>
                     <Row className="align-items-center justify-content-center">
-                        <Col xs={5}>
+                        <Col xs={12} md={5}>
                             <InputGroup>
                                 <DropdownButton variant="outline-secondary" title="Base Language" id="input-group-dropdown-1">
                                     {this.state.project.translations.map((translation, i) => {
@@ -472,8 +471,10 @@ class Project extends React.Component {
                                 <Form.Control value={this.state.selectedBaseTranslation.language.name} readOnly />
                             </InputGroup>
                         </Col>
+                        <div className="col-12 d-block d-md-none"></div>
                         <i className="bi bi-arrow-bar-right text-center w-auto px-0"></i>
-                        <Col xs={5}>
+                        <div className="col-12 d-block d-md-none"></div>
+                        <Col xs={12} md={5}>
                             <InputGroup>
                                 <DropdownButton variant="outline-secondary" title="Target Language" id="input-group-dropdown-1">
                                     <Dropdown.Item key={-1} active={!this.state.selectedBaseTranslation}  onSelect={() => this.setState({ selectedTargetTranslation: null })}>None</Dropdown.Item>
@@ -512,7 +513,7 @@ class Project extends React.Component {
                     <hr className="mt-2" />
                     <Container className="py-0" fluid>
                         <Row>
-                            <Col xs={6}>
+                            <Col xs={12} md={6}>
                                 <div className="position-relative">
                                     <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
                                     <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
@@ -561,10 +562,10 @@ class Project extends React.Component {
                                 </Container>
                                 {this.state.canWrite && <div className="d-grid gap-2">
                                     {this.state.selectedBaseTranslation && !this.state.selectedBaseTranslation.isOriginal && <Alert className="mt-1 mb-2" variant="secondary">Switch to the original transcription to add more fragments.</Alert>}
-                                    <Button variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0}>Add Fragment</Button>
+                                    <Button className='mb-2' variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0}>Add Fragment</Button>
                                 </div>}
                             </Col>
-                            <Col xs={6}>
+                            <Col xs={12} md={6}>
                                 <ResponsiveEmbed aspectRatio="16by9">
                                     <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0 }}} />
                                 </ResponsiveEmbed>

@@ -72,8 +72,8 @@ class NoteTypes extends React.Component {
                                     <LinkContainer to={`/flashcard/type/${noteType.id}`}>
                                         <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
                                     </LinkContainer>
-                                    {' '}
-                                    <Button variant="danger" onClick={() => this.showDeleteNoteTypeModal(noteType)}><i className="bi bi-trash"></i></Button>
+                                    <div className='w-100 d-block d-md-none'></div>
+                                    <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteNoteTypeModal(noteType)}><i className="bi bi-trash"></i></Button>
                                 </td>
                             </tr>);
                         })}

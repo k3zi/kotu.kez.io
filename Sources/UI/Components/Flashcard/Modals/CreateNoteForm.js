@@ -120,7 +120,7 @@ class CreateNoteForm extends React.Component {
         return (
             <div {...this.props}>
                 <Row>
-                    <Col>
+                    <Col xs={12} lg={6}>
                         <InputGroup className="mb-2">
                             <Form.Control value={this.state.noteType ? this.state.noteType.name : '(None)'} readOnly />
                             <DropdownButton variant="outline-secondary" title="Note Type" id="input-group-dropdown-1">
@@ -130,8 +130,8 @@ class CreateNoteForm extends React.Component {
                             </DropdownButton>
                         </InputGroup>
                     </Col>
-                    <Col>
-                        <InputGroup className="mb-2">
+                    <Col xs={12} lg={6}>
+                        <InputGroup className="mb-2 mt-2 mt-lg-0">
                             <Form.Control value={this.state.deck ? this.state.deck.name : '(None)'} readOnly />
                             <DropdownButton variant="outline-secondary" title="Deck" id="input-group-dropdown-1">
                                 {this.state.decks.map((deck, i) => {
