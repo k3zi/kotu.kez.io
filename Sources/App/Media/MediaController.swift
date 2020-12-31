@@ -41,12 +41,21 @@ class MediaController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
-                .map { file in
-                    let response = Response(status: .ok)
+                .flatMapThrowing { file in
+                    let rangeString = req.headers.first(name: .range) ?? ""
+                    let response = Response(status: rangeString.count > 0 ? .partialContent : .ok)
                     response.headers.contentType = HTTPMediaType.audio
                     let filename = "\(file.id!.uuidString).m4a"
                     response.headers.contentDisposition = .init(.attachment, filename: filename)
-                    response.body = .init(data: file.data)
+                    if rangeString.count > 0 {
+                        let range = try Range.parse(tokenizer: .init(input: rangeString))
+                        let data = file.data[range.startByte...min(range.endByte, file.data.endIndex - 1)]
+                        response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(file.data.count)")
+                        response.headers.add(name: .contentLength, value: String(data.count))
+                        response.body = .init(data: data)
+                    } else {
+                        response.body = .init(data: file.data)
+                    }
                     return response
                 }
         }
