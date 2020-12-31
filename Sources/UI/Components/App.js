@@ -34,7 +34,7 @@ import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
 
 import MediaYouTubePlayer from './Media/YouTubePlayer';
 
-const UserContext = React.createContext(null);
+import UserContext from './Context/User';
 
 class App extends React.Component {
 

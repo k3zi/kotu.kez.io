@@ -60,24 +60,24 @@ class LoginModal extends React.Component {
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <Form.Group controlId="loginModalUsername">
+                        <Form.Group controlId="loginModalUsername" className='mb-3'>
                             <Form.Label>Username</Form.Label>
                             <Form.Control type="text" name="username" placeholder="Enter a username" />
                         </Form.Group>
 
-                        <Form.Group controlId="loginModalPassword">
+                        <Form.Group controlId="loginModalPassword" className='mb-3'>
                             <Form.Label>Password</Form.Label>
                             <Form.Control type="password" name="password" placeholder="Enter a password" />
                         </Form.Group>
 
-                        {this.state.didError && <Alert variant="danger">
+                        {this.state.didError && <Alert variant="danger" className='mb-3'>
                             {this.state.message}
                         </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        {!this.state.didError && this.state.message && <Alert variant='info'>
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />}
                             {this.state.isSubmitting ? ' Loading...' : 'Login'}
                         </Button>}

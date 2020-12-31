@@ -60,19 +60,19 @@ class CreateDeckModal extends React.Component {
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <Form.Group controlId="createDeckModalName">
+                        <Form.Group controlId="createDeckModalName" className='mb-3'>
                             <Form.Label>Name</Form.Label>
                             <Form.Control autoComplete="off" type="text" name="name" placeholder="Enter the name of the deck" />
                         </Form.Group>
 
-                        {this.state.didError && <Alert variant="danger">
+                        {this.state.didError && <Alert variant="danger" className='mb-3'>
                             {this.state.message}
                         </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        {!this.state.didError && this.state.message && <Alert variant="info" className='mb-3'>
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Loading...' : 'Create'}
                         </Button>}
                     </Form>
