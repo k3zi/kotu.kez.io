@@ -567,7 +567,7 @@ class Project extends React.Component {
                             </Col>
                             <Col xs={12} md={6}>
                                 <ResponsiveEmbed aspectRatio="16by9">
-                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, playsinline: 0 }}} />
+                                    <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, playsinline: 1 }}} />
                                 </ResponsiveEmbed>
 
                                 <hr />
