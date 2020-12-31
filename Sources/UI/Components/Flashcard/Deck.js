@@ -90,7 +90,7 @@ class Deck extends React.Component {
 
         // Handle media for front / back.
         let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-        let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+        let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="${location.origin}/api/media/audio/$1" type="audio/x-m4a"></audio>`;
         result = result.replace(regex, subst);
         return result;
     }
