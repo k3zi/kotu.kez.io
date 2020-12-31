@@ -43,7 +43,7 @@ class MediaController: RouteCollection {
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { file in
                     let rangeString = req.headers.first(name: .range) ?? ""
-                    let response = Response(status: rangeString.count > 0 ? .partialContent : .ok)
+                    let response = Response(status: .ok)
                     response.headers.contentType = HTTPMediaType.audio
                     let filename = "\(file.id!.uuidString).m4a"
                     response.headers.contentDisposition = .init(.attachment, filename: filename)
