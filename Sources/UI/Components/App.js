@@ -211,7 +211,7 @@ class App extends React.Component {
                         </div>
                         {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-6 d-inline order-3 order-xl-1">
                             <Dropdown>
-                                <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} onBlur={() => this.setState({ isFocused: false })} />
+                                <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
                                     {this.state.results.map((r, i) => {
                                         return <Dropdown.Item as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>{r.headline}</Dropdown.Item>;
@@ -274,7 +274,7 @@ class App extends React.Component {
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
 
-                    {this.state.selectedResult && <Modal size="lg" show={!!this.state.selectedResult} onHide={() => this.setState({ selectedResult: null, selectedResultHTML: '' })} centered>
+                    {this.state.selectedResult && <Modal size="lg" show={!!this.state.selectedResult} onHide={() => this.setState({ selectedResult: null, selectedResultHTML: '', isFocused: false })} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>{this.state.selectedResult.headline}</Modal.Title>
                         </Modal.Header>

@@ -75,11 +75,12 @@ class CreateProjectModal extends React.Component {
 
     videoOnReady(e) {
         const info = e.target.getVideoData();
-        this.setState({ youtubeVideoInfo: {
-            author: info.author,
-            videoID: info.video_id,
-            title: info.title
-        }
+        this.setState({
+            youtubeVideoInfo: {
+                author: info.author,
+                videoID: info.video_id,
+                title: info.title
+            }
         });
     }
 
