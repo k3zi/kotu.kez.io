@@ -102,6 +102,24 @@ class ProjectSession {
                     }
             }
 
+            WSEventHolder.attemptDecodeUnwrap(type: NewTranslation.self, jsonString: text) { holder in
+                let id = holder.data.id
+                Translation.query(on: db)
+                    .with(\.$project)
+                    .with(\.$language)
+                    .filter(\.$id == id)
+                    .first()
+                    .unwrap(or: Abort(.badRequest))
+                    .guard({ $0.project.id == projectID }, else: Abort(.badRequest))
+                    .whenSuccess { [weak self] translation in
+                        guard let string = translation.jsonString(connectionID: connectionID) else { return }
+                        sessionDispatchQueue.sync {
+                            self?.connections.filter { $0 != connection }
+                                .forEach { $0.ws.send(string) }
+                        }
+                    }
+            }
+
             WSEventHolder.attemptDecodeUnwrap(type: BlurSubtitle.self, jsonString: text) { holder in
                 if connection.user.edit?.subtitleID == holder.data.id {
                     connection.user.edit = nil

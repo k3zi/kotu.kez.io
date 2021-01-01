@@ -75,6 +75,11 @@ struct NewFragment: WSEvent {
 
 }
 
+struct NewTranslation: WSEvent {
+    static let eventName = "newTranslation"
+    let id: UUID
+}
+
 struct DeleteFragment: WSEvent {
 
     static let eventName = "deleteFragment"
@@ -84,4 +89,8 @@ struct DeleteFragment: WSEvent {
 
 extension Fragment: WSEvent {
     static let eventName = "newFragment"
+}
+
+extension Translation: WSEvent {
+    static let eventName = "newTranslation"
 }

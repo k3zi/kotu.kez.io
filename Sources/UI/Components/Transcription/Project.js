@@ -154,6 +154,9 @@ class Project extends React.Component {
             } else if (name === 'deleteFragment') {
                 const fragments = this.state.fragments.filter(f => f.id != data.id);
                 this.setState({ fragments });
+            } else if (name === 'newTranslation') {
+                this.state.project.translations.push(data);
+                this.setState({ project: this.state.project });
             }
         };
 
@@ -212,6 +215,11 @@ class Project extends React.Component {
     async addedNewTargetTranslation(translation) {
         await this.loadProject(translation);
         this.toggleAddTargetLanguageModal(false);
+        this.ws.send(JSON.stringify({
+            name: 'newTranslation',
+            data: translation,
+            connectionID: this.state.connectionID
+        }));
     }
 
     videoOnReady(e) {
@@ -494,7 +502,7 @@ class Project extends React.Component {
                         <Row>
                             <Col>
                                 {this.state.otherUsers.map((u, i) => {
-                                    return <div className="d-inline-block text-center mr-2" key={i}>
+                                    return <div className="d-inline-block text-center me-2" key={i}>
                                         <Spinner animation="grow" variant={u.color} />
                                         <br />
                                         <div className="bg-gray-200 text-secondary rounded px-2 py-0">{u.username}</div>

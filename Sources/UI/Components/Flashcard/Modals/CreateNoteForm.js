@@ -131,7 +131,7 @@ class CreateNoteForm extends React.Component {
                         </InputGroup>
                     </Col>
                     <Col xs={12} lg={6}>
-                        <InputGroup className="mb-2 mt-2 mt-lg-0">
+                        <InputGroup className="mt-2 mt-lg-0">
                             <Form.Control value={this.state.deck ? this.state.deck.name : '(None)'} readOnly />
                             <DropdownButton variant="outline-secondary" title="Deck" id="input-group-dropdown-1">
                                 {this.state.decks.map((deck, i) => {
@@ -143,7 +143,7 @@ class CreateNoteForm extends React.Component {
                 </Row>
                 <Form onSubmit={(e) => this.submit(e)}>
                     {this.state.noteType && this.state.noteType.fields.map((field, i) => {
-                        return <Form.Group key={i}>
+                        return <Form.Group key={i} className='mt-2'>
                             <Form.Label>{field.name}</Form.Label>
                             <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => { this.state.fieldValues[i].value = e.target.value; }} className='form-control h-auto text-break plaintext' />
                         </Form.Group>;

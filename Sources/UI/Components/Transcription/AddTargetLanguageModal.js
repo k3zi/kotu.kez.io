@@ -86,7 +86,6 @@ class AddTargetLanguageModal extends React.Component {
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
                         <Form.Group controlId="createProjectModalLanguage">
-                            <Form.Label>Original Language</Form.Label>
                             <Form.Control as="select" name="languageID" placeholder="Select content original language" >
                                 {this.state.languages.map(language => {
                                     return <option key={language.id} value={language.id}>{language.name}</option>;
@@ -94,16 +93,15 @@ class AddTargetLanguageModal extends React.Component {
                             </Form.Control>
                         </Form.Group>
 
-                        {this.state.didError && <Alert variant="danger">
+                        {this.state.didError && <Alert variant="danger" className='mt-3'>
                             {this.state.message}
                         </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        {!this.state.didError && this.state.message && <Alert variant="info" className='mt-3'>
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
-                        {' '}
-                        {this.state.languages.length > 0 && !this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {<Button className='col-12 mt-3' variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
+                        {this.state.languages.length > 0 && <Button variant="primary" className='col-12 mt-3' type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Adding...' : 'Add'}
                         </Button>}
                     </Form>
