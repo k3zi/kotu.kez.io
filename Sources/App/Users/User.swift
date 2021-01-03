@@ -135,29 +135,6 @@ extension User {
         }
     }
 
-    struct Migration4: Fluent.Migration {
-        var name: String { "AddUserPermissions4" }
-
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
-            database.enum("permissions")
-                .case("admin")
-                .create()
-                .flatMap { _ in
-                    database.schema("users")
-                        .deleteField("permissions")
-                        .field("permissions", .sql(raw: "text[]"))
-                        .update()
-                }
-        }
-
-        func revert(on database: Database) -> EventLoopFuture<Void> {
-            database.schema("users")
-                .deleteField("permissions")
-                .field("permissions", .array(of: .string))
-                .update()
-        }
-    }
-
     struct Migration5: Fluent.Migration {
         var name: String { "AddUserPermissions5" }
 
