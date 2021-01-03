@@ -169,15 +169,7 @@ extension User {
         }
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
-            database.enum("permissions")
-                .case("admin")
-                .create()
-                .flatMap { _ in
-                    database.schema("users")
-                        .deleteField("permissions")
-                        .field("permissions", .sql(raw: "text[]"))
-                        .update()
-                }
+            database.eventLoop.future()
         }
     }
 
