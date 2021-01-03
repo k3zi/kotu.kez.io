@@ -34,6 +34,10 @@ import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
 
 import MediaYouTubePlayer from './Media/YouTubePlayer';
 
+import AdminUsers from './Admin/Users'
+
+import ResetPassword from './ResetPassword'
+
 import UserContext from './Context/User';
 
 class App extends React.Component {
@@ -207,6 +211,14 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>YouTube</NavDropdown.Item>
                                     </LinkContainer>
                                 </NavDropdown>
+
+                                {this.state.user.permissions.includes('admin') && <>
+                                    <NavDropdown title='Admin'>
+                                        <LinkContainer to="/admin/users">
+                                            <NavDropdown.Item active={false}>Users</NavDropdown.Item>
+                                        </LinkContainer>
+                                    </NavDropdown>
+                                </>}
                             </Nav>}
                         </div>
                         {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-6 d-inline order-3 order-xl-1">
@@ -266,6 +278,14 @@ class App extends React.Component {
 
                             <Route path="/media/youtube">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
+                            </Route>
+
+                            <Route path="/admin/users">
+                                {this.loginProtect(<AdminUsers />)}
+                            </Route>
+
+                            <Route path="/auth/resetPassword/:userID/:key">
+                                <ResetPassword show backdrop='static' />
                             </Route>
                         </Switch>}
                     </Container>

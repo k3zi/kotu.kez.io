@@ -156,7 +156,7 @@ class CreateNoteForm extends React.Component {
                         {this.state.message}
                     </Alert>}
 
-                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType}>
+                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType || !this.state.fieldValues.some(f => f.value.length > 0)}>
                         {this.state.isSubmitting ? 'Loading...' : 'Add'}
                     </Button>
                 </Form>

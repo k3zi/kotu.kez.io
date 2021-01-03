@@ -41,6 +41,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CardType.Migration())
     app.migrations.add(Card.Migration())
     app.migrations.add(File.Migration())
+    app.migrations.add(User.Migration2(), User.Migration3(), User.Migration4(), User.Migration5(), User.Migration6(), User.Migration7())
 
     try app.autoMigrate().wait()
 

@@ -14,8 +14,17 @@ final class User: Model, Content {
     @Field(key: "password_hash")
     var passwordHash: String
 
+    @Field(key: "permissions")
+    var permissions: [String]
+
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
+
+    @OptionalField(key: "password_reset_date")
+    var passwordResetDate: Date?
+
+    @OptionalField(key: "password_reset_key")
+    var passwordResetKey: String?
 
     // MARK: Transcription
 
@@ -88,6 +97,124 @@ extension User {
                 .update()
         }
     }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "AddUserPermissions" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("permissions", .array)
+                .field("password_reset_date", .date)
+                .field("password_reset_key", .string)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("password_reset_date")
+                .deleteField("password_reset_key")
+                .update()
+        }
+    }
+
+    struct Migration3: Fluent.Migration {
+        var name: String { "AddUserPermissions3" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("permissions")
+                .field("permissions", .array(of: .string))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("permissions")
+                .field("permissions", .array)
+                .update()
+        }
+    }
+
+    struct Migration4: Fluent.Migration {
+        var name: String { "AddUserPermissions4" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.enum("permissions")
+                .case("admin")
+                .create()
+                .flatMap { _ in
+                    database.schema("users")
+                        .deleteField("permissions")
+                        .field("permissions", .sql(raw: "text[]"))
+                        .update()
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("permissions")
+                .field("permissions", .array(of: .string))
+                .update()
+        }
+    }
+
+    struct Migration5: Fluent.Migration {
+        var name: String { "AddUserPermissions5" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("permissions")
+                .field("permissions", .array(of: .string))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.enum("permissions")
+                .case("admin")
+                .create()
+                .flatMap { _ in
+                    database.schema("users")
+                        .deleteField("permissions")
+                        .field("permissions", .sql(raw: "text[]"))
+                        .update()
+                }
+        }
+    }
+
+    struct Migration6: Fluent.Migration {
+        var name: String { "AddUserPermissions6" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            User.query(on: database)
+                .set(\.$permissions, to: [])
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.eventLoop.future()
+        }
+    }
+
+    struct Migration7: Fluent.Migration {
+        var name: String { "AddUserPasswordReset7" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("password_reset_date")
+                .field("password_reset_date", .datetime)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("password_reset_date")
+                .field("password_reset_date", .date)
+                .update()
+        }
+    }
+
+
+
 
 }
 
