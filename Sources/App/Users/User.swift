@@ -56,6 +56,7 @@ final class User: Model, Content {
         self.id = id
         self.username = username
         self.passwordHash = passwordHash
+        self.permissions = []
     }
 
     func beforeEncode() throws {

@@ -64,7 +64,7 @@ class Decks extends React.Component {
     render() {
         return (
             <div>
-                <h2>Users <small className="text-muted">{this.state.users.length}</small></h2>
+                <h2>Admin <small className="text-muted">User(s) {this.state.users.length}</small></h2>
                 {this.state.resetURL && <Alert dismissible onClose={() => this.setState({ resetURL: null })} className='mt-3' variant='primary'>User Pasword Reset URL: <pre className='mb-0 user-select-all'>{this.state.resetURL}</pre></Alert>}
                 <hr/>
                 <Table striped bordered hover>
