@@ -173,7 +173,7 @@ class App extends React.Component {
             return view;
         }
 
-        return <LoginModal show backdrop="static" onHide={() => this.loadUser()} />;
+        return <h1>Login / Register to access this page.</h1>;
     }
 
     render() {
