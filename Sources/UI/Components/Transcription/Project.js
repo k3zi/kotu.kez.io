@@ -446,6 +446,15 @@ class Project extends React.Component {
         this.setState({ message: '' });
     }
 
+    sendMessageEnter(e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+            if (this.state.message.length > 0) {
+                this.sendMessage();
+            }
+        }
+    }
+
     async deleteFragment(fragment) {
         const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/${fragment.id}`, {
             method: 'DELETE',
@@ -668,7 +677,7 @@ class Project extends React.Component {
                                                             </div>
                                                         </Col>
                                                         <Col className="ps-0 pe-3">
-                                                            <ContentEditable disabled={true} value={message.text} className='form-control h-auto text-break no-box-shadow' />
+                                                            <ContentEditable disabled={true} value={message.text} className='form-control h-auto text-break no-box-shadow plaintext' />
                                                         </Col>
                                                     </Row>
                                                 </div>;
@@ -685,7 +694,7 @@ class Project extends React.Component {
                                     <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                     <Row className="bg-white py-3 align-items-center">
                                         <Col className="px-3">
-                                            <ContentEditable value={this.state.message} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ message: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />
+                                            <ContentEditable onKeyDown={(e) => this.sendMessageEnter(e)} tabIndex={0} value={this.state.message} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ message: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />
                                         </Col>
                                     </Row>
                                     <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
