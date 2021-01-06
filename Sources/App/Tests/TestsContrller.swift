@@ -29,6 +29,7 @@ class TestsController: RouteCollection {
             if rangeString.count > 0 {
                 let range = try Range.parse(tokenizer: .init(input: rangeString))
                 let croppedData = data[range.startByte...min(range.endByte, data.endIndex - 1)]
+                response.headers.remove(name: .contentLength)
                 response.headers.add(name: .contentRange, value: "bytes \(croppedData.startIndex)-\(croppedData.endIndex)/\(data.count)")
                 response.headers.add(name: .contentLength, value: String(croppedData.count))
                 response.body = .init(data: croppedData)
