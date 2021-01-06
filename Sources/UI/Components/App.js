@@ -34,6 +34,8 @@ import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
 
 import MediaYouTubePlayer from './Media/YouTubePlayer';
 
+import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs'
+
 import AdminUsers from './Admin/Users'
 
 import ResetPassword from './ResetPassword'
@@ -212,6 +214,12 @@ class App extends React.Component {
                                     </LinkContainer>
                                 </NavDropdown>
 
+                                <NavDropdown title='Tests'>
+                                    <LinkContainer to="/tests/pitchAccent/minimalPairs">
+                                        <NavDropdown.Item active={false}>Pitch Accent (Minimal Pairs)</NavDropdown.Item>
+                                    </LinkContainer>
+                                </NavDropdown>
+
                                 {this.state.user.permissions.includes('admin') && <>
                                     <NavDropdown title='Admin'>
                                         <LinkContainer to="/admin/users">
@@ -286,6 +294,10 @@ class App extends React.Component {
 
                             <Route path="/auth/resetPassword/:userID/:key">
                                 <ResetPassword show backdrop='static' />
+                            </Route>
+
+                            <Route path="/tests/pitchAccent/minimalPairs">
+                                {this.loginProtect(<TestsPitchAccentMinimalPairs />)}
                             </Route>
                         </Switch>}
                     </Container>

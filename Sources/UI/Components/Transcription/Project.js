@@ -158,7 +158,7 @@ class Project extends React.Component {
                 }
                 this.setState({ fragments: this.state.fragments });
             } else if (name === 'newFragment') {
-                const fragments = fragments.filter(f => f.id !== data.id);
+                const fragments = this.state.fragments.filter(f => f.id !== data.id);
                 fragments.push(data);
                 this.setState({ fragments: this.sortFragments(fragments) });
             } else if (name === 'deleteFragment') {

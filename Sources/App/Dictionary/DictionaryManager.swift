@@ -72,14 +72,14 @@ struct DictionaryManager {
                 var cssWordMappings = [String: [String: String]]()
                 var contentIndexes = [String: ContentIndex]()
                 for dictionary in dictionaries {
-                    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/style.css"))
+                    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(dictionary.directoryName)/style.css"))
                     var cssString = String(data: cssData, encoding: .utf8)!
                     let replacements = cssString.replaceNonASCIICharacters()
 
-                    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/contents")
+                    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(dictionary.directoryName)/contents")
                     let fileContainer = try! CompressedFileContainer(withDirectory: contentsDirectory)
 
-                    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(dictionary.directoryName)/contents/contents.idx"))
+                    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(dictionary.directoryName)/contents/contents.idx"))
                     let contentIndex = try! ContentIndex.parse(tokenizer: .init(data: contentIndexData))
 
                     containers[dictionary.directoryName] = fileContainer

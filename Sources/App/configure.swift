@@ -48,6 +48,15 @@ public func configure(_ app: Application) throws {
     try app.autoMigrate().wait()
 
 //    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
+//
+//    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/NHK_ACCENT/contents")
+//    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+//    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
+//    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
+//    for (i, file) in fileContainer.files.enumerated() {
+//        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
+//        try file.text.data(using: .utf8)!.write(to: outputFileURL)
+//    }
 //    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/SMK8/headline/headline.headlinestore"))
 //    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
 //    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
@@ -92,6 +101,7 @@ public func configure(_ app: Application) throws {
 //        .forEach { try $0.create(on: app.db).wait() }
 
     try DictionaryManager.configure(app: app).wait()
+    PitchAccentManager.configure(app: app)
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
 
