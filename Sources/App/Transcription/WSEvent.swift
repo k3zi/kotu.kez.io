@@ -32,6 +32,7 @@ struct Hello: WSEvent {
     let color: String
     let canWrite: Bool
     let project: Project
+    let messages: [Message]
 
 }
 
@@ -78,6 +79,18 @@ struct NewFragment: WSEvent {
 struct NewTranslation: WSEvent {
     static let eventName = "newTranslation"
     let id: UUID
+}
+
+struct NewMessage: WSEvent {
+    static let eventName = "message"
+    let text: String
+}
+
+struct Message: WSEvent {
+    static let eventName = "message"
+    let text: String
+    let color: String
+    let username: String
 }
 
 struct DeleteFragment: WSEvent {

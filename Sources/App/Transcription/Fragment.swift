@@ -63,6 +63,11 @@ extension Fragment {
         let endTime: Double
     }
 
+    struct Put: Content {
+        let startTime: Double
+        let endTime: Double
+    }
+
 }
 
 extension Fragment.Create: Validatable {
@@ -72,6 +77,15 @@ extension Fragment.Create: Validatable {
         validations.add("baseTranslationID", as: UUID.self)
         validations.add("targetText", as: String?.self, required: false)
         validations.add("targetTranslationID", as: UUID?.self, required: false)
+        validations.add("startTime", as: Double.self)
+        validations.add("endTime", as: Double.self)
+    }
+
+}
+
+extension Fragment.Put: Validatable {
+
+    static func validations(_ validations: inout Validations) {
         validations.add("startTime", as: Double.self)
         validations.add("endTime", as: Double.self)
     }

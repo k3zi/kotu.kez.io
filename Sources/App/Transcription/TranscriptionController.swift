@@ -75,7 +75,13 @@ class TranscriptionController: RouteCollection {
                             }
                         }
                         .all()
-                        .map { $0.map { $0.project }}
+//                        .map {
+//                            $0.filter { $0.shareAllProjects }
+//                                .map { $0.$sharedUser }
+//
+//                            $0.map { $0.project }
+//                        }
+                        .map { $0.map { $0.project } }
                         .map { ($0 + ownedProjects) }
                         .map { $0.sorted(by: { $0.name > $1.name })}
                 }
@@ -244,7 +250,7 @@ class TranscriptionController: RouteCollection {
                 let randomColors = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "teal", "cyan"]
                 let onceRandomColors = randomColors.filter { !existingColors.contains($0) }
                 let color = onceRandomColors.randomElement() ?? randomColors.randomElement()!
-                let hello = Hello(id: wsID, color: color, canWrite: project.owner.id == userID || project.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: project), project: project)
+                let hello = Hello(id: wsID, color: color, canWrite: project.owner.id == userID || project.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: project), project: project, messages: session.messages)
                 guard let jsonString = hello.jsonString(connectionID: wsID) else {
                     return ws.close(promise: nil)
                 }
@@ -295,6 +301,8 @@ class TranscriptionController: RouteCollection {
             guard let username = req.parameters.get("username", as: String.self) else { throw Abort(.badRequest, reason: "Username not provided") }
             guard user.username != username else { throw Abort(.badRequest, reason: "You are not permitted to invite yourself") }
 
+            try Invite.Create.validate(content: req)
+            let object = try req.content.decode(Invite.Create.self)
             return Project.query(on: req.db)
                 .with(\.$owner)
                 .with(\.$shares) {
@@ -323,7 +331,7 @@ class TranscriptionController: RouteCollection {
                                 throw Abort(.badRequest, reason: "An invite already exists for this user")
                             }
 
-                            let invite = Invite(projectID: projectID, inviteeID: inviteeID)
+                            let invite = Invite(projectID: projectID, inviteeID: inviteeID, shareAllProjects: object.shareAllProjects)
                             return invite.save(on: req.db)
                                 .map { invite }
                         }
@@ -351,7 +359,7 @@ class TranscriptionController: RouteCollection {
                     return invite.delete(on: req.db)
                         .throwingFlatMap {
                             let projectID = try project.requireID()
-                            let share = Share(projectID: projectID, sharedUserID: userID)
+                            let share = Share(projectID: projectID, sharedUserID: userID, shareAllProjects: invite.shareAllProjects)
                             return share.save(on: req.db)
                                 .map { share }
                         }
@@ -458,6 +466,50 @@ class TranscriptionController: RouteCollection {
                             return fragment.$subtitles.create(subtitles, on: req.db)
                         }
                         .map { fragment }
+                }
+        }
+
+        project.put(":id", "fragment", ":fragmentID") { (req: Request) -> EventLoopFuture<Fragment> in
+            let user = req.auth.get(User.self) ?? User.guest
+            let userID = try user.requireID()
+            guard let projectID = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            guard let fragmentID = req.parameters.get("fragmentID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            try Fragment.Put.validate(content: req)
+            let object = try req.content.decode(Fragment.Put.self)
+            guard object.startTime <= object.endTime else {
+                throw Abort(.badRequest, reason: "Start time can not be greater than end time")
+            }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$fragments) {
+                    $0.with(\.$subtitles) { subtitle in
+                        subtitle.with(\.$translation)
+                    }
+                }
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .filter(\.$id == projectID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guard({ $0.owner.id == userID || $0.shares.contains(where: { $0.sharedUser.id == userID }) || Self.verifyWrite(req: req, for: $0) }, else: Abort(.unauthorized, reason: "You are not authorized to view this project"))
+                .throwingFlatMap { project in
+                    guard let fragment = project.fragments.first(where: { $0.id == fragmentID }) else {
+                        throw Abort(.notFound)
+                    }
+                    fragment.startTime = object.startTime
+                    fragment.endTime = object.endTime
+                    return fragment.save(on: req.db)
+                        .map {
+                            guard let session = self.projectSessions[projectID] else {
+                                return fragment
+                            }
+
+                            session.sendFragment(fragment: fragment)
+                            return fragment
+                        }
                 }
         }
 

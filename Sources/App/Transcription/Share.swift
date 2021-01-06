@@ -14,12 +14,16 @@ final class Share: Model, Content {
     @Parent(key: "shared_id")
     var sharedUser: User
 
+    @Field(key: "share_all_projects")
+    var shareAllProjects: Bool
+
     init() { }
 
-    init(id: UUID? = nil, projectID: UUID, sharedUserID: UUID) {
+    init(id: UUID? = nil, projectID: UUID, sharedUserID: UUID, shareAllProjects: Bool) {
         self.id = id
         self.$project.id = projectID
         self.$sharedUser.id = sharedUserID
+        self.shareAllProjects = shareAllProjects
     }
 
 }
@@ -39,6 +43,22 @@ extension Share {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "TranscriptionShareAll" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("share_all_projects", .bool, .required, .sql(.default(false)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("share_all_projects")
+                .update()
         }
     }
 

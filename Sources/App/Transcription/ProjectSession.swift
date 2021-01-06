@@ -46,6 +46,7 @@ class ProjectSession {
 
     let projectID: UUID
     private var connections = [Connection]()
+    var messages = [Message]()
 
     init(project: Project) {
         self.projectID = project.id!
@@ -68,11 +69,29 @@ class ProjectSession {
         }
     }
 
+    func sendFragment(fragment: Fragment) {
+        guard let string = fragment.jsonString(connectionID: "") else { return }
+        sessionDispatchQueue.async {
+            self.connections
+                .forEach { $0.ws.send(string) }
+        }
+    }
+
     func add(db: FluentKit.Database, connection: Connection) {
         let projectID = self.projectID
         let connectionID = connection.id
         connection.ws.onText { [weak self] (ws, text) in
-            guard let self = self else { return}
+            guard let self = self else { return }
+
+            WSEventHolder.attemptDecodeUnwrap(type: NewMessage.self, jsonString: text) { holder in
+                let message = Message(text: holder.data.text, color: connection.user.color, username: connection.user.username)
+                self.messages.append(message)
+                guard let string = message.jsonString(connectionID: connectionID) else { return }
+                sessionDispatchQueue.sync {
+                    self.connections
+                        .forEach { $0.ws.send(string) }
+                }
+            }
 
             WSEventHolder.attemptDecodeUnwrap(type: DeleteFragment.self, jsonString: text) { holder in
                 guard let string = holder.data.jsonString(connectionID: connectionID) else { return }

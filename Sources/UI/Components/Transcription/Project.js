@@ -24,6 +24,7 @@ import AddTargetLanguageModal from './AddTargetLanguageModal';
 import ContentEditable from './../Common/ContentEditable';
 import InviteUserModal from './InviteUserModal';
 import ShareURLModal from './ShareURLModal';
+import EditFragmentModal from './EditFragmentModal';
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -49,6 +50,7 @@ class Project extends React.Component {
             showAddTargetLanguageModal: false,
             showInviteUserModal: false,
             showShareURLModal: false,
+            showEditFragmentModal: null,
             videoDuration: 0,
             currentTime: 0,
             baseLanguageText: '',
@@ -62,6 +64,10 @@ class Project extends React.Component {
             otherUsers: [],
             fragmentListTopScroll: 0.0,
             fragmentListBottomScroll: 0.0,
+            commentListTopScroll: 0.0,
+            commentListBottomScroll: 0.0,
+            message: '',
+            messages: [],
             canWrite: false
         };
         this.ws = null;
@@ -109,8 +115,12 @@ class Project extends React.Component {
                     isReady: true,
                     color: data.color,
                     connectionID: data.id,
-                    canWrite: data.canWrite
+                    canWrite: data.canWrite,
+                    messages: data.messages
                 });
+                setTimeout(() => {
+                    this.bottomOfComments.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
             } else if (name === 'usersList') {
                 for (let fragment of this.state.fragments) {
                     for (let subtitle of fragment.subtitles) {
@@ -148,15 +158,22 @@ class Project extends React.Component {
                 }
                 this.setState({ fragments: this.state.fragments });
             } else if (name === 'newFragment') {
-                const fragments = this.state.fragments;
+                const fragments = fragments.filter(f => f.id !== data.id);
                 fragments.push(data);
-                this.setState({ fragments });
+                this.setState({ fragments: this.sortFragments(fragments) });
             } else if (name === 'deleteFragment') {
                 const fragments = this.state.fragments.filter(f => f.id != data.id);
                 this.setState({ fragments });
             } else if (name === 'newTranslation') {
                 this.state.project.translations.push(data);
                 this.setState({ project: this.state.project });
+            } else if (name === 'message') {
+                this.state.messages.push(data);
+                this.setState({ messages: this.state.messages });
+
+                setTimeout(() => {
+                    this.bottomOfComments.scrollIntoView({ behavior: 'smooth' });
+                }, 200);
             }
         };
 
@@ -209,6 +226,12 @@ class Project extends React.Component {
     toggleShareURLModal(show) {
         this.setState({
             showShareURLModal: show
+        });
+    }
+
+    toggleShowEditFragmentModal(fragment) {
+        this.setState({
+            showEditFragmentModal: fragment
         });
     }
 
@@ -413,6 +436,16 @@ class Project extends React.Component {
 
     }
 
+    sendMessage() {
+        const message = this.state.message;
+        this.ws.send(JSON.stringify({
+            name: 'message',
+            data: { text: message },
+            connectionID: this.state.connectionID
+        }));
+        this.setState({ message: '' });
+    }
+
     async deleteFragment(fragment) {
         const response = await fetch(`/api/transcription/project/${this.state.project.id}/fragment/${fragment.id}`, {
             method: 'DELETE',
@@ -443,6 +476,16 @@ class Project extends React.Component {
         let fragmentListBottomScroll = Math.min(1, (bottom - element.scrollTop) / 127);
         if (this.state.fragmentListTopScroll != fragmentListTopScroll || this.state.fragmentListBottomScroll != fragmentListBottomScroll) {
             this.setState({ fragmentListTopScroll, fragmentListBottomScroll});
+        }
+    }
+
+    onCommentListScroll(element) {
+        if (!element) return;
+        let bottom = element.scrollHeight - element.clientHeight;
+        let commentListTopScroll = Math.min(1, element.scrollTop / 127);
+        let commentListBottomScroll = Math.min(1, (bottom - element.scrollTop) / 127);
+        if (this.state.commentListTopScroll != commentListTopScroll || this.state.commentListBottomScroll != commentListBottomScroll) {
+            this.setState({ commentListTopScroll, commentListBottomScroll });
         }
     }
 
@@ -530,6 +573,7 @@ class Project extends React.Component {
                                                 return <div key={id}>
                                                     <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                                     <Row className="bg-light py-3 align-items-center position-relative">
+                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ left: 0, top: 0, cursor: 'pointer', width: 'auto' }} onClick={() => this.toggleShowEditFragmentModal(fragment)}><i className="bi bi-gear text-secondary"></i></a>}
                                                         <Col xs="auto" className="text-center align-self-center">
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className="bg-secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                         </Col>
@@ -605,11 +649,56 @@ class Project extends React.Component {
                                         })}
                                     </tbody>
                                 </Table>
+
+                                <hr />
+
+                                <div className="position-relative">
+                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.commentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
+                                    <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onCommentListScroll(e.target)} ref={(r) => this.onCommentListScroll(r)}>
+                                        <Container className="mb-0 py-0" fluid>
+                                            {this.state.messages.map((message, id) => {
+                                                return <div key={id}>
+                                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
+                                                    <Row className="bg-light py-3 align-items-center position-relative">
+                                                        <Col xs="auto" className="text-center align-self-center">
+                                                            <div className="d-inline-block text-center me-2">
+                                                                <Spinner animation="grow" variant={message.color} />
+                                                                <br />
+                                                                <div className="bg-gray-200 text-secondary rounded px-2 py-0">{message.username}</div>
+                                                            </div>
+                                                        </Col>
+                                                        <Col className="ps-0 pe-3">
+                                                            <ContentEditable disabled={true} value={message.text} className='form-control h-auto text-break no-box-shadow' />
+                                                        </Col>
+                                                    </Row>
+                                                </div>;
+                                            })}
+                                            <div style={{ float:'left', clear: 'both' }}
+                                                ref={(el) => { this.bottomOfComments = el; }}>
+                                            </div>
+                                        </Container>
+                                    </div>
+                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.commentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
+                                </div>
+
+                                <Container className="mb-2 py-0" fluid>
+                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
+                                    <Row className="bg-white py-3 align-items-center">
+                                        <Col className="px-3">
+                                            <ContentEditable value={this.state.message} onFocus={(e) => this.didFocusOn(null, null, null)} onChange={(e) => this.setState({ message: e.target.value })} className={`form-control h-auto text-break no-box-shadow caret-${this.state.color} border-focus-${this.state.color}`} />
+                                        </Col>
+                                    </Row>
+                                    <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
+                                </Container>
+                                <div className="d-grid gap-2">
+                                    <Button className='mb-2' variant="primary" onClick={() => this.sendMessage()} disabled={this.state.message.trim().length == 0}>Send</Button>
+                                </div>
                             </Col>
                         </Row>
                     </Container>
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
+                    <EditFragmentModal ws={this.ws} project={this.state.project} fragment={this.state.showEditFragmentModal} show={!!this.state.showEditFragmentModal} onHide={() => this.toggleShowEditFragmentModal(null)} didCancel={() => this.toggleShowEditFragmentModal(null)} onFinish={() => this.toggleShowEditFragmentModal(null)} />
                     {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}
             </div>
