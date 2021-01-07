@@ -548,8 +548,8 @@ class Project extends React.Component {
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
                             {this.state.canWrite && <Container className='py-0'><Row noGutters className="float-right text-center gap-2 justify-content-center">
-                                <Button variant='primary' className='col pe-2' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                <Button variant='primary' className='col ps-2' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                                <Button variant='primary' className='col me-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                <Button variant='primary' className='col ms-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                             </Row></Container>}
                         </Col>
                     </Row>
