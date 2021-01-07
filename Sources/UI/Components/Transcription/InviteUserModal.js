@@ -29,8 +29,13 @@ class InviteUserModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
+        data.shareAllProjects = !!data.shareAllProjects;
         const response = await fetch(`/api/transcription/project/${this.props.project.id}/invite/${data.username}`, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         const result = await response.json();
         const success = !result.error;
@@ -60,21 +65,25 @@ class InviteUserModal extends React.Component {
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <Form.Group controlId="createProjectModalLanguage">
+                        <Form.Group className='mb-3' controlId="inviteUserModalUsername">
                             <Form.Label>Username to Invite</Form.Label>
                             <Form.Control name="username" placeholder="Enter username" />
                         </Form.Group>
 
-                        {this.state.didError && <Alert variant="danger">
+                        <Form.Group className='mb-3' controlId="inviteUserModalShareAllProjects">
+                            <Form.Check type="checkbox" label="Share All Projects" name='shareAllProjects' />
+                        </Form.Group>
+
+                        {this.state.didError && <Alert className='mb-3' variant="danger">
                             {this.state.message}
                         </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        {!this.state.didError && this.state.message && <Alert className='mb-3' variant="info">
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
+                        {!this.state.success && <Button className='mb-3' variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
                         {' '}
-                        {!this.state.success && <Button variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {!this.state.success && <Button className='mb-3' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Inviting...' : 'Invite'}
                         </Button>}
                     </Form>

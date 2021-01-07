@@ -136,10 +136,12 @@ class App extends React.Component {
 
     toggleRegisterModal(show) {
         this.setState({ showRegisterModal: show });
+        this.loadUser();
     }
 
     toggleLoginModal(show) {
         this.setState({ showLoginModal: show });
+        this.loadUser();
     }
 
     toggleCreateNoteModal(show) {

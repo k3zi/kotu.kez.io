@@ -1,7 +1,15 @@
 import Fluent
 import Vapor
 
-final class Project: Model, Content {
+final class Project: Model, Content, Equatable, Hashable {
+
+    static func == (lhs: Project, rhs: Project) -> Bool {
+        lhs.id! == rhs.id!
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 
     static let schema = "transcription_projects"
 

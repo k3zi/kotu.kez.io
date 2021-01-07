@@ -123,8 +123,8 @@ class Projects extends React.Component {
                         {this.state.invites.map(invite => {
                             return (<tr>
                                 <td className="align-middle">{invite.project.owner.username}</td>
-                                <td className="align-middle">{invite.project.name}</td>
-                                <td className="align-middle">{invite.project.translations.filter(t => t.isOriginal)[0].language.name}</td>
+                                <td className="align-middle">{invite.shareAllProjects ? '(All Projects)' : invite.project.name}</td>
+                                <td className="align-middle">{invite.shareAllProjects ? 'N/A' : invite.project.translations.filter(t => t.isOriginal)[0].language.name}</td>
                                 <td className="align-middle text-center">
                                     <Button variant="success" onClick={() => this.acceptInvite(invite)}><i className="bi bi-check"></i></Button>
                                     {' '}

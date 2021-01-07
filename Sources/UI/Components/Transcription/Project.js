@@ -119,7 +119,7 @@ class Project extends React.Component {
                     messages: data.messages
                 });
                 setTimeout(() => {
-                    this.bottomOfComments.scrollIntoView({ behavior: 'smooth' });
+                    this.bottomOfComments.parentNode.parentNode.scrollTop = this.bottomOfComments.offsetTop;
                 }, 500);
             } else if (name === 'usersList') {
                 for (let fragment of this.state.fragments) {
@@ -498,6 +498,39 @@ class Project extends React.Component {
         }
     }
 
+    renderExport(side) {
+        return (
+            <>
+                <hr className={side === 'left' ? 'd-none d-lg-block' : 'd-none'} />
+                <h4 className={`${side === 'left' ? 'd-none d-lg-block' : 'd-block d-lg-none mt-2 mt-lg-0'} text-center mt-3}`}>Export</h4>
+                <Table className={side === 'left' ? 'd-none d-lg-table mb-0' : 'd-table d-lg-none mb-0'} bordered responsive="sm">
+                    <thead>
+                        <tr>
+                            <th className="text-center">Base ({this.state.selectedBaseTranslation.language.name})</th>
+                            {this.state.selectedTargetTranslation && <th className="text-center">Target ({this.state.selectedTargetTranslation.language.name})</th>}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {['srt'].map((ext, i) => {
+                            return <tr key={i}>
+                                <td>
+                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
+                                        Download .{ext}
+                                    </Button>
+                                </td>
+                                {this.state.selectedTargetTranslation && <td>
+                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
+                                        Download .{ext}
+                                    </Button>
+                                </td>}
+                            </tr>;
+                        })}
+                    </tbody>
+                </Table>
+            </>
+        );
+    }
+
     render() {
         return (
             <div>
@@ -514,10 +547,10 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <div className="float-right text-center gap-2 d-flex justify-content-center">
-                                <Button variant='primary' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                <Button variant='primary' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
-                            </div>}
+                            {this.state.canWrite && <Container className='py-0'><Row noGutters className="float-right text-center gap-2 justify-content-center">
+                                <Button variant='primary' className='col pe-2' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                <Button variant='primary' className='col ps-2' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                            </Row></Container>}
                         </Col>
                     </Row>
                     <Row className="align-items-center justify-content-center">
@@ -575,7 +608,7 @@ class Project extends React.Component {
                         <Row>
                             <Col xs={12} md={6}>
                                 <div className="position-relative">
-                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
+                                    <div className="gutter-margin position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.fragmentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
                                     <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onFragmentListScroll(e.target)} ref={(r) => this.onFragmentListScroll(r)}>
                                         <Container className="mb-0 py-0" fluid>
                                             {this.state.fragments.map((fragment, id) => {
@@ -602,7 +635,7 @@ class Project extends React.Component {
                                             </div>
                                         </Container>
                                     </div>
-                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.fragmentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
+                                    <div className="gutter-margin position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.fragmentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
                                 </div>
 
                                 <Container className="mb-2 py-0" fluid>
@@ -625,44 +658,22 @@ class Project extends React.Component {
                                     {this.state.selectedBaseTranslation && !this.state.selectedBaseTranslation.isOriginal && <Alert className="mt-1 mb-2" variant="secondary">Switch to the original transcription to add more fragments.</Alert>}
                                     <Button className='mb-2' variant="primary" onClick={() => this.addFragment()} disabled={!this.state.selectedBaseTranslation || !this.state.selectedBaseTranslation.isOriginal || !this.state.baseLanguageText || this.state.baseLanguageText.trim().length == 0}>Add Fragment</Button>
                                 </div>}
+
+                                {this.renderExport('left')}
+
                             </Col>
+
                             <Col xs={12} md={6}>
                                 <ResponsiveEmbed aspectRatio="16by9">
                                     <YouTube videoId={this.state.project.youtubeID} onReady={(e) => this.videoOnReady(e)} onPause ={(e) => this.onPause(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, playsinline: 1 }}} />
                                 </ResponsiveEmbed>
 
-                                <hr />
+                                {this.renderExport('right')}
 
-                                <h4 className="text-center">Export Options</h4>
-                                <Table responsive="sm">
-                                    <thead>
-                                        <tr>
-                                            <th className="text-center">Base ({this.state.selectedBaseTranslation.language.name})</th>
-                                            {this.state.selectedTargetTranslation && <th className="text-center">Target ({this.state.selectedTargetTranslation.language.name})</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {['srt'].map((ext, i) => {
-                                            return <tr key={i}>
-                                                <td>
-                                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedBaseTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
-                                                        Download .{ext}
-                                                    </Button>
-                                                </td>
-                                                {this.state.selectedTargetTranslation &&<td >
-                                                    <Button className='col-12' href={`/api/transcription/project/${this.state.project.id}/translation/${this.state.selectedTargetTranslation.id}/download/${ext}?shareHash=${this.getShareHash(true)}`} variant="outline-secondary" block download>
-                                                        Download .{ext}
-                                                    </Button>
-                                                </td>}
-                                            </tr>;
-                                        })}
-                                    </tbody>
-                                </Table>
-
-                                <hr />
+                                <h4 className="text-center mt-2">Comments</h4>
 
                                 <div className="position-relative">
-                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.commentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
+                                    <div className="gutter-margin position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(127, 127, 127, ${this.state.commentListTopScroll * 0.27}) 100%)`, zIndex: '1', top: '0' }}></div>
                                     <div className="overflow-auto hide-scrollbar max-vh-75" onScroll={(e) => this.onCommentListScroll(e.target)} ref={(r) => this.onCommentListScroll(r)}>
                                         <Container className="mb-0 py-0" fluid>
                                             {this.state.messages.map((message, id) => {
@@ -687,7 +698,7 @@ class Project extends React.Component {
                                             </div>
                                         </Container>
                                     </div>
-                                    <div className="position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.commentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
+                                    <div className="gutter-margin position-absolute w-100" style={{ height: '27px', pointerEvents: 'none', background: `linear-gradient(0deg, rgba(127, 127, 127, ${this.state.commentListBottomScroll * 0.27}) 0%, rgba(0, 0, 0, 0) 100%)`, 'z-index': '1', 'bottom': '0' }}></div>
                                 </div>
 
                                 <Container className="mb-2 py-0" fluid>

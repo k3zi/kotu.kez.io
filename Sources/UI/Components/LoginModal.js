@@ -36,16 +36,25 @@ class LoginModal extends React.Component {
         const result = await response.json();
         const success = !result.error;
         this.setState({
-            isSubmitting: false,
-            didError: result.error,
-            message: result.error ? result.reason : 'Logging in...',
             success
         });
 
         if (success) {
             setTimeout(() => {
-                location.reload();
+                this.props.onHide();
+
+                setTimeout(() => {
+                    this.setState({
+                        isSubmitting: false
+                    });
+                }, 1000);
             }, 1000);
+        } else {
+            this.setState({
+                isSubmitting: false,
+                didError: result.error,
+                message: result.error ? result.reason : null
+            });
         }
     }
 
@@ -77,10 +86,10 @@ class LoginModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />}
                             {this.state.isSubmitting ? ' Loading...' : 'Login'}
-                        </Button>}
+                        </Button>
                     </Form>
                 </Modal.Body>
             </Modal>

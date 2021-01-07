@@ -327,3 +327,16 @@ body {
     display: flex;;
     align-items: center;
 }
+
+
+hr {
+    border: 0.5px solid #dee2e6 !important;
+    height: 0 !important;
+    overflow: visible;
+    opacity: 1 !important;
+}
+
+.gutter-margin {
+    width: calc(100% - 1.5rem) !important;
+    margin-left: 0.75rem;
+}
