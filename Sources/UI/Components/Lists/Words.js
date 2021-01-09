@@ -81,7 +81,7 @@ class Words extends React.Component {
                     </tbody>
                 </Table>
 
-                <DeleteWordModal word={this.state.showDeleteModal} didDelete={() => this.showDeleteModal(null)} didCancel={() => this.showDeleteModal(null)} onHide={() => this.showDeleteModal(null)} />
+                <DeleteWordModal word={this.state.showDeleteModal} show={this.state.showDeleteModal} didDelete={() => this.showDeleteModal(null)} didCancel={() => this.showDeleteModal(null)} onHide={() => this.showDeleteModal(null)} />
             </div>
         );
     }

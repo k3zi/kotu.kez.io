@@ -44,6 +44,20 @@ class ListsController: RouteCollection {
                 .map { listWord }
         }
 
+        word.delete(":wordID") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            guard let wordID = req.parameters.get("wordID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return user
+                .$listWords
+                .query(on: req.db)
+                .filter(\.$id == wordID)
+                .delete()
+                .map {
+                    Response(status: .ok)
+                }
+        }
+
         word.put(":wordID") { (req: Request) -> EventLoopFuture<ListWord> in
             let user = try req.auth.require(User.self)
             guard let wordID = req.parameters.get("wordID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
