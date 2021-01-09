@@ -44,6 +44,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(User.Migration2(), User.Migration3(), User.Migration5(), User.Migration6(), User.Migration7())
     app.migrations.add(Share.Migration2())
     app.migrations.add(Invite.Migration1())
+    app.migrations.add(ListWord.Migration(), ListWord.Migration1(), ListWord.Migration2(), ListWord.Migration3())
 
     try app.autoMigrate().wait()
 

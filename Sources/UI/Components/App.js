@@ -8,6 +8,7 @@ import 'intl-relative-time-format/locale-data/ja';
 import '../Styles/Custom.scss';
 
 import Badge from 'react-bootstrap/Badge';
+import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
@@ -22,6 +23,7 @@ import Home from './Home';
 
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
+import SearchResultModal from './SearchResultModal';
 
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
@@ -32,13 +34,15 @@ import FlashcardNoteTypes from './Flashcard/NoteTypes';
 import FlashcardNoteType from './Flashcard/NoteType';
 import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
 
+import ListsWords from './Lists/Words';
+
 import MediaYouTubePlayer from './Media/YouTubePlayer';
 
-import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs'
+import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
 
-import AdminUsers from './Admin/Users'
+import AdminUsers from './Admin/Users';
 
-import ResetPassword from './ResetPassword'
+import ResetPassword from './ResetPassword';
 
 import UserContext from './Context/User';
 
@@ -57,10 +61,7 @@ class App extends React.Component {
 
             query: '',
             results: [],
-            isLoading: true,
-            isFocused: false,
-            selectedResult: null,
-            selectedResultHTML: ''
+            headword: null
         };
     }
 
@@ -159,15 +160,14 @@ class App extends React.Component {
         this.setState({ query, results: [], isLoading: true });
         if (query.length === 0) return;
         const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
-        const results = await response.json();
-        this.setState({ results, isLoading: false });
+        if (response.ok) {
+            const results = await response.json();
+            this.setState({ results, isLoading: false });
+        }
     }
 
-    async loadResult(headword) {
-        this.setState({ selectedResult: headword, isLoading: true });
-        const response = await fetch(`/api/dictionary/entry/${headword.id}`);
-        const result = await response.text();
-        this.setState({ selectedResultHTML: result, isLoading: false });
+    loadResult(headword) {
+        this.setState({ headword: headword });
     }
 
     loginProtect(view) {
@@ -193,7 +193,7 @@ class App extends React.Component {
                             </LinkContainer>
                             {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
                                 <LinkContainer exact to="/transcription">
-                                    <Nav.Link active={false}>Transcription</Nav.Link>
+                                    <Nav.Link active={false}>Transcribe</Nav.Link>
                                 </LinkContainer>
 
                                 <NavDropdown title={<>Anki{this.state.numberOfReviews > 0 && <Badge className="ms-2 bg-secondary">{this.state.numberOfReviews}</Badge>}</>}>
@@ -207,7 +207,19 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>Browse Cards</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
-                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Create Note</NavDropdown.Item>
+                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
+                                </NavDropdown>
+
+                                <NavDropdown title='Lists'>
+                                    <LinkContainer to="/lists/words">
+                                        <NavDropdown.Item active={false}>Words</NavDropdown.Item>
+                                    </LinkContainer>
+                                    <LinkContainer to="/lists/sentences">
+                                        <NavDropdown.Item active={false}>Sentences</NavDropdown.Item>
+                                    </LinkContainer>
+                                    <NavDropdown.Divider />
+                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Word</NavDropdown.Item>
+                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Sentence</NavDropdown.Item>
                                 </NavDropdown>
 
                                 <NavDropdown title='Media'>
@@ -286,6 +298,10 @@ class App extends React.Component {
                                 {this.loginProtect(<FlashcardNoteType />)}
                             </Route>
 
+                            <Route path="/lists/words">
+                                {this.loginProtect(<ListsWords />)}
+                            </Route>
+
                             <Route path="/media/youtube">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
                             </Route>
@@ -307,16 +323,7 @@ class App extends React.Component {
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
-
-                    {this.state.selectedResult && <Modal size="lg" show={!!this.state.selectedResult} onHide={() => this.setState({ selectedResult: null, selectedResultHTML: '', isFocused: false })} centered>
-                        <Modal.Header closeButton>
-                            <Modal.Title>{this.state.selectedResult.headline}</Modal.Title>
-                        </Modal.Header>
-                        <Modal.Body>
-                            {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
-                            {!this.state.isLoading && <iframe className="col-12" style={{ height: '60vh' }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
-                        </Modal.Body>
-                    </Modal>}
+                    <SearchResultModal headword={this.state.headword} show={!!this.state.headword} onHide={() => this.setState({ headword: null, isFocused: false })} />
                 </Router>
             </UserContext.Provider>
         );

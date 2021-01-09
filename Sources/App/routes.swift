@@ -12,6 +12,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: MediaController())
     try api.register(collection: TestsController())
     try api.register(collection: AdminController())
+    try api.register(collection: ListsController())
 
     api.get("me") { req -> User in
         return try req.auth.require(User.self)

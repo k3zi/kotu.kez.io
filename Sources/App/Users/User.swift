@@ -50,6 +50,11 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var files: [File]
 
+    // MARK: Lists
+
+    @Children(for: \.$owner)
+    var listWords: [ListWord]
+
     init() { }
 
     init(id: UUID? = nil, username: String, passwordHash: String) {
