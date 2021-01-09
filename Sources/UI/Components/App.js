@@ -218,7 +218,6 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>Sentences</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
-                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Word</NavDropdown.Item>
                                     <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Sentence</NavDropdown.Item>
                                 </NavDropdown>
 

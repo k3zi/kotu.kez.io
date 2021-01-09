@@ -15,11 +15,10 @@ class ListsController: RouteCollection {
             let isLookup = (try? req.query.get(Bool.self, at: "isLookup")) ?? false
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
-            let modifiedQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
             return user
                 .$listWords
                 .query(on: req.db)
-                .filter(\.$value =~ modifiedQuery)
+                .filter(\.$value =~ q)
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMap { word in
