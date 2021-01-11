@@ -9,7 +9,7 @@ public func configure(_ app: Application) throws {
     app.redis.configuration = try RedisConfiguration(hostname: "127.0.0.1")
     app.sessions.use(.redis)
 
-    app.routes.defaultMaxBodySize = "10mb"
+    app.routes.defaultMaxBodySize = "100mb"
 
     app.databases.use(.postgres(
         hostname: "localhost",

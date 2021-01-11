@@ -151,7 +151,7 @@ class ListsController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        sentence.post("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
+        sentence.on(.POST, "parse", body: .collect(maxSize: "500mb")) { (req: Request) -> EventLoopFuture<[ParseResult]> in
             req.logger.info("parse method")
             let user = try req.auth.require(User.self)
             req.logger.info("parse: user loaded")
