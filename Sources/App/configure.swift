@@ -16,7 +16,9 @@ public func configure(_ app: Application) throws {
         port: PostgresConfiguration.ianaPortNumber,
         username: Config.shared.databaseUsername,
         password: Config.shared.databasePassword,
-        database: Config.shared.databaseName
+        database: Config.shared.databaseName,
+        maxConnectionsPerEventLoop: 32,
+        connectionPoolTimeout: .hours(1)
     ), as: .psql)
 
     app.migrations.add(User.Migration())
