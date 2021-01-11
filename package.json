@@ -47,6 +47,7 @@
     },
     "dependencies": {
         "@mozilla/readability": "^0.4.0",
+        "pako": "^2.0.3",
         "react-bootstrap": "k3zi/react-bootstrap#bs5-dev",
         "yarn": "^1.22.10"
     }

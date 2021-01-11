@@ -1,6 +1,7 @@
 import React from 'react';
 import { Readability } from '@mozilla/readability';
 import { LinkContainer } from 'react-router-bootstrap';
+import { gzip } from 'pako';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -50,7 +51,10 @@ class Reader extends React.Component {
 
         const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
             method: 'POST',
-            body: article.textContent
+            body: await gzip(article.textContent),
+            headers: {
+                'Content-Encoding': 'gzip'
+            }
         });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);
@@ -72,7 +76,10 @@ class Reader extends React.Component {
         this.currentRequestID = requestID;
         const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
             method: 'POST',
-            body: text
+            body: await gzip(text),
+            headers: {
+                'Content-Encoding': 'gzip'
+            }
         });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);
