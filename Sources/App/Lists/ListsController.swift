@@ -152,8 +152,12 @@ class ListsController: RouteCollection {
         }
 
         sentence.post("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
+            req.logger.info("parse method")
             let user = try req.auth.require(User.self)
+            req.logger.info("parse: user loaded")
+            req.logger.info("body: \(req.body.string ?? "none")")
             guard let sentence = req.body.string, sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
+            print("sentence loaded")
             let mecab = try Mecab()
             req.logger.info("mecab instantiated")
             let nodes = try mecab.tokenize(string: sentence)
