@@ -1,14 +1,5 @@
-import Foundation
 import Fluent
 import Vapor
-
-extension Data {
-    var stringEncoding: String.Encoding? {
-        var nsString: NSString?
-        guard case let rawValue = NSString.stringEncoding(for: self, encodingOptions: nil, convertedString: &nsString, usedLossyConversion: nil), rawValue != 0 else { return nil }
-        return .init(rawValue: rawValue)
-    }
-}
 
 func routes(_ app: Application) throws {
 
@@ -34,9 +25,7 @@ func routes(_ app: Application) throws {
                 ("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
             ]))
                 .map { response in
-                    let data = Data(buffer: response.body ?? .init())
-                    let encoding = data.stringEncoding
-                    return String(data: data, encoding: encoding ?? .utf8) ?? ""
+                    String(buffer: response.body ?? .init())
                 }
         }
 
