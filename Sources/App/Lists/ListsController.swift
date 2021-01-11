@@ -156,7 +156,9 @@ class ListsController: RouteCollection {
             let sentence = try req.content.get(String.self, at: "sentence").trimmingCharacters(in: .whitespacesAndNewlines)
             guard sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
             let mecab = try Mecab()
+            req.logger.info("mecab instantiated")
             let nodes = try mecab.tokenize(string: sentence)
+            req.logger.info("mecab: \(nodes.count) nodes")
             let resultsFutures: [EventLoopFuture<(Node, [Headword])>] = nodes.map { node in
                 if node.shouldIgnore(for: user) {
                     return req.eventLoop.future((node, []))
@@ -167,7 +169,8 @@ class ListsController: RouteCollection {
                     .limit(5)
                     .all()
                     .map {
-                        (node, $0)
+                        req.logger.info("map: \(node.original) / \($0.count) headwords")
+                        return (node, $0)
                     }
             }
             let resultsFuture = EventLoopFuture.whenAllSucceed(resultsFutures, on: req.eventLoop)
@@ -176,7 +179,8 @@ class ListsController: RouteCollection {
                 .all()
                 .and(resultsFuture)
                 .map { (listWords, results) in
-                    results.map { (node, headwords) in
+                    req.logger.info("parse: \(listWords.count) listWords & \(results.count) results")
+                    return results.map { (node, headwords) in
                         let frequencyItem = DictionaryManager.shared.frequencyList[node.original] ?? DictionaryManager.shared.frequencyList[node.surface]
                         return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
