@@ -61,7 +61,7 @@ class Words extends React.Component {
                         <tr>
                             <th className="text-center col-3">Word</th>
                             <th className="text-center col-auto">Note</th>
-                            <th className="text-center col-1">Lookups</th>
+                            <th className="text-center col-1">Lookup(s)</th>
                             <th className="text-center col-1">Actions</th>
                         </tr>
                     </thead>

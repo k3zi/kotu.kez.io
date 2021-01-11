@@ -1,6 +1,12 @@
 // swift-tools-version:5.2
 import PackageDescription
 
+#if os(macOS)
+    let CMeCab = "CMeCabOSX"
+#else
+    let CMeCab = "CMeCab"
+#endif
+
 let package = Package(
     name: "kotu.kez.io",
     platforms: [
@@ -24,7 +30,8 @@ let package = Package(
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Redis", package: "redis"),
-                .product(name: "Gzip", package: "Gzip")
+                .product(name: "Gzip", package: "Gzip"),
+                .target(name: "MeCab")
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
@@ -33,6 +40,20 @@ let package = Package(
                 .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
             ]
         ),
+        .target(
+            name: "MeCab",
+            dependencies: [
+                .target(name: CMeCab)
+            ],
+            cSettings: [
+                .unsafeFlags(["-I/usr/local/include/"])
+            ],
+            swiftSettings: [
+                .unsafeFlags(["-I/usr/local/include/"])
+            ],
+            linkerSettings: [.unsafeFlags(["-L/usr/local/lib", ])]
+        ),
+        .systemLibrary(name: CMeCab),
         .target(
             name: "Run",
             dependencies: [

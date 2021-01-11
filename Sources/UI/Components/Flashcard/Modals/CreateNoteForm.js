@@ -116,6 +116,14 @@ class CreateNoteForm extends React.Component {
         }
     }
 
+    onTextChange(e, i) {
+        let update = !this.state.fieldValues.some(f => f.value.trim().length > 0);
+        this.state.fieldValues[i].value = e.target.value;
+        if (update) {
+            this.setState({ fieldValues: this.state.fieldValues });
+        }
+    }
+
     render() {
         return (
             <div {...this.props}>
@@ -145,7 +153,7 @@ class CreateNoteForm extends React.Component {
                     {this.state.noteType && this.state.noteType.fields.map((field, i) => {
                         return <Form.Group key={i} className='mt-2'>
                             <Form.Label>{field.name}</Form.Label>
-                            <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => { this.state.fieldValues[i].value = e.target.value; }} className='form-control h-auto text-break plaintext' />
+                            <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext' />
                         </Form.Group>;
                     })}
 
@@ -156,7 +164,7 @@ class CreateNoteForm extends React.Component {
                         {this.state.message}
                     </Alert>}
 
-                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType || !this.state.fieldValues.some(f => f.value.length > 0)}>
+                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType || !this.state.fieldValues.some(f => f.value.trim().length > 0)}>
                         {this.state.isSubmitting ? 'Loading...' : 'Add'}
                     </Button>
                 </Form>

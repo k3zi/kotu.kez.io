@@ -55,6 +55,9 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var listWords: [ListWord]
 
+    @Field(key: "ignore_words")
+    var ignoreWords: [String]
+
     init() { }
 
     init(id: UUID? = nil, username: String, passwordHash: String) {
@@ -62,6 +65,7 @@ final class User: Model, Content {
         self.username = username
         self.passwordHash = passwordHash
         self.permissions = []
+        self.ignoreWords = []
     }
 
     func beforeEncode() throws {
@@ -188,8 +192,26 @@ extension User {
         }
     }
 
+    struct Migration8: Fluent.Migration {
+        var name: String { "AddUserIgnoreWords" }
 
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("ignore_words", .array(of: .string))
+                .update()
+                .flatMap {
+                    User.query(on: database)
+                        .set(\.$ignoreWords, to: [])
+                        .update()
+                }
+        }
 
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("ignore_words")
+                .update()
+        }
+    }
 
 }
 

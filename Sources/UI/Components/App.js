@@ -35,8 +35,10 @@ import FlashcardNoteType from './Flashcard/NoteType';
 import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
 
 import ListsWords from './Lists/Words';
+import AddSentenceModal from './AddSentenceModal';
 
 import MediaYouTubePlayer from './Media/YouTubePlayer';
+import MediaReader from './Media/Reader';
 
 import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
 
@@ -54,6 +56,7 @@ class App extends React.Component {
             showRegisterModal: false,
             showLoginModal: false,
             showCreateNoteModal: false,
+            showAddSentenceModal: false,
             user: null,
             isReady: false,
 
@@ -149,6 +152,10 @@ class App extends React.Component {
         this.setState({ showCreateNoteModal: show });
     }
 
+    toggleAddSentenceModal(show) {
+        this.setState({ showAddSentenceModal: show });
+    }
+
     async logout() {
         const response = await fetch('/api/auth/logout');
         if (response.ok) {
@@ -218,12 +225,15 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>Sentences</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
-                                    <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Sentence</NavDropdown.Item>
+                                    <NavDropdown.Item onClick={() => this.toggleAddSentenceModal(true)}>Add Sentence</NavDropdown.Item>
                                 </NavDropdown>
 
                                 <NavDropdown title='Media'>
                                     <LinkContainer to="/media/youtube">
                                         <NavDropdown.Item active={false}>YouTube</NavDropdown.Item>
+                                    </LinkContainer>
+                                    <LinkContainer to="/media/reader">
+                                        <NavDropdown.Item active={false}>Reader</NavDropdown.Item>
                                     </LinkContainer>
                                 </NavDropdown>
 
@@ -242,7 +252,7 @@ class App extends React.Component {
                                 </>}
                             </Nav>}
                         </div>
-                        {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-6 d-inline order-3 order-xl-1">
+                        {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-4 d-inline order-3 order-xl-1">
                             <Dropdown>
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
@@ -304,6 +314,9 @@ class App extends React.Component {
                             <Route path="/media/youtube">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
                             </Route>
+                            <Route path="/media/reader">
+                                {this.loginProtect(<MediaReader />)}
+                            </Route>
 
                             <Route path="/admin/users">
                                 {this.loginProtect(<AdminUsers />)}
@@ -322,6 +335,7 @@ class App extends React.Component {
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
+                    <AddSentenceModal show={this.state.showAddSentenceModal} onHide={() => this.toggleAddSentenceModal(false)} onSuccess={() => this.toggleAddSentenceModal(false)} />
                     <SearchResultModal headword={this.state.headword} show={!!this.state.headword} onHide={() => this.setState({ headword: null, isFocused: false })} />
                 </Router>
             </UserContext.Provider>

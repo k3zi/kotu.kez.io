@@ -1,0 +1,5 @@
+module CMeCabOSX [system] {
+    header "/usr/local/include/mecab.h"
+    link "mecab"
+    export *
+}

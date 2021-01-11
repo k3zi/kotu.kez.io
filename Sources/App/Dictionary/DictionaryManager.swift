@@ -63,6 +63,16 @@ struct DictionaryManager {
         let directory = app.directory.workingDirectory
         let directoryURL = URL(fileURLWithPath: directory)
 
+        var frequencyList: [FrequencyListElement] = []
+        let frequencyListURL = directoryURL.appendingPathComponent("../Dictionaries/frequency_lists/netflix/word_freq_report.txt")
+        if let frequencyListString = try? String(contentsOf: frequencyListURL) {
+            let arrays = frequencyListString.split(separator: "\r\n").map { $0.split(separator: "\t").map { String($0) } }
+            
+            if let data = try? JSONEncoder().encode(arrays), let list = try? JSONDecoder().decode([FrequencyListElement].self, from: data) {
+                frequencyList = list
+            }
+        }
+
         return Dictionary
             .query(on: app.db)
             .all()
@@ -92,7 +102,8 @@ struct DictionaryManager {
                     containers: containers,
                     cssStrings: cssStrings,
                     cssWordMappings: cssWordMappings,
-                    contentIndexes: contentIndexes
+                    contentIndexes: contentIndexes,
+                    frequencyList: frequencyList
                 )
             }
     }
@@ -101,5 +112,6 @@ struct DictionaryManager {
     let cssStrings: [String: String]
     let cssWordMappings: [String: [String: String]]
     let contentIndexes: [String: ContentIndex]
+    let frequencyList: [FrequencyListElement]
 
 }

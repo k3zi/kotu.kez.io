@@ -1,5 +1,46 @@
 import Fluent
+import MeCab
 import Vapor
+
+extension Node {
+
+    var original: String {
+        (features.count > 7 ? features[7] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
+    }
+
+    var partOfSpeech: String {
+        features[0]
+    }
+
+    var isGenerallyIgnored: Bool {
+        ["連体詞", "助詞", "補助記号", "助動詞"].contains(partOfSpeech)
+    }
+
+    func shouldIgnore(for user: User) -> Bool {
+        isBasic || user.ignoreWords.contains(original)
+    }
+
+    var isBasic: Bool {
+        isBosEos || isGenerallyIgnored
+    }
+
+    var shouldDisplay: Bool {
+        !isBosEos
+    }
+
+}
+
+struct ParseResult: Content {
+
+    let surface: String
+    let original: String
+    let shouldDisplay: Bool
+    let isBasic: Bool
+    let frequency: Frequency
+    let headwords: [Headword]
+    let listWords: [ListWord]
+
+}
 
 class ListsController: RouteCollection {
 
@@ -9,6 +50,7 @@ class ListsController: RouteCollection {
 
         let word = dictionary.grouped("word")
         let words = dictionary.grouped("words")
+        let sentence = dictionary.grouped("sentence")
 
         word.get("first") { (req: Request) -> EventLoopFuture<ListWord> in
             let user = try req.auth.require(User.self)
@@ -89,6 +131,50 @@ class ListsController: RouteCollection {
                 .query(on: req.db)
                 .sort(\.$createdAt, .descending)
                 .all()
+        }
+
+        sentence.put("ignore") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let word = try req.content.get(String.self, at: "word").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard word.count > 0 else { throw Abort(.badRequest, reason: "Empty word passed.") }
+
+            if !user.ignoreWords.contains(word) {
+                user.ignoreWords.append(word)
+            }
+            return user.save(on: req.db)
+                .map { Response(status: .ok) }
+        }
+
+        sentence.get("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
+            let user = try req.auth.require(User.self)
+            let sentence = try req.query.get(String.self, at: "sentence").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
+            let mecab = try Mecab()
+            let nodes = try mecab.tokenize(string: sentence)
+            let resultsFutures: [EventLoopFuture<(Node, [Headword])>] = nodes.map { node in
+                if node.shouldIgnore(for: user) {
+                    return req.eventLoop.future((node, []))
+                }
+                return Headword.query(on: req.db)
+                    .filter(\.$text == node.original.applyingTransform(.hiraganaToKatakana, reverse: false) ?? node.original)
+                    .sort(\.$text)
+                    .limit(5)
+                    .all()
+                    .map {
+                        (node, $0)
+                    }
+            }
+            let resultsFuture = EventLoopFuture.whenAllSucceed(resultsFutures, on: req.eventLoop)
+
+            return user.$listWords.query(on: req.db)
+                .all()
+                .and(resultsFuture)
+                .map { (listWords, results) in
+                    results.map { (node, headwords) in
+                        let frequencyItem = DictionaryManager.shared.frequencyList.first { $0.word == node.original || $0.word == node.surface }
+                        return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
+                    }
+                }
         }
     }
 

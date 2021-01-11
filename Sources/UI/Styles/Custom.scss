@@ -336,7 +336,83 @@ hr {
     opacity: 1 !important;
 }
 
+.alert hr {
+    border: 1px solid currentColor !important;
+}
+
 .gutter-margin {
     width: calc(100% - 1.5rem) !important;
     margin-left: 0.75rem;
+}
+
+.bg-veryCommon {
+    background-color: $cyan;
+}
+
+.bg-common {
+    background-color: $teal;
+}
+
+.bg-uncommon {
+    background-color: $yellow;
+}
+
+.bg-rare {
+    background-color: $orange;
+}
+
+.bg-veryRare {
+    background-color: $red;
+}
+
+.bg-unknown {
+    background-color: $gray-500;
+}
+
+.underline {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25rem;
+}
+
+.underline-veryCommon {
+    text-decoration-color: $cyan;
+}
+
+.underline-common {
+    text-decoration-color: $teal;
+}
+
+.underline-uncommon {
+    text-decoration-color: $yellow;
+}
+
+.underline-rare {
+    text-decoration-color: $orange;
+}
+
+.underline-veryRare {
+    text-decoration-color: $red;
+}
+
+.underline-unknown {
+    text-decoration-color: $gray-500;
+}
+
+.page {
+    line-height: 2rem;
+    font-size: 1.25rem;
+}
+
+.page span {
+    padding: 1px;
+}
+
+.page img {
+    max-width: 100%;
+}
+
+rt .underline {
+    text-decoration: none;
+    padding: 0;
 }
