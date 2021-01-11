@@ -10,6 +10,8 @@ public func configure(_ app: Application) throws {
     app.sessions.use(.redis)
 
     app.routes.defaultMaxBodySize = "100mb"
+    app.http.server.configuration.requestDecompression = .enabled
+    app.http.server.configuration.supportPipelining = true
 
     app.databases.use(.postgres(
         hostname: "localhost",
