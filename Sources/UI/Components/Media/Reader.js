@@ -50,12 +50,7 @@ class Reader extends React.Component {
 
         const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
             method: 'POST',
-            body: JSON.stringify({
-                sentence: article.textContent
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            body: article.textContent
         });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);
@@ -77,12 +72,7 @@ class Reader extends React.Component {
         this.currentRequestID = requestID;
         const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
             method: 'POST',
-            body: JSON.stringify({
-                sentence: text
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            body: text
         });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);

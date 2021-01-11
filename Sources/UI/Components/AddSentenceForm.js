@@ -33,12 +33,7 @@ class AddSentenceForm extends React.Component {
         this.currentSentence = sentence;
         const response = await fetch(`/api/lists/sentence/parse`, {
             method: 'POST',
-            body: JSON.stringify({
-                sentence
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            body: sentence
         });
         if (response.ok && this.currentSentence === sentence) {
             const nodes = await response.json();
