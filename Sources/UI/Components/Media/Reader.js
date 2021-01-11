@@ -44,10 +44,19 @@ class Reader extends React.Component {
         const response = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
         const html = await response.text();
         const doc = document.implementation.createHTMLDocument(url);
-        doc.documentElement.innerHTML = html.replace('<title>', `<base href="${new URL(url).origin}">\n<title>`);
+        doc.documentElement.innerHTML = html
+            .replace('<title>', `<base href="${new URL(url).origin}">\n<title>`);
         const article = new Readability(doc).parse();
 
-        const sentenceResponse = await fetch(`/api/lists/sentence/parse?sentence=${encodeURIComponent(article.textContent)}`);
+        const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
+            method: 'POST',
+            body: JSON.stringify({
+                sentence: article.textContent
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);
         if (requestID != this.currentRequestID) return;
@@ -66,7 +75,15 @@ class Reader extends React.Component {
         }
         const requestID = this.currentRequestID + 1;
         this.currentRequestID = requestID;
-        const sentenceResponse = await fetch(`/api/lists/sentence/parse?sentence=${encodeURIComponent(text)}`);
+        const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
+            method: 'POST',
+            body: JSON.stringify({
+                sentence: text
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         let nodes = await sentenceResponse.json();
         nodes = nodes.filter(n => n.shouldDisplay);
         if (requestID != this.currentRequestID) return;

@@ -103,7 +103,7 @@ struct DictionaryManager {
                     cssStrings: cssStrings,
                     cssWordMappings: cssWordMappings,
                     contentIndexes: contentIndexes,
-                    frequencyList: frequencyList
+                    frequencyList: Swift.Dictionary(uniqueKeysWithValues: frequencyList.map { ($0.word, $0) })
                 )
             }
     }
@@ -112,6 +112,6 @@ struct DictionaryManager {
     let cssStrings: [String: String]
     let cssWordMappings: [String: [String: String]]
     let contentIndexes: [String: ContentIndex]
-    let frequencyList: [FrequencyListElement]
+    let frequencyList: [String: FrequencyListElement]
 
 }

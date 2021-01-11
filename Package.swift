@@ -51,7 +51,7 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-I/usr/local/include/"])
             ],
-            linkerSettings: [.unsafeFlags(["-L/usr/local/lib", ])]
+            linkerSettings: [.unsafeFlags(["-L/opt/homebrew/lib", "-L/usr/local/lib"])]
         ),
         .systemLibrary(name: CMeCab),
         .target(

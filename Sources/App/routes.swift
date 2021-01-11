@@ -25,7 +25,8 @@ func routes(_ app: Application) throws {
                 ("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
             ]))
                 .map { response in
-                    String(buffer: response.body ?? .init())
+                    let data = Data(buffer: response.body ?? .init())
+                    return String(data: data, encoding: .utf8) ?? String(data: data, encoding: .shiftJIS) ?? ""
                 }
         }
 

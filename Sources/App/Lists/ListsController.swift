@@ -12,8 +12,14 @@ extension Node {
         features[0]
     }
 
+    var partOfSpeechSubType: String {
+        features[1]
+    }
+
     var isGenerallyIgnored: Bool {
-        ["連体詞", "助詞", "補助記号", "助動詞"].contains(partOfSpeech)
+        ["連体詞", "助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
+            ||
+        ["数詞"].contains(partOfSpeechSubType)
     }
 
     func shouldIgnore(for user: User) -> Bool {
@@ -145,9 +151,9 @@ class ListsController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        sentence.get("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
+        sentence.post("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
             let user = try req.auth.require(User.self)
-            let sentence = try req.query.get(String.self, at: "sentence").trimmingCharacters(in: .whitespacesAndNewlines)
+            let sentence = try req.content.get(String.self, at: "sentence").trimmingCharacters(in: .whitespacesAndNewlines)
             guard sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
             let mecab = try Mecab()
             let nodes = try mecab.tokenize(string: sentence)
@@ -171,7 +177,7 @@ class ListsController: RouteCollection {
                 .and(resultsFuture)
                 .map { (listWords, results) in
                     results.map { (node, headwords) in
-                        let frequencyItem = DictionaryManager.shared.frequencyList.first { $0.word == node.original || $0.word == node.surface }
+                        let frequencyItem = DictionaryManager.shared.frequencyList[node.original] ?? DictionaryManager.shared.frequencyList[node.surface]
                         return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
                 }

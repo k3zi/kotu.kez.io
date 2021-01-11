@@ -31,12 +31,20 @@ class AddSentenceForm extends React.Component {
 
     async load(sentence) {
         this.currentSentence = sentence;
-        const response = await fetch(`/api/lists/sentence/parse?sentence=${encodeURIComponent(sentence)}`);
+        const response = await fetch(`/api/lists/sentence/parse`, {
+            method: 'POST',
+            body: JSON.stringify({
+                sentence
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         if (response.ok && this.currentSentence === sentence) {
             const nodes = await response.json();
             this.setState({
                 sentence,
-                nodes: nodes.filter(n => n.listWords.length === 0 && n.headwords.length > 0)
+                nodes: nodes.filter(n => !n.isBasic && n.listWords.length === 0 && n.headwords.length > 0)
             });
         }
     }
