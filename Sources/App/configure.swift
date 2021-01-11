@@ -17,7 +17,7 @@ public func configure(_ app: Application) throws {
         username: Config.shared.databaseUsername,
         password: Config.shared.databasePassword,
         database: Config.shared.databaseName,
-        maxConnectionsPerEventLoop: 32,
+        maxConnectionsPerEventLoop: 128,
         connectionPoolTimeout: .hours(1)
     ), as: .psql)
 
