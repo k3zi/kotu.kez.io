@@ -2,6 +2,15 @@ import Fluent
 import MeCab
 import Vapor
 
+extension String {
+
+    var moraCount: Int {
+        trimmingCharacters(in: .init(charactersIn: "ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮぁぃぅぇぉゃゅょゎ"))
+            .count
+    }
+
+}
+
 extension Node {
 
     var original: String {
@@ -16,8 +25,41 @@ extension Node {
         features[1]
     }
 
+    var pronunciation: String {
+        features[6]
+    }
+
+    var pitchAccentInteger: Int? {
+        Int(features.count > 24 ? features[24] : "") ?? Int(features.count > 25 ? features[25] : "")
+    }
+
+    var pitchAccent: PitchAccent {
+        guard let i = pitchAccentInteger else {
+            return .unknown
+        }
+        let c = pronunciation.moraCount
+
+        if i == 0 {
+            return .heiban
+        }
+
+        if partOfSpeech == "動詞" || partOfSpeech == "形容詞" {
+            return .kihuku
+        }
+
+        if i == c {
+            return .odaka
+        }
+
+        if i == 1 {
+            return .atamadaka
+        }
+
+        return .nakadaka
+    }
+
     var isGenerallyIgnored: Bool {
-        ["連体詞", "助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
+        ["助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
             ||
         ["数詞"].contains(partOfSpeechSubType)
     }
@@ -36,6 +78,17 @@ extension Node {
 
 }
 
+enum PitchAccent: String, Content {
+
+    case heiban
+    case kihuku
+    case odaka
+    case nakadaka
+    case atamadaka
+    case unknown
+
+}
+
 struct ParseResult: Content {
 
     let surface: String
@@ -43,6 +96,7 @@ struct ParseResult: Content {
     let shouldDisplay: Bool
     let isBasic: Bool
     let frequency: Frequency
+    let pitchAccent: PitchAccent
     let headwords: [Headword]
     let listWords: [ListWord]
 
@@ -151,17 +205,11 @@ class ListsController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        sentence.on(.POST, "parse", body: .collect(maxSize: "500mb")) { (req: Request) -> EventLoopFuture<[ParseResult]> in
-            req.logger.info("parse method")
+        sentence.post("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
             let user = try req.auth.require(User.self)
-            req.logger.info("parse: user loaded")
-            req.logger.info("body: \(req.body.string ?? "none")")
             guard let sentence = req.body.string, sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
-            print("sentence loaded")
             let mecab = try Mecab()
-            req.logger.info("mecab instantiated")
             let nodes = try mecab.tokenize(string: sentence)
-            req.logger.info("mecab: \(nodes.count) nodes")
             let resultsFutures: [EventLoopFuture<(Node, [Headword])>] = nodes.map { node in
                 if node.shouldIgnore(for: user) {
                     return req.eventLoop.future((node, []))
@@ -182,10 +230,9 @@ class ListsController: RouteCollection {
                 .all()
                 .and(resultsFuture)
                 .map { (listWords, results) in
-                    req.logger.info("parse: \(listWords.count) listWords & \(results.count) results")
                     return results.map { (node, headwords) in
                         let frequencyItem = DictionaryManager.shared.frequencyList[node.original] ?? DictionaryManager.shared.frequencyList[node.surface]
-                        return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
+                        return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccent, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
                 }
         }

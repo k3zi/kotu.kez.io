@@ -26,7 +26,7 @@ func routes(_ app: Application) throws {
             ]))
                 .map { response in
                     let data = Data(buffer: response.body ?? .init())
-                    return String(data: data, encoding: .utf8) ?? String(data: data, encoding: .shiftJIS) ?? ""
+                    return String(data: data, encoding: .utf8) ?? String(data: data, encoding: .shiftJIS) ?? String(data: data, encoding: .japaneseEUC) ?? ""
                 }
         }
 

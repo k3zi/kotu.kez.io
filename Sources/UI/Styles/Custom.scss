@@ -369,34 +369,89 @@ hr {
     background-color: $gray-500;
 }
 
-.underline {
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.25rem;
+.bg-heiban {
+    background-color: $cyan;
 }
 
-.underline-veryCommon {
-    text-decoration-color: $cyan;
+.bg-odaka {
+    background-color: $teal;
 }
 
-.underline-common {
-    text-decoration-color: $teal;
+.bg-nakadaka {
+    background-color: $orange;
 }
 
-.underline-uncommon {
-    text-decoration-color: $yellow;
+.bg-kihuku {
+    background-color: $purple;
 }
 
-.underline-rare {
-    text-decoration-color: $orange;
+.bg-atamadaka {
+    background-color: $red;
 }
 
-.underline-veryRare {
-    text-decoration-color: $red;
+.visual-type-showFrequency {
+    .underline {
+        text-decoration: underline;
+        text-decoration-color: transparent;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 0.25rem;
+    }
+
+    .underline-veryCommon {
+        text-decoration-color: $cyan;
+    }
+
+    .underline-common {
+        text-decoration-color: $teal;
+    }
+
+    .underline-uncommon {
+        text-decoration-color: $yellow;
+    }
+
+    .underline-rare {
+        text-decoration-color: $orange;
+    }
+
+    .underline-veryRare {
+        text-decoration-color: $red;
+    }
+    .underline-unknown {
+        text-decoration-color: $gray-500;
+    }
 }
 
-.underline-unknown {
-    text-decoration-color: $gray-500;
+.visual-type-showPitchAccent {
+    .underline {
+        text-decoration: underline;
+        text-decoration-color: transparent;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 0.25rem;
+    }
+
+    .underline-pitch-heiban {
+        text-decoration-color: $cyan;
+    }
+
+    .underline-pitch-odaka {
+        text-decoration-color: $teal;
+    }
+
+    .underline-pitch-nakadaka {
+        text-decoration-color: $orange;
+    }
+
+    .underline-pitch-kihuku {
+        text-decoration-color: $purple;
+    }
+
+    .underline-pitch-atamadaka {
+        text-decoration-color: $red;
+    }
+
+    .underline-pitch-unknown {
+        // text-decoration-color: $gray-500;
+    }
 }
 
 .page {
@@ -413,6 +468,6 @@ hr {
 }
 
 rt .underline {
-    text-decoration: none;
+    text-decoration: none !important;
     padding: 0;
 }

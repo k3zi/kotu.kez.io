@@ -6,11 +6,13 @@ import { gzip } from 'pako';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
+import ToggleButton from 'react-bootstrap/ToggleButton';
 import Spinner from 'react-bootstrap/Spinner';
 import YouTube from 'react-youtube';
 
@@ -23,7 +25,8 @@ class Reader extends React.Component {
         this.state = {
             isLoading: false,
             article: null,
-            html: null
+            html: null,
+            visualType: 'showFrequency'
         };
         this.currentRequestID = 0;
     }
@@ -47,6 +50,21 @@ class Reader extends React.Component {
         const doc = document.implementation.createHTMLDocument(url);
         doc.documentElement.innerHTML = html
             .replace('<title>', `<base href="${new URL(url).origin}">\n<title>`);
+        doc.documentElement.querySelectorAll('rp').forEach(item => {
+            item.parentNode.removeChild(item);
+        });
+        doc.documentElement.querySelectorAll('rt').forEach(item => {
+            item.parentNode.removeChild(item);
+        });
+        doc.documentElement.innerHTML = doc.documentElement.innerHTML
+            .replace(/<ruby>/g, '')
+            .replace(/<\/ruby>/g, '')
+            .replace(/<rb>/g, '')
+            .replace(/<\/rb>/g, '')
+            .replace(/<rt>/g, '')
+            .replace(/<\/rt>/g, '')
+            .replace(/<rp>/g, '')
+            .replace(/<\/rp>/g, '');
         const article = new Readability(doc).parse();
 
         const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
@@ -62,6 +80,7 @@ class Reader extends React.Component {
 
         const articleContent = document.createElement('div');
         articleContent.innerHTML = article.content;
+        console.log(article.content);
         this.loadElement(articleContent, nodes);
         if (requestID != this.currentRequestID) return;
         this.setState({ isLoading: false, article, html: articleContent.innerHTML });
@@ -108,11 +127,13 @@ class Reader extends React.Component {
             let startIndex = 0;
             let node = nodes[nodeIndex];
             let index = text.indexOf(node.surface, startIndex);
+            console.log('looking for ' + node.surface);
             while (index != -1) {
+                console.log('looking for ' + node.surface);
                 if (node.isBasic) {
                     newText += `<span>${node.surface}</span>`;
                 } else {
-                    newText += `<span class='underline underline-${node.frequency}'>${node.surface}</span>`;
+                    newText += `<span class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.surface}</span>`;
                 }
 
                 nodeIndex += 1;
@@ -142,16 +163,49 @@ class Reader extends React.Component {
             <Row>
                 <Col xs={12} md={7}>
                     <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
-                    {this.state.html && <div className='p-3' dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
-                    {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+                    <ButtonGroup className='my-3 d-flex' toggle>
+                        {[{ name: 'Show Frequency', value: 'showFrequency' }, { name: 'Show Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
+                            <ToggleButton
+                                id={`visualType${item.value}`}
+                                key={i}
+                                type="radio"
+                                variant="secondary"
+                                name="visualType"
+                                value={item.value}
+                                checked={this.state.visualType === item.value}
+                                onChange={(e) => this.setState({ visualType: e.target.value })}>
+                            {item.name}
+                            </ToggleButton>
+                        ))}
+                    </ButtonGroup>
+                    {this.state.visualType === 'showFrequency' && <>
+                        {[
+                            { name: 'Very Common', value: 'veryCommon' },
+                            { name: 'Common', value: 'common' },
+                            { name: 'Uncommon', value: 'uncommon' },
+                            { name: 'Rare', value: 'rare' },
+                            { name: 'Very Rare', value: 'veryRare' },
+                            { name: 'Unknown', value: 'unknown' }
+                        ].map(item => (
+                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                        ))}
+                    </>}
+
+                    {this.state.visualType === 'showPitchAccent' && <>
+                        {[
+                            { name: 'Heiban (平板)', value: 'heiban' },
+                            { name: 'Kihuku (起伏)', value: 'kihuku' },
+                            { name: 'Odaka (尾高)', value: 'odaka' },
+                            { name: 'Nakadaka (中高)', value: 'nakadaka' },
+                            { name: 'Atamadak (頭高)', value: 'atamadaka' },
+                            { name: 'Unknown (知らんw)', value: 'unknown' }
+                        ].map(item => (
+                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                        ))}
+                    </>}
                     <hr />
-                    <h4>Key</h4>
-                    <div className='d-flex mb-2'><Badge className='bg-veryCommon me-2'>{' '}</Badge> <span className='align-self-center'>Very Common</span></div>
-                    <div className='d-flex mb-2'><Badge className='bg-common me-2'>{' '}</Badge> <span className='align-self-center'>Common</span></div>
-                    <div className='d-flex mb-2'><Badge className='bg-uncommon me-2'>{' '}</Badge> <span className='align-self-center'>Uncommon</span></div>
-                    <div className='d-flex mb-2'><Badge className='bg-rare me-2'>{' '}</Badge> <span className='align-self-center'>Rare</span></div>
-                    <div className='d-flex mb-2'><Badge className='bg-veryRare me-2'>{' '}</Badge> <span className='align-self-center'>Very Rare</span></div>
-                    <div className='d-flex mb-2'><Badge className='bg-unknown me-2'>{' '}</Badge> <span className='align-self-center'>Unknown</span></div>
+                    {this.state.html && <div className={`p-3 visual-type-${this.state.visualType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
+                    {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                 </Col>
 
                 <Col xs={12} md={5}>
