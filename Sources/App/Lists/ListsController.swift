@@ -30,7 +30,9 @@ extension Node {
     }
 
     var pitchAccentInteger: Int? {
-        Int(features.count > 24 ? features[24] : "") ?? Int(features.count > 25 ? features[25] : "")
+        let feature24 = ((features.count > 24 ? features[24] : "").split(separator: ",").first ?? "").trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
+        let feature25 = ((features.count > 25 ? features[25] : "").split(separator: ",").first ?? "").trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
+        return Int(feature24) ?? Int(feature25)
     }
 
     var pitchAccent: PitchAccent {
