@@ -20,8 +20,11 @@ func routes(_ app: Application) throws {
 
     api.grouped(User.guardMiddleware())
         .get("proxy") { (req: Request) -> EventLoopFuture<String> in
-            let url = try req.query.get(String.self, at: "url")
-            return req.client.get(.init(string: url), headers: .init([
+            let urlString = try req.query.get(String.self, at: "url")
+            guard let _ = URL(string: urlString) else {
+                throw Abort(.badRequest)
+            }
+            return req.client.get(.init(string: urlString), headers: .init([
                 ("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
             ]))
                 .map { response in

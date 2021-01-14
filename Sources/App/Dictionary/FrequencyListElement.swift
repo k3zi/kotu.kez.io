@@ -1,15 +1,34 @@
 import Vapor
 
-enum Frequency: String, Content {
+enum Frequency: String, Content, Comparable {
     case veryCommon
     case common
     case uncommon
     case rare
     case veryRare
     case unknown
+
+    var rank: Int {
+        switch self {
+        case .veryCommon: return 1
+        case .common: return 2
+        case .uncommon: return 3
+        case .rare: return 4
+        case .veryRare: return 5
+        case .unknown: return 6
+        }
+    }
+
+    static func <(lhs: Frequency, rhs: Frequency) -> Bool {
+        return lhs.rank < rhs.rank
+    }
 }
 
-struct FrequencyListElement: Decodable {
+struct FrequencyListElement: Decodable, Comparable {
+
+    static func <(lhs: FrequencyListElement, rhs: FrequencyListElement) -> Bool {
+        return lhs.frequency < rhs.frequency
+    }
 
     let numberOfTimes: Int
     let word: String

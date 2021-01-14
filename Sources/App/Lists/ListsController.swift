@@ -235,7 +235,7 @@ class ListsController: RouteCollection {
                     return results.map { (node, headwords) in
                         let katakana = node.pronunciation
                         let hiragana = katakana.applyingTransform(.hiraganaToKatakana, reverse: true) ?? katakana
-                        let frequencyItem = DictionaryManager.shared.frequencyList[node.surface] ?? DictionaryManager.shared.frequencyList[hiragana] ?? DictionaryManager.shared.frequencyList[katakana] ?? DictionaryManager.shared.frequencyList[node.original]
+                        let frequencyItem = [DictionaryManager.shared.frequencyList[node.surface], DictionaryManager.shared.frequencyList[hiragana], DictionaryManager.shared.frequencyList[katakana], DictionaryManager.shared.frequencyList[node.original]].compactMap { $0 }.min()
                         return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccent, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
                 }
