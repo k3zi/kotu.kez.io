@@ -80,7 +80,6 @@ class Reader extends React.Component {
 
         const articleContent = document.createElement('div');
         articleContent.innerHTML = article.content;
-        console.log(article.content);
         this.loadElement(articleContent, nodes);
         if (requestID != this.currentRequestID) return;
         this.setState({ isLoading: false, article, html: articleContent.innerHTML });
@@ -127,9 +126,7 @@ class Reader extends React.Component {
             let startIndex = 0;
             let node = nodes[nodeIndex];
             let index = text.indexOf(node.surface, startIndex);
-            console.log('looking for ' + node.surface);
             while (index != -1) {
-                console.log('looking for ' + node.surface);
                 if (node.isBasic) {
                     newText += `<span>${node.surface}</span>`;
                 } else {
