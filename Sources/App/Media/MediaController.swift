@@ -105,7 +105,7 @@ class MediaController: RouteCollection {
                 "-o", "\(uuid).%(ext)s",
                 "https://youtu.be/\(object.youtubeID)"
             ]
-            task.launch()
+            try task.run()
             task.waitUntilExit()
             if task.terminationStatus != 0 {
                 throw Abort(.internalServerError)
@@ -244,7 +244,7 @@ class MediaController: RouteCollection {
                         "-map", "a",
                         "\(uuid).m4a"
                     ]
-                    task.launch()
+                    try task.run()
                     task.waitUntilExit()
                     if task.terminationStatus != 0 {
                         throw Abort(.internalServerError)
