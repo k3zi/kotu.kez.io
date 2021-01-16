@@ -96,11 +96,10 @@ public class Plex {
 
     lazy var requestHeaders: [String: String] = {
         let deviceName = Host.current().name ?? "NoHostName"
-        let platformVersion = ProcessInfo().operatingSystemVersionString
         return [
             "Accept": "application/json",
             "X-Plex-Platform": "Web",
-            "X-Plex-Platform-Version": platformVersion,
+            "X-Plex-Platform-Version": "1.0.0",
             "X-Plex-Provides": "player",
             "X-Plex-Client-Identifier": clientIdentifier,
             "X-Plex-Product": Bundle.main.bundleIdentifier ?? "NoBundleIdentifier",
@@ -126,15 +125,18 @@ public class Plex {
     public func signIn(client: Client) -> EventLoopFuture<PinRequest> {
         return post(client: client, Path.Pins.request)
             .flatMapThrowing { (response: ClientResponse) in
-                try Plex.parseResponseOrError(data: response.data, keyPath: "pin") as PinRequest
+                try response.content.decode(PinRequestResponse.self)
             }
+            .map { $0.pin }
     }
 
     public func checkPin(client: Client, id: Int) -> EventLoopFuture<SignInResponse> {
         return get(client: client, Path.Pins.check(pin: id)).flatMapThrowing { (response: ClientResponse) in
-            try Plex.parseResponseOrError(data: response.data, keyPath: "pin") as PinRequest
-        }.map {
-            if $0.authToken != nil && $0.expiresAt.timeIntervalSinceNow.sign == .plus {
+            try response.content.decode(PinRequestResponse.self)
+        }
+        .map { $0.pin }
+        .map {
+            if $0.authToken != nil {
                 return SignInResponse(inviteCode: $0.code, linked: $0)
             } else {
                 return SignInResponse(inviteCode: $0.code, linked: nil)
@@ -184,42 +186,24 @@ public class Plex {
 
 }
 
+struct PlexURLRequest {
+    let url: URL
+    var headers: [String: String] = [:]
+}
+
 extension Plex {
 
-    private func makeURLRequest(urlString: String, method: HTTPMethod, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> URLRequest {
-        var request = URLRequest(url: URL(string: urlString)!)
-        request.httpMethod = method.rawValue
-        request.timeoutInterval = timeoutInterval ?? request.timeoutInterval
-        var headers = requestHeaders
-        headers["X-Plex-Token"] = token
-        request.allHTTPHeaderFields = headers
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    private func makeURLRequest(urlString: String, token: String? = nil) -> PlexURLRequest {
+        var request = PlexURLRequest(url: URL(string: urlString)!, headers: requestHeaders)
+        request.headers["X-Plex-Token"] = token
+        request.headers["Content-Type"] = "application/json"
         return request
     }
 
-    static func parseResponseOrError<T: Codable>(data: Data, keyPath: String? = nil) throws -> T {
-        var rootData = data
-
-        if let keyPath = keyPath {
-            let topLevel = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions.mutableContainers)
-
-            guard let nestedJson = (topLevel as AnyObject).value(forKeyPath: keyPath) else {
-                throw PlexError.invalidRootKeyPath
-            }
-
-            rootData = try JSONSerialization.data(withJSONObject: nestedJson)
-        }
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(T.self, from: rootData)
-    }
-
     private func get(client: Client, _ url: String, headers additionalHeaders: HTTPHeaders = .init(), token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
-        let request = makeURLRequest(urlString: url, method: HTTPMethod.get, token: token, timeoutInterval: timeoutInterval)
-        let url = request.url!
-        var headers = (request.allHTTPHeaderFields ?? [:]).map {
+        let request = makeURLRequest(urlString: url, token: token)
+        let url = request.url
+        var headers = request.headers.map {
             ($0.key, $0.value)
         }
         headers += additionalHeaders.map { ($0.name, $0.value) }
@@ -228,28 +212,27 @@ extension Plex {
     }
 
     private func download(client: Client, _ url: String, to saveLocation: URL, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
-        let request = makeURLRequest(urlString: url, method: HTTPMethod.get, token: token, timeoutInterval: timeoutInterval)
-
-        let url = request.url!
-        let headers = (request.allHTTPHeaderFields ?? [:]).map {
+        let request = makeURLRequest(urlString: url, token: token)
+        let url = request.url
+        var headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.get(.init(string: url.absoluteString), headers: HTTPHeaders(headers))
     }
 
     private func post(client: Client, _ url: String, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
-        let request = makeURLRequest(urlString: url, method: HTTPMethod.post, token: token, timeoutInterval: timeoutInterval)
-        let url = request.url!
-        let headers = (request.allHTTPHeaderFields ?? [:]).map {
+        let request = makeURLRequest(urlString: url, token: token)
+        let url = request.url
+        var headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.post(.init(string: url.absoluteString), headers: HTTPHeaders(headers))
     }
 
     private func put(client: Client, _ url: String, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
-        let request = makeURLRequest(urlString: url, method: HTTPMethod.put, token: token, timeoutInterval: timeoutInterval)
-        let url = request.url!
-        let headers = (request.allHTTPHeaderFields ?? [:]).map {
+        let request = makeURLRequest(urlString: url, token: token)
+        let url = request.url
+        var headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.put(.init(string: url.absoluteString), headers: HTTPHeaders(headers))
