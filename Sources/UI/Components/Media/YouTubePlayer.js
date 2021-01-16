@@ -103,7 +103,7 @@ class YouTubePlayer extends React.Component {
                 </Col>
 
                 <Col xs={12} md={5}>
-                    <Button onMouseDown={(e) => this.startCapture(e)} onMouseUp={() => this.endCapture()} className='col-12 mt-3 mt-md-0' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
+                    <Button onTouchStart={(e) => this.startCapture(e)} onMouseDown={(e) => this.startCapture(e)} onTouchEnd={() => this.endCapture()} onMouseUp={() => this.endCapture()} className='col-12 mt-3 mt-md-0' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
                         {this.state.isRecording ? 'Release to Capture' : (this.state.isSubmitting ? 'Capturing' : 'Hold to Record')}
                     </Button>
                     {this.state.lastFile && <Alert dismissible onClose={() => this.setState({ lastFile: null })} className='mt-3' variant='primary'>Audio Embed Code: <pre className='mb-0 user-select-all'>[audio: {this.state.lastFile.id}]</pre></Alert>}
