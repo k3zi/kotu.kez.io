@@ -21,7 +21,7 @@ func routes(_ app: Application) throws {
     api.grouped(User.guardMiddleware())
         .get("proxy") { (req: Request) -> EventLoopFuture<String> in
             let urlString = try req.query.get(String.self, at: "url")
-            guard let _ = URL(string: urlString) else {
+            guard URL(string: urlString) != nil else {
                 throw Abort(.badRequest)
             }
             return req.client.get(.init(string: urlString), headers: .init([

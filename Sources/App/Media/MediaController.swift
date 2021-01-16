@@ -17,6 +17,20 @@ extension MediaCaptureRequest: Validatable {
 
 }
 
+struct PlexCaptureRequest: Content {
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+}
+
+extension PlexCaptureRequest: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("startTime", as: Double.self)
+        validations.add("endTime", as: Double.self)
+    }
+
+}
+
 class MediaController: RouteCollection {
 
     static func stringFromTimeInterval(interval: TimeInterval) -> String {
@@ -105,6 +119,144 @@ class MediaController: RouteCollection {
             return file.create(on: req.db).map {
                 file
             }
+        }
+
+        let plex = media.grouped("plex")
+
+        plex.post("signIn") { req -> EventLoopFuture<PinRequest> in
+            Plex().signIn(client: req.client)
+        }
+
+        plex.get("checkPin", ":id") { req -> EventLoopFuture<SignInResponse> in
+            let user = try req.auth.require(User.self)
+            guard let id = req.parameters.get("id", as: Int.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return Plex().checkPin(client: req.client, id: id)
+                .flatMap { signInResponse in
+                    if signInResponse.linked != nil {
+                        user.plexAuth = signInResponse
+                        return user.save(on: req.db)
+                            .map { signInResponse }
+                    } else {
+                        return req.eventLoop.future(signInResponse)
+                    }
+                }
+        }
+
+        plex.get("resources") { req -> EventLoopFuture<[Resource]> in
+            let user = try req.auth.require(User.self)
+            guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
+            return Plex().resources(client: req.client, token: token)
+        }
+
+        plex.get("resource", ":clientIdentifier", "sections") { req -> EventLoopFuture<[Section]> in
+            let user = try req.auth.require(User.self)
+            guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
+            guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
+            let plex = Plex()
+            return plex.resources(client: req.client, token: token)
+                .map { resources in
+                    resources.first { $0.clientIdentifier == clientIdentifier }
+                }
+                .unwrap(orError: Abort(.badRequest, reason: "Resource not found"))
+                .flatMap { resource in
+                    plex.providers(client: req.client, resource: resource)
+                }
+        }
+
+        plex.get("resource", ":clientIdentifier", "section", ":sectionPath") { req -> EventLoopFuture<[Metadata]> in
+            let user = try req.auth.require(User.self)
+            guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
+            guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
+            guard let sectionPath = req.parameters.get("sectionPath", as: String.self) else { throw Abort(.badRequest, reason: "Section path not provided") }
+            let plex = Plex()
+            return plex.resources(client: req.client, token: token)
+                .map { resources in
+                    resources.first { $0.clientIdentifier == clientIdentifier }
+                }
+                .unwrap(orError: Abort(.badRequest, reason: "Resource not found"))
+                .flatMap { resource in
+                    plex.all(client: req.client, resource: resource, path: sectionPath)
+                }
+        }
+
+        plex.get("resource", ":clientIdentifier", "stream", ":mediaID") { req -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
+            guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
+            guard let mediaID = req.parameters.get("mediaID", as: Int.self) else { throw Abort(.badRequest, reason: "Media ID not provided") }
+            let plex = Plex()
+            return plex.resources(client: req.client, token: token)
+                .map { resources in
+                    resources.first { $0.clientIdentifier == clientIdentifier }
+                }
+                .unwrap(orError: Abort(.badRequest, reason: "Resource not found"))
+                .flatMapThrowing { resource in
+                    guard let connection = resource.connections.first(where: { !$0.local }) else {
+                        throw Abort(.badRequest)
+                    }
+                    var url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.m3u8").absoluteString
+                    url += "?X-Plex-Token=\(resource.accessToken ?? "")"
+                    url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=hls&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome"
+                    return req.redirect(to: url)
+                }
+        }
+
+        plex.post("resource", ":clientIdentifier", "stream", ":mediaID", "capture") { req -> EventLoopFuture<File> in
+            let user = try req.auth.require(User.self)
+            guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
+            guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
+            guard let mediaID = req.parameters.get("mediaID", as: Int.self) else { throw Abort(.badRequest, reason: "Media ID not provided") }
+
+            try PlexCaptureRequest.validate(content: req)
+            let object = try req.content.decode(PlexCaptureRequest.self)
+
+            let plex = Plex()
+            return plex.resources(client: req.client, token: token)
+                .map { resources in
+                    resources.first { $0.clientIdentifier == clientIdentifier }
+                }
+                .unwrap(orError: Abort(.badRequest, reason: "Resource not found"))
+                .throwingFlatMap { resource in
+                    guard let connection = resource.connections.first(where: { !$0.local }) else {
+                        throw Abort(.badRequest)
+                    }
+                    var url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.m3u8").absoluteString
+                    url += "?X-Plex-Token=\(resource.accessToken ?? "")"
+                    url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=hls&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome&offset=\(object.startTime)"
+                    let task = Process()
+                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+                    task.currentDirectoryURL = directory
+                    task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                    let uuid = UUID().uuidString
+                    let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("m4a")
+
+                    var env = task.environment ?? [:]
+                    env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+                    task.environment = env
+
+                    task.arguments = [
+                        "ffmpeg",
+                        "-ss", Self.stringFromTimeInterval(interval: 0),
+                        "-to", Self.stringFromTimeInterval(interval: object.endTime - object.startTime),
+                        "-i", url,
+                        "-c:a", "aac",
+                        "-b:a", "128k",
+                        "-map", "a",
+                        "\(uuid).m4a"
+                    ]
+                    task.launch()
+                    task.waitUntilExit()
+                    if task.terminationStatus != 0 {
+                        throw Abort(.internalServerError)
+                    }
+
+                    let data = try Data(contentsOf: fileURL)
+                    try FileManager.default.removeItem(at: fileURL)
+                    let file = File(owner: user, size: data.count, data: data)
+                    return file.create(on: req.db).map {
+                        file
+                    }
+                }
         }
     }
 

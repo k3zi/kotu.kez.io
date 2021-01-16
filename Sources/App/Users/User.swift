@@ -26,6 +26,12 @@ final class User: Model, Content {
     @OptionalField(key: "password_reset_key")
     var passwordResetKey: String?
 
+    @Field(key: "ignore_words")
+    var ignoreWords: [String]
+
+    @OptionalField(key: "plex_auth")
+    var plexAuth: SignInResponse?
+
     // MARK: Transcription
 
     @Children(for: \.$owner)
@@ -54,9 +60,6 @@ final class User: Model, Content {
 
     @Children(for: \.$owner)
     var listWords: [ListWord]
-
-    @Field(key: "ignore_words")
-    var ignoreWords: [String]
 
     init() { }
 
@@ -209,6 +212,22 @@ extension User {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema("users")
                 .deleteField("ignore_words")
+                .update()
+        }
+    }
+
+    struct Migration9: Fluent.Migration {
+        var name: String { "AddUserPlexAuth" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("plex_auth", .json)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("plex_auth")
                 .update()
         }
     }

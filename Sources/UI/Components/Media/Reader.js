@@ -130,7 +130,7 @@ class Reader extends React.Component {
                 if (node.isBasic) {
                     newText += `<span>${node.surface}</span>`;
                 } else {
-                    newText += `<span class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.surface}</span>`;
+                    newText += `<span data-bs-toggle='popover' title="Popover title" data-bs-content='And here's some amazing content. It's very engaging. Right?' class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.surface}</span>`;
                 }
 
                 nodeIndex += 1;

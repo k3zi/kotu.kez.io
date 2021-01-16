@@ -38,6 +38,7 @@ import ListsWords from './Lists/Words';
 import AddSentenceModal from './AddSentenceModal';
 
 import MediaYouTubePlayer from './Media/YouTubePlayer';
+import MediaPlexPlayer from './Media/PlexPlayer';
 import MediaReader from './Media/Reader';
 
 import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
@@ -136,6 +137,7 @@ class App extends React.Component {
         const response = await fetch('/api/flashcard/numberOfReviews');
         const numberOfReviews = response.ok ? (parseInt(await response.text()) || 0) : 0;
         this.setState({ numberOfReviews });
+        await this.loadUser();
     }
 
     toggleRegisterModal(show) {
@@ -232,6 +234,9 @@ class App extends React.Component {
                                     <LinkContainer to="/media/youtube">
                                         <NavDropdown.Item active={false}>YouTube</NavDropdown.Item>
                                     </LinkContainer>
+                                    <LinkContainer to="/media/plex">
+                                        <NavDropdown.Item active={false}>Plex</NavDropdown.Item>
+                                    </LinkContainer>
                                     <LinkContainer to="/media/reader">
                                         <NavDropdown.Item active={false}>Reader</NavDropdown.Item>
                                     </LinkContainer>
@@ -313,6 +318,9 @@ class App extends React.Component {
 
                             <Route path="/media/youtube">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
+                            </Route>
+                            <Route path="/media/plex">
+                                {this.loginProtect(<MediaPlexPlayer />)}
                             </Route>
                             <Route path="/media/reader">
                                 {this.loginProtect(<MediaReader />)}

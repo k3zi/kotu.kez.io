@@ -13,7 +13,7 @@ import YouTube from 'react-youtube';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
 
-class Player extends React.Component {
+class YouTubePlayer extends React.Component {
 
     constructor(props) {
         super(props);
@@ -114,4 +114,4 @@ class Player extends React.Component {
     }
 }
 
-export default Player;
+export default YouTubePlayer;

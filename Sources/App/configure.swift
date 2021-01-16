@@ -52,6 +52,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Invite.Migration1())
     app.migrations.add(ListWord.Migration(), ListWord.Migration1(), ListWord.Migration2(), ListWord.Migration3())
     app.migrations.add(User.Migration8())
+    app.migrations.add(User.Migration9())
 
     try app.autoMigrate().wait()
 
@@ -108,7 +109,7 @@ public func configure(_ app: Application) throws {
 //        .chunked(into: 127)
 //        .forEach { try $0.create(on: app.db).wait() }
 
-    try DictionaryManager.configure(app: app).wait()
+    //try DictionaryManager.configure(app: app).wait()
     PitchAccentManager.configure(app: app)
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
