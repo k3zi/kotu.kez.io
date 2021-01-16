@@ -20,6 +20,13 @@ enum HTTPMethod: String {
 
 public class Plex {
 
+    static var decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+
     enum Settings: String {
         case userId
         case authToken
@@ -125,14 +132,14 @@ public class Plex {
     public func signIn(client: Client) -> EventLoopFuture<PinRequest> {
         return post(client: client, Path.Pins.request)
             .flatMapThrowing { (response: ClientResponse) in
-                try response.content.decode(PinRequestResponse.self)
+                try response.content.decode(PinRequestResponse.self, using: Self.decoder)
             }
             .map { $0.pin }
     }
 
     public func checkPin(client: Client, id: Int) -> EventLoopFuture<SignInResponse> {
         return get(client: client, Path.Pins.check(pin: id)).flatMapThrowing { (response: ClientResponse) in
-            try response.content.decode(PinRequestResponse.self)
+            try response.content.decode(PinRequestResponse.self, using: Self.decoder)
         }
         .map { $0.pin }
         .map {
