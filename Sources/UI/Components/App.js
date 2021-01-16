@@ -20,6 +20,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import Spinner from 'react-bootstrap/Spinner';
 
 import Home from './Home';
+import Changelog from './Changelog';
 
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
@@ -288,6 +289,10 @@ class App extends React.Component {
                                 <Home />
                             </Route>
 
+                            <Route path="/changelog">
+                                <Changelog />
+                            </Route>
+
                             <Route exact path="/transcription">
                                 {this.loginProtect(<TranscriptionProjects />)}
                             </Route>
@@ -339,6 +344,16 @@ class App extends React.Component {
                             </Route>
                         </Switch>}
                     </Container>
+
+                    <footer className="my-3 text-white-50 text-center text-small">
+                        <p className="mb-1">
+                            Made by <a className='text-white' href='https://kez.io'>ケジ</a>
+                            ・
+                            <LinkContainer to="/changelog">
+                                <a className='text-white' href='#'>Changelog</a>
+                            </LinkContainer>
+                        </p>
+                    </footer>
 
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
