@@ -47,11 +47,13 @@ class SectionChildrenList extends React.Component {
             const media = [
                 {
                     src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=hls`,
-                    type: 'application/vnd.apple.mpegurl'
+                    type: 'application/vnd.apple.mpegurl',
+                    base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
                 },
                 {
                     src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=dash`,
-                    type: 'dash'
+                    type: 'dash',
+                    base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
                 }
             ];
             this.props.onPlayMedia(media);
@@ -254,12 +256,27 @@ class PlexPlayer extends React.Component {
         this.state.playerRef.play();
     }
 
+    keyPress(e) {
+        if (e.which === 32) {
+            e.preventDefault();
+            if (this.state.playerRef.paused) {
+                this.state.playerRef.play();
+            } else {
+                this.state.playerRef.pause();
+            }
+        } else if (e.which === 39) {
+            this.state.playerRef.currentTime += 10;
+        } else if (e.which === 37) {
+            this.state.playerRef.currentTime = max(0, this.state.playerRef.currentTime - 10);
+        }
+    }
+
     async endCapture() {
         this.state.playerRef.pause();
         this.setState({ isRecording: false, isSubmitting: true, lastFile: null });
         const startTime = this.state.startTime;
         const endTime = this.state.playerRef.currentTime;
-        const response = await fetch(`${this.state.media[0].src}/capture`, {
+        const response = await fetch(`${this.state.media[0].base}/capture`, {
             method: 'POST',
             body: JSON.stringify({
                 startTime,
@@ -298,8 +315,12 @@ class PlexPlayer extends React.Component {
         this.setState({ media });
         const dashMedia = media.filter(m => m.type === 'dash')[0];
         if (this.state.useDash && dashMedia) {
-            this.dashPlayer = dashjs.MediaPlayer().create();
-            this.dashPlayer.initialize(this.playerRef.current, dashMedia.src, false);
+            if (this.dashPlayer) {
+                this.dashPlayer.attachSource(dashMedia.src);
+            } else {
+                this.dashPlayer = dashjs.MediaPlayer().create();
+                this.dashPlayer.initialize(this.playerRef.current, dashMedia.src, true);
+            }
         }
     }
 
@@ -312,7 +333,7 @@ class PlexPlayer extends React.Component {
             <UserContext.Consumer>{user => (
                 <Row>
                     <Col xs={12} md={7}>
-                        <div className={this.state.media.length > 0 ? '' : 'd-none'}>
+                        <div className={this.state.media.length > 0 ? '' : 'd-none'} onKeyPress={(e) => this.keyPress(e)}>
                             <video ref={this.playerRef} width="100%" controls autoPlay onCanPlay={(e) => this.canPlay(e)}>
                                 {this.state.media.map((m, i) => (
                                     <source src={m.src} type={m.type} />
