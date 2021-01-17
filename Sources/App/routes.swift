@@ -18,6 +18,15 @@ func routes(_ app: Application) throws {
         return try req.auth.require(User.self)
     }
 
+    api.post("feedback") { (req: Request) -> EventLoopFuture<Response> in
+        let object = try req.content.decode(Feedback.Create.self)
+        return Feedback(value: object.value)
+            .create(on: req.db)
+            .map {
+                Response(status: .ok)
+            }
+    }
+
     api.grouped(User.guardMiddleware())
         .get("proxy") { (req: Request) -> EventLoopFuture<String> in
             let urlString = try req.query.get(String.self, at: "url")

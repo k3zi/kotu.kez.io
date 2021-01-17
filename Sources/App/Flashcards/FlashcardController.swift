@@ -72,6 +72,51 @@ class FlashcardController: RouteCollection {
 
         // MARK: Notes
         let guardedNote = guardedFlashcards.grouped("note")
+        let guardedNoteID = guardedNote.grouped(":noteID")
+        let guardedNotes = guardedFlashcards.grouped("notes")
+
+        guardedNoteID.delete() { (req: Request) -> EventLoopFuture<String> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("noteID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return Note
+                .query(on: req.db)
+                .with(\.$fieldValues)
+                .with(\.$cards)
+                .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
+                .join(User.self, on: \NoteType.$owner.$id == \User.$id)
+                .filter(User.self, \.$id == userID)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Note not found"))
+                .flatMap { note in
+                    note.cards.delete(on: req.db)
+                        .flatMap {
+                            note.fieldValues.delete(on: req.db)
+                        }
+                        .flatMap {
+                            note.delete(on: req.db)
+                        }
+                }
+                .map { "Note deleted." }
+        }
+
+        guardedNotes.get() { req -> EventLoopFuture<Page<Note>> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            return Note
+                .query(on: req.db)
+                .with(\.$noteType)
+                .with(\.$fieldValues) {
+                    $0.with(\.$field)
+                }
+                .with(\.$cards)
+                .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
+                .join(User.self, on: \NoteType.$owner.$id == \User.$id)
+                .filter(User.self, \.$id == userID)
+                .paginate(for: req)
+        }
 
         guardedNote.post() { req -> EventLoopFuture<Note> in
             let user = try req.auth.require(User.self)

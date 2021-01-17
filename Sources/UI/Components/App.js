@@ -19,9 +19,11 @@ import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Spinner from 'react-bootstrap/Spinner';
 
-import Home from './Home';
 import Changelog from './Changelog';
+import Help from './Help';
+import Home from './Home';
 
+import FeedbackModal from './FeedbackModal';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 import SearchResultModal from './SearchResultModal';
@@ -31,6 +33,7 @@ import TranscriptionProject from './Transcription/Project';
 
 import FlashcardDeck from './Flashcard/Deck';
 import FlashcardDecks from './Flashcard/Decks';
+import FlashcardNotes from './Flashcard/Notes';
 import FlashcardNoteTypes from './Flashcard/NoteTypes';
 import FlashcardNoteType from './Flashcard/NoteType';
 import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
@@ -55,6 +58,7 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            showFeedbackModal: false,
             showRegisterModal: false,
             showLoginModal: false,
             showCreateNoteModal: false,
@@ -141,6 +145,10 @@ class App extends React.Component {
         await this.loadUser();
     }
 
+    toggleFeedbackModal(show) {
+        this.setState({ showFeedbackModal: show });
+    }
+
     toggleRegisterModal(show) {
         this.setState({ showRegisterModal: show });
         this.loadUser();
@@ -213,8 +221,8 @@ class App extends React.Component {
                                     <LinkContainer to="/flashcard/types">
                                         <NavDropdown.Item active={false}>Note Types</NavDropdown.Item>
                                     </LinkContainer>
-                                    <LinkContainer to="/flashcard/cards">
-                                        <NavDropdown.Item active={false}>Browse Cards</NavDropdown.Item>
+                                    <LinkContainer to="/flashcard/notes">
+                                        <NavDropdown.Item active={false}>Browse Notes</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
                                     <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
@@ -282,13 +290,15 @@ class App extends React.Component {
                         </Nav>}
                     </Navbar>
 
-                    <Container className='pt-3'>
+                    <Container className='p-4'>
                         {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                         {this.state.isReady && <Switch>
                             <Route exact path="/">
                                 <Home />
                             </Route>
-
+                            <Route path="/help">
+                                <Help />
+                            </Route>
                             <Route path="/changelog">
                                 <Changelog />
                             </Route>
@@ -296,7 +306,6 @@ class App extends React.Component {
                             <Route exact path="/transcription">
                                 {this.loginProtect(<TranscriptionProjects />)}
                             </Route>
-
                             <Route path="/transcription/:id">
                                 <TranscriptionProject />
                             </Route>
@@ -304,17 +313,17 @@ class App extends React.Component {
                             <Route path="/flashcard/decks">
                                 {this.loginProtect(<FlashcardDecks />)}
                             </Route>
-
                             <Route path="/flashcard/deck/:id">
                                 {this.loginProtect(<FlashcardDeck />)}
                             </Route>
-
                             <Route path="/flashcard/types">
                                 {this.loginProtect(<FlashcardNoteTypes />)}
                             </Route>
-
                             <Route path="/flashcard/type/:id">
                                 {this.loginProtect(<FlashcardNoteType />)}
+                            </Route>
+                            <Route path="/flashcard/notes">
+                                {this.loginProtect(<FlashcardNotes />)}
                             </Route>
 
                             <Route path="/lists/words">
@@ -352,9 +361,18 @@ class App extends React.Component {
                             <LinkContainer to="/changelog">
                                 <a className='text-white' href='#'>Changelog</a>
                             </LinkContainer>
+                            ・
+                            <LinkContainer to="/help">
+                                <a className='text-white' href='#'>Help</a>
+                            </LinkContainer>
+                            ・
+                            <LinkContainer to="/help">
+                                <a className='text-white' onClick={() => this.toggleFeedbackModal(true)}>Feedback</a>
+                            </LinkContainer>
                         </p>
                     </footer>
 
+                    <FeedbackModal show={this.state.showFeedbackModal} onHide={() => this.toggleFeedbackModal(false)} />
                     <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />

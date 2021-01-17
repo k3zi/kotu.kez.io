@@ -51,6 +51,7 @@
         "dashjs": "^3.2.0",
         "pako": "^2.0.3",
         "react-bootstrap": "k3zi/react-bootstrap#bs5-dev",
+        "react-bootstrap-4-pagination": "^1.0.4",
         "react-markdown": "^5.0.3",
         "remark-gfm": "^1.0.0",
         "stream-browserify": "^3.0.0",

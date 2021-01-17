@@ -10,7 +10,7 @@ import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import YouTube from 'react-youtube';
 
-class DeleteDeckModal extends React.Component {
+class DeleteNoteModal extends React.Component {
 
     constructor(props) {
         super(props);
@@ -28,7 +28,7 @@ class DeleteDeckModal extends React.Component {
             return;
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
-        const response = await fetch(`/api/flashcard/deck/${this.props.deck.id}`, {
+        const response = await fetch(`/api/flashcard/note/${this.props.note.id}`, {
             method: 'DELETE'
         });
         const success = response.ok;
@@ -50,7 +50,7 @@ class DeleteDeckModal extends React.Component {
 
     render() {
         return (
-            <Modal {...this.props} show={this.props.deck != null} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
+            <Modal {...this.props} show={this.props.note != null} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
                         Confirm Deletion
@@ -58,7 +58,7 @@ class DeleteDeckModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete: {this.props.deck ? this.props.deck.name : ''}. This will delete all cards under this deck.</p>
+                    <p>Are you sure you wish to delete this note? This will delete all cards under this note.</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">
@@ -78,4 +78,4 @@ class DeleteDeckModal extends React.Component {
     }
 }
 
-export default DeleteDeckModal;
+export default DeleteNoteModal;

@@ -36,7 +36,6 @@ class DeleteFieldModal extends React.Component {
         });
 
         if (success) {
-            this.setState({ message: 'Deleted.'  });
             this.props.didDelete();
         } else {
             const result = await response.json();
@@ -67,10 +66,10 @@ class DeleteFieldModal extends React.Component {
                         {this.state.message}
                     </Alert>}
 
-                    {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
-                    {!this.state.success && <Button variant="danger" disabled={this.state.isSubmitting} onClick={() => this.confirmDelete()}>
+                    <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>
+                    <Button variant="danger" disabled={this.state.isSubmitting} onClick={() => this.confirmDelete()}>
                         {this.state.isSubmitting ? 'Deleting...' : 'Delete'}
-                    </Button>}
+                    </Button>
                 </Modal.Footer>
             </Modal>
         );

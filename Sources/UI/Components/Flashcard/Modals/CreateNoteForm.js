@@ -66,11 +66,11 @@ class CreateNoteForm extends React.Component {
         }
     }
 
-    selectNoteType(noteTyoe) {
-        const fieldValues = noteType.fields.map(f => {
+    selectNoteType(noteType) {
+        const fieldValues = noteType.fields.map((f, i) => {
             return {
                 fieldID: f.id,
-                value: ''
+                value: this.state.fieldValues[i] ? this.state.fieldValues[i].value : ''
             };
         });
         this.setState({ noteType, fieldValues });
@@ -133,7 +133,7 @@ class CreateNoteForm extends React.Component {
                             <Form.Control value={this.state.noteType ? this.state.noteType.name : '(None)'} readOnly />
                             <DropdownButton variant="outline-secondary" title="Note Type" id="input-group-dropdown-1">
                                 {this.state.noteTypes.map((noteType, i) => {
-                                    return <Dropdown.Item key={i} active={this.state.noteType && noteType.id == this.state.noteType.id} onSelect={() => this.setState({ noteType })}>{noteType.name}</Dropdown.Item>;
+                                    return <Dropdown.Item key={i} active={this.state.noteType && noteType.id == this.state.noteType.id} onSelect={() => this.selectNoteType(noteType)}>{noteType.name}</Dropdown.Item>;
                                 })}
                             </DropdownButton>
                         </InputGroup>
@@ -164,7 +164,7 @@ class CreateNoteForm extends React.Component {
                         {this.state.message}
                     </Alert>}
 
-                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType || !this.state.fieldValues.some(f => f.value.trim().length > 0)}>
+                    <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.deck || !this.state.noteType || !this.state.fieldValues[0] || this.state.fieldValues[0].value.trim().length == 0}>
                         {this.state.isSubmitting ? 'Loading...' : 'Add'}
                     </Button>
                 </Form>

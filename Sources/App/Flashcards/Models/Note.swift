@@ -12,6 +12,9 @@ final class Note: Model, Content {
     @Parent(key: "note_type_id")
     var noteType: NoteType
 
+    @Timestamp(key: "created_at", on: .create)
+    var createdAt: Date?
+
     @Children(for: \.$note)
     var fieldValues: [NoteFieldValue]
 
@@ -41,6 +44,22 @@ extension Note {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "CreateNoteCreatedAt" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("created_at", .date)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("created_at")
+                .update()
         }
     }
 
