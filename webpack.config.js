@@ -20,7 +20,12 @@ module.exports = {
       ]
     },
     resolve: {
-        extensions: ["*", ".js", ".jsx"]
+        extensions: ["*", ".js", ".jsx"],
+        fallback: {
+            "string_decoder": require.resolve("string_decoder/"),
+            "stream": require.resolve("stream-browserify"),
+            "buffer": require.resolve("buffer/")
+        }
     },
     output: {
         path: __dirname + "/Public/generated",

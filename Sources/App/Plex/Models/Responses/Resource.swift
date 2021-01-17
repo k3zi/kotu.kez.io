@@ -77,6 +77,7 @@ public struct Metadata: Content {
     let year: Int?
     let type: String
     let index: Int?
+    let viewCount: Int?
 
     let Media: [Media]?
 }

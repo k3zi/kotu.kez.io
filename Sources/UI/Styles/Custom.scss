@@ -471,3 +471,32 @@ rt .underline {
     text-decoration: none !important;
     padding: 0;
 }
+
+@media (prefers-color-scheme: dark) {
+
+    body {
+        background-color: #000;
+    }
+
+    .container {
+        background-color: #272727 !important;
+        color: #fff !important;
+    }
+
+    .bg-dark {
+        background-color: #111 !important;
+    }
+
+    .table {
+        color: #fff;
+    }
+
+    .table-striped>tbody>tr:nth-of-type(odd) {
+        color: #fff;
+    }
+
+    .table-hover>tbody>tr:hover {
+        color: #fff;
+    }
+
+}

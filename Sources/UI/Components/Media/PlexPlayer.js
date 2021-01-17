@@ -1,9 +1,11 @@
 import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
+import dashjs from 'dashjs';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
+import Breadcrumb from 'react-bootstrap/Breadcrumb';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import ListGroup from 'react-bootstrap/ListGroup';
@@ -44,44 +46,68 @@ class SectionChildrenList extends React.Component {
         if ((child.type === 'episode' || child.type === 'movie') && child.Media) {
             const media = [
                 {
-                    src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`,
+                    src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=hls`,
                     type: 'application/vnd.apple.mpegurl'
+                },
+                {
+                    src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=dash`,
+                    type: 'dash'
                 }
             ];
             this.props.onPlayMedia(media);
         }
     }
 
+    breadcrumb() {
+        return {
+            hide: () => this.setState({ child: null }),
+            name: this.props.section.title
+        };
+    }
+
     render() {
         if (this.state.child) {
-            if (this.state.child.type === 'show' || this.state.child.type === 'season') {
-                return (
-                    <SectionChildrenList onPlayMedia={this.props.onPlayMedia} section={this.state.child} server={this.props.server} />
-                );
-            } else if (this.state.child.Media) {
+            return (
+                <SectionChildrenList breadcrumbs={[...this.props.breadcrumbs, this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} section={this.state.child} server={this.props.server} />
+            );
+        } else {
+            if (this.props.section.type === 'episode' || this.props.section.type === 'movie') {
                 return (
                     <div>
-                        <h4>{this.state.child.title}</h4>
+                        <Breadcrumb>
+                            {this.props.breadcrumbs.map((b, i) => (
+                                <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
+                            ))}
+                            <Breadcrumb.Item active>{this.props.section.title}</Breadcrumb.Item>
+                        </Breadcrumb>
+                        {this.props.section.type === 'episode' && <small>Episode {this.props.section.index}</small>}
+                        <h4>{this.props.section.title}</h4>
                     </div>
                 );
             } else {
                 return (
                     <div>
-                        <h4>{this.state.child.title}</h4>
+                        <Breadcrumb>
+                            {this.props.breadcrumbs.map((b, i) => (
+                                <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
+                            ))}
+                            <Breadcrumb.Item active>{this.props.section.title}</Breadcrumb.Item>
+                        </Breadcrumb>
+                        <h4>{this.props.section.title}</h4>
+                        <ListGroup>
+                            {this.state.children.map((s, i) => (<ListGroup.Item className='d-flex justify-content-between align-items-center' key={i}  action onClick={() => this.playMedia(s)}>
+                                <div>
+                                    {s.title}
+                                    <br />
+                                    <small>{s.type === 'episode' && `Episode ${s.index}`}</small>
+                                </div>
+
+                                {(s.type === 'movie' || s.type === 'episode') && s.viewCount && s.viewCount > 0 && <i class='bi bi-check fs-3 text-success'></i>}
+                            </ListGroup.Item>))}
+                        </ListGroup>
                     </div>
                 );
             }
-        } else {
-            return (
-                <div>
-                    <h4>{this.props.section.title}</h4>
-                    <ListGroup>
-                        {this.state.children.map((s, i) => (<ListGroup.Item key={i}  action onClick={() => this.playMedia(s)}>
-                            {s.title}
-                        </ListGroup.Item>))}
-                    </ListGroup>
-                </div>
-            );
         }
     }
 
@@ -110,14 +136,27 @@ class SectionList extends React.Component {
         this.setState({ sections });
     }
 
+    breadcrumb() {
+        return {
+            hide: () => this.setState({ section: null }),
+            name: this.props.server.name
+        };
+    }
+
     render() {
         if (this.state.section) {
             return (
-                <SectionChildrenList onPlayMedia={this.props.onPlayMedia} section={this.state.section} server={this.props.server} />
+                <SectionChildrenList breadcrumbs={[...this.props.breadcrumbs, this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} section={this.state.section} server={this.props.server} />
             );
         } else {
             return (
                 <div>
+                    <Breadcrumb>
+                        {this.props.breadcrumbs.map((b, i) => (
+                            <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
+                        ))}
+                        <Breadcrumb.Item active>{this.props.server.name}</Breadcrumb.Item>
+                    </Breadcrumb>
                     <h4>{this.props.server.name}</h4>
                     <ListGroup>
                         {this.state.sections.map((s, i) => (<ListGroup.Item key={i}  action onClick={() => this.setState({ section: s})}>
@@ -155,10 +194,17 @@ class ServerList extends React.Component {
         this.setState({ servers });
     }
 
+    breadcrumb() {
+        return {
+            hide: () => this.setState({ server: null }),
+            name: 'Servers'
+        };
+    }
+
     render() {
         if (this.state.server) {
             return (
-                <SectionList onPlayMedia={this.props.onPlayMedia} server={this.state.server} />
+                <SectionList breadcrumbs={[this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} server={this.state.server} />
             );
         } else {
             return (
@@ -186,8 +232,16 @@ class PlexPlayer extends React.Component {
             isSubmitting: false,
             lastFile: null,
             showConfigureServer: false,
-            media: []
+            media: [],
+            useDash: false
         };
+        this.playerRef = React.createRef();
+    }
+
+    componentDidMount() {
+        this.setState({
+            useDash: typeof(window.MediaSource || window.WebKitMediaSource) === 'function'
+        });
     }
 
     toggleConfigureServer(show) {
@@ -242,6 +296,11 @@ class PlexPlayer extends React.Component {
 
     playMedia(media) {
         this.setState({ media });
+        const dashMedia = media.filter(m => m.type === 'dash')[0];
+        if (this.state.useDash && dashMedia) {
+            this.dashPlayer = dashjs.MediaPlayer().create();
+            this.dashPlayer.initialize(this.playerRef.current, dashMedia.src, false);
+        }
     }
 
     canPlay(e) {
@@ -253,14 +312,14 @@ class PlexPlayer extends React.Component {
             <UserContext.Consumer>{user => (
                 <Row>
                     <Col xs={12} md={7}>
-                        {this.state.media.length > 0 && <>
-                            <video width="100%" controls autoPlay onCanPlay={(e) => this.canPlay(e)}>
+                        <div className={this.state.media.length > 0 ? '' : 'd-none'}>
+                            <video ref={this.playerRef} width="100%" controls autoPlay onCanPlay={(e) => this.canPlay(e)}>
                                 {this.state.media.map((m, i) => (
                                     <source src={m.src} type={m.type} />
                                 ))}
                             </video>
                             <hr />
-                        </>}
+                        </div>
                         {user.plexAuth && <ServerList onPlayMedia={(m) => this.playMedia(m)} user={user} />}
                         <hr />
                         <Button variant='secondary' className='mt-0 col-12' onClick={() => this.setState({ showConfigureServer: true })}>Configure Server</Button>

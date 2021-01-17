@@ -12,6 +12,10 @@ class Component extends React.Component {
 - TODO: HLS streaming does not currently work with Chrome for some reason.
 - TODO: Add breadcrumbs so users can navigate Plex menu without reloading.
 - Fixed 'Capture' button so it works with mobile devices.
+- Fixed support for Chrome streaming by using the dash protocol.
+- Added breadcrumbs to Plex browsing.
+- Added checkmark to watched Plex media.
+- Added basic dark mode.
 ---
 #### 2021/1/13
 - Added pitch accent (supplied by MeCab) to the Reader.
