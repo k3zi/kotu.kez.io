@@ -39,7 +39,27 @@ class FlashcardController: RouteCollection {
                 .with(\.$cardType)
                 .filter(\.$id == id)
                 .first()
-                .unwrap(orError: Abort(.notFound))
+                .flatMap { card -> EventLoopFuture<Card> in
+                    if let card = card {
+                        return req.eventLoop.future(card)
+                    }
+
+                    return user.$decks
+                        .query(on: req.db)
+                        .all()
+                        .flatMap { decks in
+                            for deck in decks {
+                                let sm = deck.sm
+                                sm.queue.removeAll(where: { $0.card == id })
+                                deck.sm = sm
+                            }
+                            let save = decks.map { $0.save(on: req.db) }
+                            return EventLoopFuture.whenAllComplete(save, on: req.eventLoop)
+                                .throwingFlatMap { _ in
+                                    throw Abort(.notFound)
+                                }
+                        }
+                }
                 .guard({ $0.deck.owner.id == userID }, else: Abort(.unauthorized))
         }
 

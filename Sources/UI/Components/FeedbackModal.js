@@ -82,7 +82,7 @@ class FeedbackModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || this.state.value.length === 0}>
                             {this.state.isSubmitting && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />}
                             {this.state.isSubmitting ? ' Submitting...' : 'Submit'}
                         </Button>

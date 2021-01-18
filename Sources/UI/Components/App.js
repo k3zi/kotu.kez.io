@@ -367,6 +367,8 @@ class App extends React.Component {
                             </LinkContainer>
                             ・
                             <a className='text-white' onClick={() => this.toggleFeedbackModal(true)}>Feedback</a>
+                            ・
+                            <a className='text-white' href='https://github.com/k3zi/kotu.kez.io' target='_blank'>Github</a>
                         </p>
                     </footer>
 
