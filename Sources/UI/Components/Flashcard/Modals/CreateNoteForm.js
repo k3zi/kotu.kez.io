@@ -117,9 +117,11 @@ class CreateNoteForm extends React.Component {
     }
 
     onTextChange(e, i) {
-        let update = !this.state.fieldValues.some(f => f.value.trim().length > 0);
+        const hasNoValuesBefore = this.state.fieldValues[0].value.trim().length === 0;
         this.state.fieldValues[i].value = e.target.value;
-        if (update) {
+        const hasNoValuesAfter = this.state.fieldValues[0].value.trim().length === 0;
+        const shouldUpdate = hasNoValuesBefore || hasNoValuesAfter;
+        if (shouldUpdate) {
             this.setState({ fieldValues: this.state.fieldValues });
         }
     }

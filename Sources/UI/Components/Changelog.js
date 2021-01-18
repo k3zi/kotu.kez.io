@@ -13,7 +13,7 @@ class Component extends React.Component {
 - Added \`[frequency: ]\` syntax for showing the frequency of a sentence.
 - Added \`[pitch: ]\` syntax for showing the word-level pitch accent of a sentence.
 - Added ability to update the requested forgetting index of decks.
-- Adjusted the default requested foegtting index to 8.
+- Adjusted the default requested forgetting index to 8.
 ---
 #### 2021/1/16
 - Added this changelog ;)
