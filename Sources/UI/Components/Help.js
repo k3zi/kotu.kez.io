@@ -7,8 +7,12 @@ class Component extends React.Component {
     render() {
         let markdown = `# Help
 ---
+
+### Transcribe
+Add subtitles to YouTube videos. Practice transcription or translation or use for a project. Collaborate with others in real time. Work on multiple translations at the same time.
+
+---
 ### Anki
-#### Note
 The Anki module has no direct relation with Anki the software.
 It's just named that way because other names didn't sound cool enough ;).
 Although a lot of the structure is based off of Anki.
@@ -35,11 +39,11 @@ The Anki module supports these commands:
 - Auto play is enabled on both sides of the card but if you use {{FrontSide}} on the back side then any audio on the front will not auto play.
 
 
-\`[frequency: 恥の多い生涯を送ってきました。]\` **(Coming Soon)**
+\`[frequency: 恥の多い生涯を送ってきました。]\`
 - Labels the frequency of words using underlines.
 
 
-\`[pitch: 恥の多い生涯を送ってきました。]\` **(Coming Soon)**
+\`[pitch: 恥の多い生涯を送ってきました。]\`
 - Labels the pitch accent of words using underlines.
 
 
@@ -49,6 +53,14 @@ The Anki module supports these commands:
 ---
 
 ### Lists
+
+---
+
+### Media
+
+---
+
+### Tests
 
 ---
 `;

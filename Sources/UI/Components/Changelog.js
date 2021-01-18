@@ -10,12 +10,14 @@ class Component extends React.Component {
 - Added browser for Anki notes.
 - Added start of help page.
 - Added feedback form.
+- Added \`[frequency: ]\` syntax for showing the frequency of a sentence.
+- Added \`[pitch: ]\` syntax for showing the word-level pitch accent of a sentence.
+- Added ability to update the requested forgetting index of decks.
+- Adjusted the default requested foegtting index to 8.
 ---
 #### 2021/1/16
 - Added this changelog ;)
 - Added Plex as an option of capturing media.
-- TODO: HLS streaming does not currently work with Chrome for some reason.
-- TODO: Add breadcrumbs so users can navigate Plex menu without reloading.
 - Fixed 'Capture' button so it works with mobile devices.
 - Fixed support for Chrome streaming by using the dash protocol.
 - Added breadcrumbs to Plex browsing.

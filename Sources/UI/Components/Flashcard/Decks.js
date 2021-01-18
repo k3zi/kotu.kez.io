@@ -8,6 +8,7 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
+import EditDeckModal from './Modals/EditDeckModal';
 import DeleteDeckModal from './Modals/DeleteDeckModal';
 import CreateDeckModal from './Modals/CreateDeckModal';
 
@@ -83,6 +84,13 @@ class Decks extends React.Component {
         await this.load();
     }
 
+    async showEditDeckModal(deck) {
+        this.setState({
+            showEditDeckModal: deck
+        });
+        await this.load();
+    }
+
     render() {
         return (
             <div>
@@ -111,6 +119,8 @@ class Decks extends React.Component {
                                         <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
                                     </LinkContainer>
                                     <div className='w-100 d-block d-md-none'></div>
+                                    <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditDeckModal(deck)}><i className="bi bi-pencil-square"></i></Button>
+                                    <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteDeckModal(deck)}><i className="bi bi-trash"></i></Button>
                                 </td>
                             </tr>);
@@ -119,6 +129,7 @@ class Decks extends React.Component {
                 </Table>
 
                 <CreateDeckModal show={this.state.showCreateDeckModal} onHide={() => this.toggleCreateDeckModal(false)} onSuccess={() => this.toggleCreateDeckModal(false)} />
+                <EditDeckModal deck={this.state.showEditDeckModal} onHide={() => this.showEditDeckModal(false)} onSuccess={() => this.showEditDeckModal(null)} />
                 <DeleteDeckModal deck={this.state.showDeleteDeckModal} didDelete={() => this.showDeleteDeckModal(null)} didCancel={() => this.showDeleteDeckModal(null)} onHide={() => this.showDeleteDeckModal(null)} />
             </div>
         );

@@ -20,7 +20,7 @@ fileprivate let gradeOffset: Double = 1
 
 class SweetMemo: Codable {
 
-    var requestedFI: Double = 10
+    var requestedFI: Double = 8
     var intervalBase: Double = 3 * 60 * 60
     var forgettingIndexGraph: ForgettingIndexGraph!
     var forgettingCurves: ForgettingCurves!

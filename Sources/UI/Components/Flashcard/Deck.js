@@ -28,6 +28,7 @@ import Tabs from 'react-bootstrap/Tabs';
 import Table from 'react-bootstrap/Table';
 
 import scoper from './scoper.js';
+import Helpers from './../Helpers';
 
 class Deck extends React.Component {
 
@@ -55,6 +56,16 @@ class Deck extends React.Component {
         }
     }
 
+    async generateHTMLForFrequency(sentence) {
+        const html = `<div class='page visual-type-showFrequency'><span>${sentence}</span></div>`;
+        return await Helpers.generateVisualSentenceElement(html, sentence);
+    }
+
+    async generateHTMLForPitch(sentence) {
+        const html = `<div class='page visual-type-showPitchAccent'><span>${sentence}</span></div>`;
+        return await Helpers.generateVisualSentenceElement(html, sentence);
+    }
+
     async loadNextCard() {
         const availableQueue = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
         const item = availableQueue[0];
@@ -66,19 +77,19 @@ class Deck extends React.Component {
         if (response.ok) {
             const nextCard = await response.json();
             this.setState({ nextCard, loadedHTML: null, showGradeButtons: false });
-            this.loadFront();
+            await this.loadFront();
         }
     }
 
-    loadFront() {
-        this.loadHTML(this.state.nextCard.cardType.frontHTML, this.state.nextCard.cardType.css, 'front');
+    async loadFront() {
+        await this.loadHTML(this.state.nextCard.cardType.frontHTML, this.state.nextCard.cardType.css, 'front');
     }
 
-    loadBack() {
-        this.loadHTML(this.state.nextCard.cardType.backHTML, this.state.nextCard.cardType.css, 'back');
+    async loadBack() {
+        await this.loadHTML(this.state.nextCard.cardType.backHTML, this.state.nextCard.cardType.css, 'back');
     }
 
-    replaceFieldsFor(html, autoplay) {
+    async replaceFieldsFor(html, autoplay) {
         let result = html;
         // Replace fields.
         for (let fieldValue of this.state.nextCard.note.fieldValues) {
@@ -92,10 +103,25 @@ class Deck extends React.Component {
         let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
         let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="${location.origin}/api/media/audio/$1" type="audio/x-m4a"></audio>`;
         result = result.replace(regex, subst);
+
+        regex = /\[frequency: (.*)\]/mi;
+        let match;
+        while ((match = regex.exec(result)) !== null) {
+            const sentence = match[1];
+            const element = await this.generateHTMLForFrequency(sentence);
+            result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
+        }
+
+        regex = /\[pitch: (.*)\]/mi;
+        while ((match = regex.exec(result)) !== null) {
+            const sentence = match[1];
+            const element = await this.generateHTMLForPitch(sentence);
+            result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
+        }
         return result;
     }
 
-    loadHTML(html, css, id) {
+    async loadHTML(html, css, id) {
         let result = `
         <div id="${`card_${id}`}">
             <style>
@@ -110,19 +136,19 @@ class Deck extends React.Component {
         </div>
         `;
 
-        result = this.replaceFieldsFor(result, true);
+        result = await this.replaceFieldsFor(result, true);
 
         if (id !== 'front') {
             result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
         }
 
-        result = this.replaceFieldsFor(result, false);
+        result = await this.replaceFieldsFor(result, false);
 
         this.setState({ loadedHTML: result });
     }
 
-    showAnswer() {
-        this.loadBack();
+    async showAnswer() {
+        await this.loadBack();
         this.setState({ showGradeButtons: true });
     }
 

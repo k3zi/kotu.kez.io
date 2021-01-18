@@ -130,7 +130,7 @@ class NoteType extends React.Component {
                             <h4>Card Template</h4>
                             <InputGroup className="mb-3">
                                 <Form.Control value={this.state.selectedCardType ? this.state.selectedCardType.name : '(None)'} readOnly />
-                                <DropdownButton as={InputGroup.Append} variant="outline-secondary" title="Card Type" id="input-group-dropdown-1">
+                                <DropdownButton variant="outline-secondary" title="Card Type" id="input-group-dropdown-1">
                                     {this.state.cardTypes.map(cardType => {
                                         return <Dropdown.Item active={this.state.selectedCardType && cardType.id == this.state.selectedCardType.id} onSelect={() => this.setState({ selectedCardType: cardType })}>{cardType.name}</Dropdown.Item>;
                                     })}

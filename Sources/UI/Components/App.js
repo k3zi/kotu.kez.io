@@ -366,9 +366,7 @@ class App extends React.Component {
                                 <a className='text-white' href='#'>Help</a>
                             </LinkContainer>
                             ・
-                            <LinkContainer to="/help">
-                                <a className='text-white' onClick={() => this.toggleFeedbackModal(true)}>Feedback</a>
-                            </LinkContainer>
+                            <a className='text-white' onClick={() => this.toggleFeedbackModal(true)}>Feedback</a>
                         </p>
                     </footer>
 

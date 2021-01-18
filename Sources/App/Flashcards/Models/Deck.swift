@@ -59,12 +59,26 @@ extension Deck {
         let name: String
     }
 
+    struct Update: Content {
+        let name: String
+        let requestedFI: Int
+    }
+
 }
 
 extension Deck.Create: Validatable {
 
     static func validations(_ validations: inout Validations) {
         validations.add("name", as: String.self, is: !.empty)
+    }
+
+}
+
+extension Deck.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: !.empty)
+        validations.add("requestedFI", as: Int.self)
     }
 
 }

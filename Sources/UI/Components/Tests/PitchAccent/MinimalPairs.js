@@ -120,7 +120,7 @@ class MinimalPairs extends React.Component {
                         <Col xs={0} lg={3}></Col>
                         <Col xs={12} lg={6}>
                             <div className="d-grid">
-                                <Button block variant="primary" className="mt-3" onClick={() => this.start()}>Start</Button>
+                                <Button block variant="primary" onClick={() => this.start()}>Start</Button>
                             </div>
                         </Col>
                         <Col xs={0} lg={3}></Col>

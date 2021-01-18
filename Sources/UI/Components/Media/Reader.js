@@ -1,7 +1,6 @@
 import React from 'react';
 import { Readability } from '@mozilla/readability';
 import { LinkContainer } from 'react-router-bootstrap';
-import { gzip } from 'pako';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -17,6 +16,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import YouTube from 'react-youtube';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
+import Helpers from './../Helpers';
 
 class Reader extends React.Component {
 
@@ -66,23 +66,11 @@ class Reader extends React.Component {
             .replace(/<rp>/g, '')
             .replace(/<\/rp>/g, '');
         const article = new Readability(doc).parse();
-
-        const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
-            method: 'POST',
-            body: await gzip(article.textContent),
-            headers: {
-                'Content-Encoding': 'gzip'
-            }
+        const self = this;
+        const articleContent = await Helpers.generateVisualSentenceElement(article.content, article.textContent, () => {
+            return requestID != self.currentRequestID;
         });
-        let nodes = await sentenceResponse.json();
-        nodes = nodes.filter(n => n.shouldDisplay);
-        if (requestID != this.currentRequestID) return;
-
-        const articleContent = document.createElement('div');
-        articleContent.innerHTML = article.content;
-        this.loadElement(articleContent, nodes);
-        if (requestID != this.currentRequestID) return;
-        this.setState({ isLoading: false, article, html: articleContent.innerHTML });
+        this.setState({ isLoading: false, html: articleContent.innerHTML });
     }
 
     async loadText(text) {
@@ -92,67 +80,11 @@ class Reader extends React.Component {
         }
         const requestID = this.currentRequestID + 1;
         this.currentRequestID = requestID;
-        const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
-            method: 'POST',
-            body: await gzip(text),
-            headers: {
-                'Content-Encoding': 'gzip'
-            }
+        const self = this;
+        const articleContent = await Helpers.generateVisualSentenceElement(`<div class='page'><span>${text}</span></div>`, text, () => {
+            return requestID != self.currentRequestID;
         });
-        let nodes = await sentenceResponse.json();
-        nodes = nodes.filter(n => n.shouldDisplay);
-        if (requestID != this.currentRequestID) return;
-
-        const articleContent = document.createElement('div');
-        articleContent.innerHTML = `<div class='page'><span>${text}</span></div>`;
-        this.loadElement(articleContent, nodes);
-        if (requestID != this.currentRequestID) return;
         this.setState({ isLoading: false, html: articleContent.innerHTML });
-    }
-
-    loadElement(contentElement, nodes) {
-        const walker = document.createTreeWalker(contentElement, NodeFilter.SHOW_TEXT);
-        let nodeIndex = 0;
-        let didRemoveNode = false;
-        do {
-            didRemoveNode = false;
-            let element = walker.currentNode;
-            if (element.nodeType !== Node.TEXT_NODE) {
-                continue;
-            }
-
-            const text = element.textContent;
-            let newText = '';
-            let startIndex = 0;
-            let node = nodes[nodeIndex];
-            let index = text.indexOf(node.surface, startIndex);
-            while (index != -1) {
-                if (node.isBasic) {
-                    newText += `<span>${node.surface}</span>`;
-                } else {
-                    newText += `<span data-bs-toggle='popover' title="Popover title" data-bs-content='And here's some amazing content. It's very engaging. Right?' class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.surface}</span>`;
-                }
-
-                nodeIndex += 1;
-                node = nodes[nodeIndex];
-                if (node) {
-                    index = text.indexOf(node.surface, startIndex);
-                    startIndex += node.surface.length;
-                } else {
-                    index = -1
-                }
-            }
-            if (newText.length > 0) {
-                const newElement = document.createElement('span');
-                newElement.innerHTML = newText;
-                element.before(newElement);
-
-                // Have to go to the next node or else we lose our place.
-                walker.nextNode();
-                element.remove();
-                didRemoveNode = true;
-            }
-        } while ((didRemoveNode || walker.nextNode()) && nodeIndex < nodes.length);
     }
 
     render() {
@@ -199,6 +131,8 @@ class Reader extends React.Component {
                         ].map(item => (
                             <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
                         ))}
+                        <br />
+                        <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
                     </>}
                     <hr />
                     {this.state.html && <div className={`p-3 visual-type-${this.state.visualType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}

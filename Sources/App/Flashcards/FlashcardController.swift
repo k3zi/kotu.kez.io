@@ -83,7 +83,9 @@ class FlashcardController: RouteCollection {
             return Note
                 .query(on: req.db)
                 .with(\.$fieldValues)
-                .with(\.$cards)
+                .with(\.$cards) {
+                    $0.with(\.$deck)
+                }
                 .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
                 .join(User.self, on: \NoteType.$owner.$id == \User.$id)
                 .filter(User.self, \.$id == userID)
@@ -91,12 +93,23 @@ class FlashcardController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Note not found"))
                 .flatMap { note in
-                    note.cards.delete(on: req.db)
-                        .flatMap {
-                            note.fieldValues.delete(on: req.db)
-                        }
-                        .flatMap {
-                            note.delete(on: req.db)
+                    let deckUpdates: [EventLoopFuture<Void>] = Swift.Dictionary(grouping: note.cards, by: { $0.deck.id }).map { (id, cards) in
+                        let deck = cards.first!.deck
+                        let sm = deck.sm
+                        let ids = cards.map { $0.id }
+                        sm.queue.removeAll(where: { ids.contains($0.card) })
+                        deck.sm = sm
+                        return deck.update(on: req.db)
+                    }
+                    return EventLoopFuture.whenAllComplete(deckUpdates, on: req.eventLoop)
+                        .flatMap { _ in
+                            note.cards.delete(on: req.db)
+                                .flatMap {
+                                    note.fieldValues.delete(on: req.db)
+                                }
+                                .flatMap {
+                                    note.delete(on: req.db)
+                                }
                         }
                 }
                 .map { "Note deleted." }
@@ -185,6 +198,27 @@ class FlashcardController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
+        }
+
+        guardedDeckID.put { req -> EventLoopFuture<Deck> in
+            let user = try req.auth.require(User.self)
+            guard let id = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            try Deck.Update.validate(content: req)
+            let object = try req.content.decode(Deck.Update.self)
+            return user.$decks
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.notFound))
+                .flatMap { deck in
+                    let sm = deck.sm
+                    sm.requestedFI = Double(object.requestedFI)
+
+                    deck.name = object.name
+                    deck.sm = sm
+                    return deck.save(on: req.db)
+                        .map { deck }
+                }
         }
 
         guardedDecks.get { req -> EventLoopFuture<[Deck]> in
