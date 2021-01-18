@@ -62,6 +62,14 @@ class FeedbackModal extends React.Component {
         }
     }
 
+    onChange(text) {
+        const shouldUpdate = text.length === 0 || this.state.value.length === 0;
+        this.state.value = text;
+        if (shouldUpdate) {
+            this.setState({ value: this.state.value });
+        }
+    }
+
     render() {
         return (
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
@@ -73,7 +81,7 @@ class FeedbackModal extends React.Component {
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <ContentEditable value={this.state.value} onChange={(e) => { this.state.value = e.target.value; }} className='form-control h-auto text-break plaintext' />
+                        <ContentEditable value={this.state.value} onChange={(e) => this.onChange(e.target.value)} className='form-control h-auto text-break plaintext' />
 
                         {this.state.didError && <Alert variant="danger" className='mb-3'>
                             {this.state.message}
