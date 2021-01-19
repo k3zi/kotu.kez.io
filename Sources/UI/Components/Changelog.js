@@ -9,6 +9,8 @@ class Component extends React.Component {
 #### 2021/1/19
 - Added option for furigana based on frequency on the Reader page.
 - Added click to display dictionary entries feature to Reader.
+- Add settings page.
+- Add option to hide card note form.
 #### 2021/1/18
 - Add ability to add card types.
 #### 2021/1/17

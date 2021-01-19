@@ -15,7 +15,15 @@ func routes(_ app: Application) throws {
     try api.register(collection: ListsController())
 
     api.get("me") { req -> User in
-        return try req.auth.require(User.self)
+        try req.auth.require(User.self)
+    }
+
+    api.put("me", "settings") { req -> EventLoopFuture<Settings> in
+        let user = try req.auth.require(User.self)
+        let object = try req.content.decode(Settings.self)
+        user.settings = object
+        return user.save(on: req.db)
+            .map { object }
     }
 
     api.post("feedback") { (req: Request) -> EventLoopFuture<Response> in

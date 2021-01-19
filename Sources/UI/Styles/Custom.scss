@@ -582,6 +582,12 @@ rt .underline {
     padding: 0;
 }
 
+.dropdown-menu-end .dropdown-menu {
+    --bs-position: end;
+    right: 0 !important;
+    left: auto;
+}
+
 @media (prefers-color-scheme: dark) {
 
     body {

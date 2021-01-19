@@ -20,6 +20,7 @@ import YouTube from 'react-youtube';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
 import Helpers from './../Helpers';
+import UserContext from './../Context/User';
 
 class Reader extends React.Component {
 
@@ -108,62 +109,64 @@ class Reader extends React.Component {
 
     render() {
         return (
-            <Row>
-                <Col xs={12} md={7}>
-                    <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
-                    <InputGroup className="mt-3">
-                        <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name} readOnly />
-                        <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
-                            {this.furiganaFrequencyOptions().map((item, i) => {
-                                return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
-                            })}
-                        </DropdownButton>
-                    </InputGroup>
-                    <ButtonGroup className='my-3 d-flex' toggle>
-                        {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
-                            <ToggleButton
-                                id={`visualType${item.value}`}
-                                key={i}
-                                type="radio"
-                                variant="secondary"
-                                name="visualType"
-                                value={item.value}
-                                checked={this.state.visualType === item.value}
-                                onChange={(e) => this.setState({ visualType: e.target.value })}>
-                            {item.name}
-                            </ToggleButton>
-                        ))}
-                    </ButtonGroup>
-                    {this.state.visualType === 'showFrequency' && <>
-                        {this.frequencyOptions().map(item => (
-                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                        ))}
-                    </>}
+            <UserContext.Consumer>{user => (
+                <Row>
+                    <Col xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
+                        <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
+                        <InputGroup className="mt-3">
+                            <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name} readOnly />
+                            <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
+                                {this.furiganaFrequencyOptions().map((item, i) => {
+                                    return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
+                                })}
+                            </DropdownButton>
+                        </InputGroup>
+                        <ButtonGroup className='my-3 d-flex' toggle>
+                            {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
+                                <ToggleButton
+                                    id={`visualType${item.value}`}
+                                    key={i}
+                                    type="radio"
+                                    variant="secondary"
+                                    name="visualType"
+                                    value={item.value}
+                                    checked={this.state.visualType === item.value}
+                                    onChange={(e) => this.setState({ visualType: e.target.value })}>
+                                {item.name}
+                                </ToggleButton>
+                            ))}
+                        </ButtonGroup>
+                        {this.state.visualType === 'showFrequency' && <>
+                            {this.frequencyOptions().map(item => (
+                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                            ))}
+                        </>}
 
-                    {this.state.visualType === 'showPitchAccent' && <>
-                        {[
-                            { name: 'Heiban (平板)', value: 'heiban' },
-                            { name: 'Kihuku (起伏)', value: 'kihuku' },
-                            { name: 'Odaka (尾高)', value: 'odaka' },
-                            { name: 'Nakadaka (中高)', value: 'nakadaka' },
-                            { name: 'Atamadak (頭高)', value: 'atamadaka' },
-                            { name: 'Unknown (知らんw)', value: 'unknown' }
-                        ].map(item => (
-                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                        ))}
-                        <br />
-                        <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
-                    </>}
-                    <hr />
-                    {this.state.html && <div className={`p-3 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
-                    {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
-                </Col>
+                        {this.state.visualType === 'showPitchAccent' && <>
+                            {[
+                                { name: 'Heiban (平板)', value: 'heiban' },
+                                { name: 'Kihuku (起伏)', value: 'kihuku' },
+                                { name: 'Odaka (尾高)', value: 'odaka' },
+                                { name: 'Nakadaka (中高)', value: 'nakadaka' },
+                                { name: 'Atamadak (頭高)', value: 'atamadaka' },
+                                { name: 'Unknown (知らんw)', value: 'unknown' }
+                            ].map(item => (
+                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                            ))}
+                            <br />
+                            <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
+                        </>}
+                        <hr />
+                        {this.state.html && <div className={`p-3 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
+                        {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+                    </Col>
 
-                <Col xs={12} md={5}>
-                    <CreateNoteForm className='mt-3 mt-md-0' onSuccess={() => { }} />
-                </Col>
-            </Row>
-        );
+                    {user.settings.reader.showCreateNoteForm && <Col xs={12} md={5}>
+                        <CreateNoteForm className='mt-3 mt-md-0' onSuccess={() => { }} />
+                    </Col>}
+                </Row>
+            )
+        }</UserContext.Consumer>);
     }
 }
 

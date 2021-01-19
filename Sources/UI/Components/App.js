@@ -27,6 +27,7 @@ import FeedbackModal from './FeedbackModal';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 import SearchResultModal from './SearchResultModal';
+import SettingsModal from './SettingsModal';
 
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
@@ -63,6 +64,7 @@ class App extends React.Component {
             showLoginModal: false,
             showCreateNoteModal: false,
             showAddSentenceModal: false,
+            showSettingsModal: false,
             user: null,
             isReady: false,
 
@@ -172,6 +174,11 @@ class App extends React.Component {
         this.setState({ showAddSentenceModal: show });
     }
 
+    toggleShowSettingsModal(show) {
+        this.setState({ showSettingsModal: show });
+        this.loadUser();
+    }
+
     async logout() {
         const response = await fetch('/api/auth/logout');
         if (response.ok) {
@@ -241,7 +248,7 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>Sentences</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
-                                    <NavDropdown.Item onClick={() => this.toggleAddSentenceModal(true)}>Add Sentence</NavDropdown.Item>
+                                    <NavDropdown.Item active={false} onClick={() => this.toggleAddSentenceModal(true)}>Add Sentence</NavDropdown.Item>
                                 </NavDropdown>
 
                                 <NavDropdown title='Media'>
@@ -291,7 +298,12 @@ class App extends React.Component {
                             <Navbar.Text className="d-sm-block d-none">
                                 Logged in as: <strong>{this.state.user.username}</strong>
                             </Navbar.Text>
-                            <Nav.Link href="#" onClick={() => this.logout()}>Logout</Nav.Link>
+
+                            <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
+                                <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
+                                <NavDropdown.Divider />
+                                <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
+                            </NavDropdown>
                         </Nav>}
                     </Navbar>
 
@@ -383,6 +395,7 @@ class App extends React.Component {
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
                     <AddSentenceModal show={this.state.showAddSentenceModal} onHide={() => this.toggleAddSentenceModal(false)} onSuccess={() => this.toggleAddSentenceModal(false)} />
                     <SearchResultModal headwords={this.state.headwords} show={this.state.headwords.length > 0} onHide={() => this.setState({ headwords: [], isFocused: false })} />
+                    <SettingsModal user={this.state.user} show={this.state.showSettingsModal} onHide={() => this.toggleShowSettingsModal(false)} onSave={() => this.loadUser()} />
                 </Router>
             </UserContext.Provider>
         );

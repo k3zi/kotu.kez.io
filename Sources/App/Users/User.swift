@@ -32,6 +32,9 @@ final class User: Model, Content {
     @OptionalField(key: "plex_auth")
     var plexAuth: SignInResponse?
 
+    @OptionalField(key: "settings")
+    var settings: Settings?
+
     // MARK: Transcription
 
     @Children(for: \.$owner)
@@ -73,6 +76,7 @@ final class User: Model, Content {
 
     func beforeEncode() throws {
         self.passwordHash = ""
+        self.settings = self.settings ?? Settings()
     }
 
 }
@@ -228,6 +232,22 @@ extension User {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema("users")
                 .deleteField("plex_auth")
+                .update()
+        }
+    }
+
+    struct Migration10: Fluent.Migration {
+        var name: String { "AddUserSettings" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("settings", .json)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("settings")
                 .update()
         }
     }
