@@ -454,13 +454,123 @@ hr {
     }
 }
 
+.ruby-type-none {
+    rt {
+        display: none;
+    }
+}
+
+.ruby-type-unknown {
+    .underline-veryRare {
+        rt {
+            display: none;
+        }
+    }
+    .underline-rare {
+        rt {
+            display: none;
+        }
+    }
+    .underline-uncommon {
+        rt {
+            display: none;
+        }
+    }
+    .underline-common {
+        rt {
+            display: none;
+        }
+    }
+    .underline-veryCommon {
+        rt {
+            display: none;
+        }
+    }
+}
+
+.ruby-type-veryRare {
+    .underline-rare {
+        rt {
+            display: none;
+        }
+    }
+    .underline-uncommon {
+        rt {
+            display: none;
+        }
+    }
+    .underline-common {
+        rt {
+            display: none;
+        }
+    }
+    .underline-veryCommon {
+        rt {
+            display: none;
+        }
+    }
+}
+
+.ruby-type-rare {
+    .underline-uncommon {
+        rt {
+            display: none;
+        }
+    }
+    .underline-common {
+        rt {
+            display: none;
+        }
+    }
+    .underline-veryCommon {
+        rt {
+            display: none;
+        }
+    }
+}
+
+.ruby-type-uncommon {
+    .underline-common {
+        rt {
+            display: none;
+        }
+    }
+    .underline-veryCommon {
+        rt {
+            display: none;
+        }
+    }
+}
+
+.ruby-type-common {
+    .underline-veryCommon {
+        rt {
+            display: none;
+        }
+    }
+}
+
 .page {
     line-height: 2.5rem;
     font-size: 1.25rem;
 }
 
-.page span {
-    padding: 1px;
+.page span.word {
+    background-color: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    padding-bottom: 6px;
+    padding-left: 1px;
+    padding-right: 1px;
+}
+.page span.word:hover {
+    background-color: rgba(127, 127, 127, 0.6);
+}
+
+.visual-type-none {
+    span.word {
+        padding-bottom: 0px;
+    }
 }
 
 .page img {

@@ -1,4 +1,5 @@
 import Fluent
+import Foundation
 import MeCab
 import Vapor
 
@@ -9,7 +10,15 @@ extension String {
             .count
     }
 
+    func match(_ regex: String) -> [[String]] {
+        let nsString = self as NSString
+        return (try? NSRegularExpression(pattern: regex, options: []))?.matches(in: self, options: [], range: NSMakeRange(0, count)).map { match in
+            (0..<match.numberOfRanges).map { match.range(at: $0).location == NSNotFound ? "" : nsString.substring(with: match.range(at: $0)) }
+        } ?? []
+    }
+
 }
+
 
 extension Node {
 
@@ -27,6 +36,43 @@ extension Node {
 
     var pronunciation: String {
         (features.count > 6 ? features[6] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
+    }
+
+    var surfacePronunciation: String {
+        ((features.count > 22 ? features[22] : "").split(separator: "-").first.flatMap { String($0) } ?? "")
+            .replacingOccurrences(of: "ヅ", with: "ズ")
+    }
+
+    var ruby: String {
+        //  使う → 使ウ
+        // 入り込む → 入リ込ム
+        let katakanaSurface = (surface.applyingTransform(.hiraganaToKatakana, reverse: false) ?? surface)
+            .replacingOccurrences(of: "ヅ", with: "ズ")
+        guard katakanaSurface != surfacePronunciation else {
+            return surface
+        }
+
+        //  使ウ → (.+)ウ
+        // 入リ込ム → (.+)リ(.+)ム
+        let regexString = katakanaSurface.replacingOccurrences(of: "\\p{Han}+", with: "(.+)", options: [.regularExpression])
+
+        // [ツカ]
+        // [ハイ, コ]
+        var captures = surfacePronunciation.match(regexString).first?.suffix(from: 1) ?? []
+        var result = surface
+
+        var startIndex: String.Index? = nil
+        while let range = result.range(of: "\\p{Han}+", options: .regularExpression, range: startIndex.flatMap { ($0..<result.endIndex) }) {
+            let kanji = result[range]
+            guard captures.count > 0 else {
+                return surface
+            }
+            let kana = captures.removeFirst().applyingTransform(.hiraganaToKatakana, reverse: true)!
+            result.replaceSubrange(range, with: "<ruby>\(kanji)<rt>\(kana)</rt></ruby>")
+            startIndex = result.lastIndex(of: ">")
+        }
+
+        return result
     }
 
     var pitchAccentInteger: Int? {
@@ -95,6 +141,7 @@ struct ParseResult: Content {
 
     let surface: String
     let original: String
+    let ruby: String
     let shouldDisplay: Bool
     let isBasic: Bool
     let frequency: Frequency
@@ -236,7 +283,7 @@ class ListsController: RouteCollection {
                         let katakana = node.pronunciation
                         let hiragana = katakana.applyingTransform(.hiraganaToKatakana, reverse: true) ?? katakana
                         let frequencyItem = [DictionaryManager.shared.frequencyList[node.surface], DictionaryManager.shared.frequencyList[hiragana], DictionaryManager.shared.frequencyList[katakana], DictionaryManager.shared.frequencyList[node.original]].compactMap { $0 }.min()
-                        return ParseResult(surface: node.surface, original: node.original, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccent, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
+                        return ParseResult(surface: node.surface, original: node.original, ruby: node.ruby, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccent, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
                 }
         }

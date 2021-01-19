@@ -6,6 +6,8 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/19
+- Added option for furigana based on frequency on the Reader page.
 #### 2021/1/18
 - Add ability to add card types.
 #### 2021/1/17

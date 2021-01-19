@@ -7,7 +7,10 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Col from 'react-bootstrap/Col';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
@@ -26,7 +29,8 @@ class Reader extends React.Component {
             isLoading: false,
             article: null,
             html: null,
-            visualType: 'showFrequency'
+            visualType: 'showFrequency',
+            rubyType: 'none'
         };
         this.currentRequestID = 0;
     }
@@ -87,13 +91,36 @@ class Reader extends React.Component {
         this.setState({ isLoading: false, html: articleContent.innerHTML });
     }
 
+    frequencyOptions() {
+        return [
+            { name: 'Very Common', value: 'veryCommon' },
+            { name: 'Common', value: 'common' },
+            { name: 'Uncommon', value: 'uncommon' },
+            { name: 'Rare', value: 'rare' },
+            { name: 'Very Rare', value: 'veryRare' },
+            { name: 'Unknown', value: 'unknown' }
+        ];
+    }
+
+    furiganaFrequencyOptions() {
+        return [{ name: 'Hide Furigana', value: 'none' }, ...this.frequencyOptions()];
+    }
+
     render() {
         return (
             <Row>
                 <Col xs={12} md={7}>
                     <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
+                    <InputGroup className="mt-3">
+                        <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name} readOnly />
+                        <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
+                            {this.furiganaFrequencyOptions().map((item, i) => {
+                                return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
+                            })}
+                        </DropdownButton>
+                    </InputGroup>
                     <ButtonGroup className='my-3 d-flex' toggle>
-                        {[{ name: 'Show Frequency', value: 'showFrequency' }, { name: 'Show Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
+                        {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
                             <ToggleButton
                                 id={`visualType${item.value}`}
                                 key={i}
@@ -108,14 +135,7 @@ class Reader extends React.Component {
                         ))}
                     </ButtonGroup>
                     {this.state.visualType === 'showFrequency' && <>
-                        {[
-                            { name: 'Very Common', value: 'veryCommon' },
-                            { name: 'Common', value: 'common' },
-                            { name: 'Uncommon', value: 'uncommon' },
-                            { name: 'Rare', value: 'rare' },
-                            { name: 'Very Rare', value: 'veryRare' },
-                            { name: 'Unknown', value: 'unknown' }
-                        ].map(item => (
+                        {this.frequencyOptions().map(item => (
                             <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
                         ))}
                     </>}
@@ -135,7 +155,7 @@ class Reader extends React.Component {
                         <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
                     </>}
                     <hr />
-                    {this.state.html && <div className={`p-3 visual-type-${this.state.visualType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
+                    {this.state.html && <div className={`p-3 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                     {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                 </Col>
 
