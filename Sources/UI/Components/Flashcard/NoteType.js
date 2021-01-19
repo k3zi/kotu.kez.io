@@ -26,6 +26,7 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Table from 'react-bootstrap/Table';
 
+import AddCardTypeModal from './Modals/AddCardTypeModal';
 import DeleteFieldModal from './Modals/DeleteFieldModal';
 import CreateFieldModal from './Modals/CreateFieldModal';
 
@@ -231,6 +232,7 @@ class NoteType extends React.Component {
                     </Row>
                 </div>}
 
+                <AddCardTypeModal noteType={this.state.noteType} show={this.state.showAddCardTypeModal} onHide={() => this.toggleAddCardType(false)} onSuccess={() => this.toggleAddCardType(false)} />
                 <CreateFieldModal noteType={this.state.noteType} show={this.state.showCreateFieldModal} onHide={() => this.toggleCreateFieldModal(false)} onSuccess={() => this.toggleCreateFieldModal(false)} />
                 <DeleteFieldModal noteType={this.state.noteType} field={this.state.showDeleteFieldModal} didDelete={() => this.showDeleteFieldModal(null)} didCancel={() => this.showDeleteFieldModal(null)} onHide={() => this.showDeleteFieldModal(null)} />
             </div>

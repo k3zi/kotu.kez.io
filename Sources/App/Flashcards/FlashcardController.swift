@@ -396,14 +396,33 @@ class FlashcardController: RouteCollection {
         let guardedCardType = guardedNoteTypeID.grouped("cardType")
         let guardedCardTypeID = guardedCardType.grouped(":cardTypeID")
 
+        guardedCardType.post() { req -> EventLoopFuture<CardType> in
+            let user = try req.auth.require(User.self)
+            guard let id = req.parameters.get("noteTypeID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            try CardType.Create.validate(content: req)
+            let object = try req.content.decode(CardType.Create.self)
+
+            return user.$noteTypes
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Note type not found"))
+                .throwingFlatMap { type in
+                    let cardType = CardType(noteTypeID: try type.requireID(), overrideDeckID: nil, name: object.name, frontHTML: "", backHTML: "", css: "")
+                    return type.$cardTypes.create(cardType, on: req.db)
+                        .map { cardType }
+                }
+        }
+
         guardedCardTypeID.put() { (req: Request) -> EventLoopFuture<CardType> in
             let user = req.auth.get(User.self) ?? User.guest
             let userID = try user.requireID()
             guard let noteTypeID = req.parameters.get("noteTypeID", as: UUID.self) else { throw Abort(.badRequest, reason: "Note Type ID not provided") }
             guard let cardTypeID = req.parameters.get("cardTypeID", as: UUID.self) else { throw Abort(.badRequest, reason: "Card Type ID not provided") }
 
-            try CardType.CreateOrUpdate.validate(content: req)
-            let object = try req.content.decode(CardType.CreateOrUpdate.self)
+            try CardType.Update.validate(content: req)
+            let object = try req.content.decode(CardType.Update.self)
             return CardType.query(on: req.db)
                 .with(\.$noteType) {
                     $0.with(\.$owner)

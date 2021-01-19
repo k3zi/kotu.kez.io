@@ -68,7 +68,11 @@ extension CardType {
 
 extension CardType {
 
-    struct CreateOrUpdate: Content {
+    struct Create: Content {
+        let name: String
+    }
+
+    struct Update: Content {
         let overrideDeckID: UUID?
         let name: String
         let frontHTML: String
@@ -78,12 +82,20 @@ extension CardType {
 
 }
 
-extension CardType.CreateOrUpdate: Validatable {
+extension CardType.Create: Validatable {
 
     static func validations(_ validations: inout Validations) {
         validations.add("name", as: String.self, is: !.empty)
-        validations.add("frontHTML", as: String.self, is: !.empty)
-        validations.add("backHTML", as: String.self, is: !.empty)
+    }
+
+}
+
+extension CardType.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: !.empty)
+        validations.add("frontHTML", as: String.self)
+        validations.add("backHTML", as: String.self)
         validations.add("css", as: String.self)
     }
 
