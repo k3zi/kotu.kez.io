@@ -555,7 +555,7 @@ hr {
     font-size: 1.25rem;
 }
 
-.page span.word {
+.page word {
     background-color: transparent;
     cursor: pointer;
     border-radius: 4px;
@@ -563,12 +563,12 @@ hr {
     padding-left: 1px;
     padding-right: 1px;
 }
-.page span.word:hover {
-    background-color: rgba(127, 127, 127, 0.6);
+.page word:hover {
+    background-color: rgba(127,127,127,.17);
 }
 
 .visual-type-none {
-    span.word {
+    word {
         padding-bottom: 0px;
     }
 }

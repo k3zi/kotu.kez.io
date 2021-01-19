@@ -30,6 +30,51 @@ extension Node {
     }
 }
 
+extension String {
+
+    mutating func remove(upToAndIncluding idx: Index) {
+        self = String(self[index(after: idx)...])
+    }
+
+    mutating func parseField() -> String {
+        assert(!self.isEmpty)
+        switch self[startIndex] {
+        case "\"":
+            removeFirst()
+            guard let quoteIdx = firstIndex(of: "\"") else {
+                fatalError("expected quote")
+            }
+            let result = prefix(upTo: quoteIdx)
+            remove(upToAndIncluding: quoteIdx)
+            if !isEmpty {
+                let comma = removeFirst()
+                assert(comma == ",")
+            }
+            return String(result)
+
+        default:
+            if let commaIdx = firstIndex(of: ",") {
+                let result = prefix(upTo: commaIdx)
+                remove(upToAndIncluding: commaIdx)
+                return String(result)
+            } else {
+                let result = self
+                removeAll()
+                return result
+            }
+        }
+    }
+}
+
+func parse(line: String) -> [String] {
+    var remainder = line
+    var result: [String] = []
+    while !remainder.isEmpty {
+        result.append(remainder.parseField())
+    }
+    return result
+}
+
 public struct Node: TokenNode, CustomStringConvertible {
     public let isBosEos: Bool
     public let surface: String
@@ -69,7 +114,7 @@ public struct Node: TokenNode, CustomStringConvertible {
                 throw MecabError.nodeParseError
         }
         self.surface = surface as String
-        self.features = feature.split(separator: ",").map(String.init)
+        self.features = parse(line: feature)
         if features.count == 0 {
             throw MecabError.nodeParseError
         }

@@ -40,14 +40,12 @@ extension Node {
 
     var surfacePronunciation: String {
         ((features.count > 22 ? features[22] : "").split(separator: "-").first.flatMap { String($0) } ?? "")
-            .replacingOccurrences(of: "ヅ", with: "ズ")
     }
 
     var ruby: String {
         //  使う → 使ウ
         // 入り込む → 入リ込ム
         let katakanaSurface = (surface.applyingTransform(.hiraganaToKatakana, reverse: false) ?? surface)
-            .replacingOccurrences(of: "ヅ", with: "ズ")
         guard katakanaSurface != surfacePronunciation else {
             return surface
         }
@@ -59,13 +57,16 @@ extension Node {
         // [ツカ]
         // [ハイ, コ]
         var captures = surfacePronunciation.match(regexString).first?.suffix(from: 1) ?? []
-        var result = surface
+        guard !captures.isEmpty else {
+            return "<ruby>\(surface)<rt>\(surfacePronunciation)</rt></ruby>"
+        }
 
+        var result = surface
         var startIndex: String.Index? = nil
         while let range = result.range(of: "\\p{Han}+", options: .regularExpression, range: startIndex.flatMap { ($0..<result.endIndex) }) {
             let kanji = result[range]
-            guard captures.count > 0 else {
-                return surface
+            guard !captures.isEmpty else {
+                return "<ruby>\(surface)<rt>\(surfacePronunciation)</rt></ruby>"
             }
             let kana = captures.removeFirst().applyingTransform(.hiraganaToKatakana, reverse: true)!
             result.replaceSubrange(range, with: "<ruby>\(kanji)<rt>\(kana)</rt></ruby>")
@@ -75,35 +76,36 @@ extension Node {
         return result
     }
 
-    var pitchAccentInteger: Int? {
-        let feature24 = ((features.count > 24 ? features[24] : "").split(separator: ",").first ?? "").trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
-        let feature25 = ((features.count > 25 ? features[25] : "").split(separator: ",").first ?? "").trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
-        return Int(feature24) ?? Int(feature25)
+    var pitchAccentIntegers: [Int] {
+        let feature24 = (features.count > 24 ? features[24] : "").split(separator: ",")
+        return feature24.compactMap { Int($0) }
     }
 
-    var pitchAccent: PitchAccent {
-        guard let i = pitchAccentInteger else {
-            return .unknown
+    var pitchAccents: [PitchAccent] {
+        guard !pitchAccentIntegers.isEmpty else {
+            return [.unknown]
         }
-        let c = pronunciation.moraCount
+        return pitchAccentIntegers.map { i in
+            let c = pronunciation.moraCount
 
-        if i == 0 {
-            return .heiban
+            if i == .zero {
+                return .heiban
+            }
+
+            if partOfSpeech == "動詞" || partOfSpeech == "形容詞" {
+                return .kihuku
+            }
+
+            if i == c {
+                return .odaka
+            }
+
+            if i == 1 {
+                return .atamadaka
+            }
+
+            return .nakadaka
         }
-
-        if partOfSpeech == "動詞" || partOfSpeech == "形容詞" {
-            return .kihuku
-        }
-
-        if i == c {
-            return .odaka
-        }
-
-        if i == 1 {
-            return .atamadaka
-        }
-
-        return .nakadaka
     }
 
     var isGenerallyIgnored: Bool {
@@ -269,7 +271,6 @@ class ListsController: RouteCollection {
                     .limit(5)
                     .all()
                     .map {
-                        req.logger.info("map: \(node.original) / \($0.count) headwords")
                         return (node, $0)
                     }
             }
@@ -283,7 +284,7 @@ class ListsController: RouteCollection {
                         let katakana = node.pronunciation
                         let hiragana = katakana.applyingTransform(.hiraganaToKatakana, reverse: true) ?? katakana
                         let frequencyItem = [DictionaryManager.shared.frequencyList[node.surface], DictionaryManager.shared.frequencyList[hiragana], DictionaryManager.shared.frequencyList[katakana], DictionaryManager.shared.frequencyList[node.original]].compactMap { $0 }.min()
-                        return ParseResult(surface: node.surface, original: node.original, ruby: node.ruby, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccent, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
+                        return ParseResult(surface: node.surface, original: node.original, ruby: node.ruby, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccents.first!, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
                     }
                 }
         }

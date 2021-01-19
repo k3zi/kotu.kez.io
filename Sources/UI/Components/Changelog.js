@@ -8,6 +8,7 @@ class Component extends React.Component {
         let markdown = `# Changelog
 #### 2021/1/19
 - Added option for furigana based on frequency on the Reader page.
+- Added click to display dictionary entries feature to Reader.
 #### 2021/1/18
 - Add ability to add card types.
 #### 2021/1/17

@@ -70,7 +70,7 @@ class App extends React.Component {
 
             query: '',
             results: [],
-            headword: null
+            headwords: []
         };
     }
 
@@ -103,7 +103,7 @@ class App extends React.Component {
                 while (target) {
                     var isMatch = target.matches(selector);
                     if (isMatch) {
-                        handler(evt);
+                        handler(evt, target);
                        return;
                    }
                    target = target.parentElement;
@@ -126,6 +126,11 @@ class App extends React.Component {
             if (e.keyCode == 13) {
                 e.preventDefault();
             }
+        });
+
+        addLiveEventListeners('word', 'click', (e, target) => {
+            const headwords = JSON.parse(target.dataset.headwords);
+            this.setState({ headwords });
         });
     }
 
@@ -185,7 +190,7 @@ class App extends React.Component {
     }
 
     loadResult(headword) {
-        this.setState({ headword: headword });
+        this.setState({ headwords: [headword] });
     }
 
     loginProtect(view) {
@@ -377,7 +382,7 @@ class App extends React.Component {
                     <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
                     <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
                     <AddSentenceModal show={this.state.showAddSentenceModal} onHide={() => this.toggleAddSentenceModal(false)} onSuccess={() => this.toggleAddSentenceModal(false)} />
-                    <SearchResultModal headword={this.state.headword} show={!!this.state.headword} onHide={() => this.setState({ headword: null, isFocused: false })} />
+                    <SearchResultModal headwords={this.state.headwords} show={this.state.headwords.length > 0} onHide={() => this.setState({ headwords: [], isFocused: false })} />
                 </Router>
             </UserContext.Provider>
         );

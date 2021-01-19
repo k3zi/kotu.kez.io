@@ -5,10 +5,12 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
+import ListGroup from 'react-bootstrap/ListGroup';
 import Modal from 'react-bootstrap/Modal';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
+import Tab from 'react-bootstrap/Tab';
 import YouTube from 'react-youtube';
 
 class SearchResultModal extends React.Component {
@@ -21,27 +23,33 @@ class SearchResultModal extends React.Component {
             inList: false,
             selectedResult: null,
             selectedResultHTML: '',
-            isSubmitting: false
+            isSubmitting: false,
+            headword: null
         };
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (prevProps.headword !== this.props.headword) {
-            this.loadResult();
+        if (prevProps.headwords !== this.props.headwords) {
+            this.loadHeadword(this.props.headwords[0]);
         }
     }
 
-    async loadResult() {
+    async loadHeadword(headword) {
+        this.setState({ headword });
+        if (!headword) {
+            return;
+        }
+
         this.setState({ isLoading: true });
-        const response = await fetch(`/api/dictionary/entry/${this.props.headword.id}`);
+        const response = await fetch(`/api/dictionary/entry/${headword.id}`);
         const result = await response.text();
-        this.setState({ selectedResultHTML: result, isLoading: false });
+        this.setState({ selectedResultHTML: result, isLoading: false, headword: headword });
 
         this.checkList();
     }
 
     async checkList() {
-        const response = await fetch(`/api/lists/word/first?q=${encodeURIComponent(this.props.headword.headline)}&isLookup=1`);
+        const response = await fetch(`/api/lists/word/first?q=${encodeURIComponent(this.state.headword.headline)}&isLookup=1`);
         this.setState({ inList: response.ok });
     }
 
@@ -49,7 +57,7 @@ class SearchResultModal extends React.Component {
         this.setState({ isSubmitting: true });
 
         const data = {
-            value: this.props.headword.headline
+            value: this.state.headword.headline
         };
         const response = await fetch(`/api/lists/word`, {
             method: 'POST',
@@ -70,14 +78,27 @@ class SearchResultModal extends React.Component {
     render() {
         return (
             <Modal {...this.props} size="lg" centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>{this.props.headword && this.props.headword.headline}</Modal.Title>
-                    <Button onClick={() => this.addToList()} className='ms-2' variant='primary' disabled={this.state.inList}>{this.state.inList ? 'Added' : 'Add to List'}</Button>
-                </Modal.Header>
-                <Modal.Body>
-                    {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
-                    {!this.state.isLoading && <iframe className="col-12" style={{ height: '60vh' }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
-                </Modal.Body>
+                <Row>
+                    {this.props.headwords.length > 1 && <Col sm={4}>
+                        <ListGroup variant='flush'>
+                            {this.props.headwords.map((headword, i) => (
+                                <ListGroup.Item key={i} action onClick={() => this.loadHeadword(headword)}>
+                                    {headword.headline}
+                                </ListGroup.Item>
+                            ))}
+                        </ListGroup>
+                    </Col>}
+                    <Col sm={this.props.headwords.length === 1 ? 12 : 8}>
+                        <Modal.Header closeButton>
+                            <Modal.Title>{this.state.headword && this.state.headword.headline}</Modal.Title>
+                            <Button onClick={() => this.addToList()} className='ms-2' variant='primary' disabled={this.state.inList}>{this.state.inList ? 'Added' : 'Add to List'}</Button>
+                        </Modal.Header>
+                        <Modal.Body>
+                            {this.state.isLoading && <h1 className="text-center" style={{ height: '60vh' }} ><Spinner animation="border" variant="secondary" /></h1>}
+                            {!this.state.isLoading && <iframe className="col-12" style={{ height: '60vh' }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
+                        </Modal.Body>
+                    </Col>
+                </Row>
             </Modal>
         );
     }

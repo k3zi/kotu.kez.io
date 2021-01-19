@@ -38,7 +38,7 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
             if (node.isBasic) {
                 newText += `<span>${node.surface}</span>`;
             } else {
-                newText += `<span class='word underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.ruby}</span>`;
+                newText += `<word data-headwords='${JSON.stringify(node.headwords)}' class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.ruby}</word>`;
             }
 
             nodeIndex += 1;
