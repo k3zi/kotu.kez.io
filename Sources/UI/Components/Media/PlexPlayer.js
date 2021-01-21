@@ -11,6 +11,7 @@ import Form from 'react-bootstrap/Form';
 import ListGroup from 'react-bootstrap/ListGroup';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
+import Spinner from 'react-bootstrap/Spinner';
 import Table from 'react-bootstrap/Table';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
@@ -46,13 +47,15 @@ class SectionChildrenList extends React.Component {
         if ((child.type === 'episode' || child.type === 'movie') && child.Media) {
             const media = [
                 {
-                    src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=hls`,
+                    url: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=hls`,
                     type: 'application/vnd.apple.mpegurl',
+                    shortType: 'hls',
                     base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
                 },
                 {
-                    src: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=dash`,
-                    type: 'dash',
+                    url: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=dash`,
+                    type: 'application/dash+xml',
+                    shortType: 'dash',
                     base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
                 }
             ];
@@ -311,15 +314,38 @@ class PlexPlayer extends React.Component {
         }
     }
 
-    playMedia(media) {
-        this.setState({ media });
-        const dashMedia = media.filter(m => m.type === 'dash')[0];
-        if (this.state.useDash && dashMedia) {
+    async fastestURL(urls) {
+        console.log('fastest of: ');
+        console.log(urls);
+        return urls[0];
+    }
+
+    async parseMedia(medias) {
+        const self = this;
+        const promises = medias.map(async (m) => {
+            const response = await fetch(m.url);
+            const urls = await response.json();
+            const url = await self.fastestURL(urls);
+            return {
+                src: url,
+                type: m.type,
+                base: m.base
+            }
+        });
+        const result = await Promise.all(promises);
+        return result.filter(m => m.src);
+    }
+
+    async playMedia(medias) {
+        const compatibleMedias = medias.filter(m => this.state.useDash ? (m.shortType === 'dash') : (m.shortType !== 'dash'));
+        const parsedMedias = await this.parseMedia(compatibleMedias);
+        this.setState({ media: parsedMedias });
+        if (this.state.useDash && parsedMedias.length > 0) {
             if (this.dashPlayer) {
-                this.dashPlayer.attachSource(dashMedia.src);
+                this.dashPlayer.attachSource(parsedMedias[0].src);
             } else {
                 this.dashPlayer = dashjs.MediaPlayer().create();
-                this.dashPlayer.initialize(this.playerRef.current, dashMedia.src, true);
+                this.dashPlayer.initialize(this.playerRef.current, parsedMedias[0].src, true);
             }
         }
     }

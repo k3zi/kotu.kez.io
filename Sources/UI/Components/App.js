@@ -130,7 +130,7 @@ class App extends React.Component {
             }
         });
 
-        addLiveEventListeners('word', 'click', (e, target) => {
+        addLiveEventListeners('component', 'click', (e, target) => {
             const headwords = JSON.parse(target.dataset.headwords);
             this.setState({ headwords });
         });

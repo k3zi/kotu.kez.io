@@ -78,9 +78,15 @@ func parse(line: String) -> [String] {
 public struct Node: TokenNode, CustomStringConvertible {
     public let isBosEos: Bool
     public let surface: String
-    public let features: [String]
-    public let posId: Int
+    public var features: [String]
     public let type: Type
+
+    public init(surface: String, features: [String], type: Type) {
+        self.isBosEos = type == .beginOfSentence || type == .endOfSentence
+        self.surface = surface
+        self.features = features
+        self.type = type
+    }
     
     init(_ node: UnsafePointer<mecab_node_t>) throws {
         let surfaceBuf: [Int8] = {
@@ -120,12 +126,11 @@ public struct Node: TokenNode, CustomStringConvertible {
         }
         self.isBosEos = type == .endOfSentence || type == .beginOfSentence
         self.type = type
-        self.posId = Int(node.pointee.posid)
     }
 }
 
 extension Node {
     public var description: String {
-        return "\(surface): \(posId) \(features)"
+        return "\(surface): \(features)"
     }
 }

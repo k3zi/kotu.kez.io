@@ -179,7 +179,7 @@ class MediaController: RouteCollection {
                 }
         }
 
-        plex.get("resource", ":clientIdentifier", "stream", ":mediaID") { req -> EventLoopFuture<Response> in
+        plex.get("resource", ":clientIdentifier", "stream", ":mediaID") { req -> EventLoopFuture<[String]> in
             let user = try req.auth.require(User.self)
             guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
             guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
@@ -192,20 +192,19 @@ class MediaController: RouteCollection {
                 }
                 .unwrap(orError: Abort(.badRequest, reason: "Resource not found"))
                 .flatMapThrowing { resource in
-                    guard let connection = resource.connections.first(where: { !$0.local }) else {
-                        throw Abort(.badRequest)
+                    resource.connections.map { connection in
+                        var url = ""
+                        if type == "hls" {
+                            url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.m3u8").absoluteString
+                            url += "?X-Plex-Token=\(resource.accessToken ?? "")"
+                            url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=hls&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome"
+                        } else if type == "dash" {
+                            url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.mpd").absoluteString
+                            url += "?X-Plex-Token=\(resource.accessToken ?? "")"
+                            url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=dash&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome"
+                        }
+                        return url
                     }
-                    var url = ""
-                    if type == "hls" {
-                        url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.m3u8").absoluteString
-                        url += "?X-Plex-Token=\(resource.accessToken ?? "")"
-                        url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=hls&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome"
-                    } else if type == "dash" {
-                        url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.mpd").absoluteString
-                        url += "?X-Plex-Token=\(resource.accessToken ?? "")"
-                        url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=dash&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome"
-                    }
-                    return req.redirect(to: url)
                 }
         }
 

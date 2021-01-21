@@ -9,14 +9,7 @@ import Modal from 'react-bootstrap/Modal';
 
 class SettingsModal extends React.Component {
 
-    constructor(props) {
-        super(props);
-        this.state = {
-        };
-    }
-
     async save(e, change) {
-        console.log(e);
         const data = this.props.user.settings;
         change(data);
         await fetch(`/api/me/settings`, {

@@ -122,7 +122,7 @@ class Reader extends React.Component {
                             </DropdownButton>
                         </InputGroup>
                         <ButtonGroup className='my-3 d-flex' toggle>
-                            {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'None', value: 'none' }].map((item, i) => (
+                            {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'Show Pitch Drops', value: 'showPitchAccentDrops' }, { name: 'None', value: 'none' }].map((item, i) => (
                                 <ToggleButton
                                     id={`visualType${item.value}`}
                                     key={i}
@@ -132,7 +132,7 @@ class Reader extends React.Component {
                                     value={item.value}
                                     checked={this.state.visualType === item.value}
                                     onChange={(e) => this.setState({ visualType: e.target.value })}>
-                                {item.name}
+                                    {item.name}
                                 </ToggleButton>
                             ))}
                         </ButtonGroup>

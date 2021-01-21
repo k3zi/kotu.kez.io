@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/21
+- Rewrite MeCab parser to better handle compounds and to support accent phrases.
+- Add pitch drop option to reader.
 #### 2021/1/19
 - Added option for furigana based on frequency on the Reader page.
 - Added click to display dictionary entries feature to Reader.

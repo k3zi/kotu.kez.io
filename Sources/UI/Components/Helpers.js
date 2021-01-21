@@ -1,6 +1,52 @@
+import _ from 'underscore';
 import { gzip } from 'pako';
 
 const helpers = {};
+
+helpers.outputAccent = (word, accent) => {
+    const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
+    let output = '';
+    let mora = 0;
+    let i = 0;
+    while (i < word.length) {
+        mora++;
+
+        if (accent > 0 && mora === accent) {
+            if (accent > 2) {
+                // rise end
+                output += "</marking>";
+            }
+            // drop start
+            output += "<marking class='drop'>";
+        }
+        output += word.charAt(i);
+        i++;
+
+        while (i < word.length && smallrowKatakana.includes(word.charAt(i))) {
+            output += word.charAt(i);
+            i++;
+        }
+
+        // drop end
+        if (accent > 0 && mora === accent) {
+            output += "</marking>";
+        }
+
+        // heiban start
+        if (accent === 0 && mora == 1 && i <= word.length) {
+            output += "<marking class='overline'>"
+        } else if (accent > 2 && mora === 1) {
+            // rise start
+            output += "<marking class='overline'>";
+        }
+
+        if (accent === 0 && i === word.length) {
+            output += "</marking>";
+        }
+    }
+
+    return output;
+};
 
 helpers.generateVisualSentenceElement = async function(content, textContent, isCancelled) {
     const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
@@ -10,8 +56,8 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
             'Content-Encoding': 'gzip'
         }
     });
-    let nodes = await sentenceResponse.json();
-    nodes = nodes.filter(n => n.shouldDisplay);
+    let sentences = await sentenceResponse.json();
+    const phrases = _.flatten(sentences.map(s => s.accentPhrases));
     if (isCancelled && isCancelled()) {
         return;
     }
@@ -20,7 +66,7 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
     contentElement.innerHTML = content;
 
     const walker = document.createTreeWalker(contentElement, NodeFilter.SHOW_TEXT);
-    let nodeIndex = 0;
+    let phraseIndex = 0;
     let didRemoveNode = false;
     do {
         didRemoveNode = false;
@@ -32,20 +78,22 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
         const text = element.textContent;
         let newText = '';
         let startIndex = 0;
-        let node = nodes[nodeIndex];
-        let index = text.indexOf(node.surface, startIndex);
+        let phrase = phrases[phraseIndex];
+        let index = text.indexOf(phrase.surface, startIndex);
         while (index != -1) {
-            if (node.isBasic) {
-                newText += `<span>${node.surface}</span>`;
+            if (phrase.isBasic) {
+                newText += `<phrase><visual>${phrase.pronunciation}</visual><component>${phrase.surface}</component></phrase>`;
             } else {
-                newText += `<word data-headwords='${JSON.stringify(node.headwords)}' class='underline underline-pitch-${node.pitchAccent} underline-${node.frequency}'>${node.ruby}</word>`;
+                newText += `<phrase><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map(c => {
+                        return `<component data-headwords='${JSON.stringify(c.headwords)}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
+                }).join('')}</phrase>`;
             }
 
-            nodeIndex += 1;
-            node = nodes[nodeIndex];
-            if (node) {
-                index = text.indexOf(node.surface, startIndex);
-                startIndex += node.surface.length;
+            phraseIndex += 1;
+            phrase = phrases[phraseIndex];
+            if (phrase) {
+                index = text.indexOf(phrase.surface, startIndex);
+                startIndex += phrase.surface.length;
             } else {
                 index = -1
             }
@@ -55,12 +103,12 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
             newElement.innerHTML = newText;
             element.before(newElement);
 
-            // Have to go to the next node or else we lose our place.
+            // Have to go to the next phrase or else we lose our place.
             walker.nextNode();
             element.remove();
             didRemoveNode = true;
         }
-    } while ((didRemoveNode || walker.nextNode()) && nodeIndex < nodes.length);
+    } while ((didRemoveNode || walker.nextNode()) && phraseIndex < phrases.length);
     return contentElement;
 }
 

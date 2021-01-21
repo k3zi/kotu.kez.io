@@ -5,9 +5,10 @@ import Vapor
 
 extension String {
 
+    static let smallRowKanaExcludingSokuon = CharacterSet(charactersIn: "ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮぁぃぅぇぉゃゅょゎ")
+
     var moraCount: Int {
-        trimmingCharacters(in: .init(charactersIn: "ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮぁぃぅぇぉゃゅょゎ"))
-            .count
+        filter { !Self.smallRowKanaExcludingSokuon.contains($0.unicodeScalars.first!) }.count
     }
 
     func match(_ regex: String) -> [[String]] {
@@ -34,6 +35,10 @@ extension Node {
         features[1]
     }
 
+    var id: String {
+        features.last ?? ""
+    }
+
     var pronunciation: String {
         (features.count > 6 ? features[6] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
     }
@@ -45,7 +50,7 @@ extension Node {
     var ruby: String {
         //  使う → 使ウ
         // 入り込む → 入リ込ム
-        let katakanaSurface = (surface.applyingTransform(.hiraganaToKatakana, reverse: false) ?? surface)
+        let katakanaSurface = surface.katakana
         guard katakanaSurface != surfacePronunciation else {
             return surface
         }
@@ -68,7 +73,7 @@ extension Node {
             guard !captures.isEmpty else {
                 return "<ruby>\(surface)<rt>\(surfacePronunciation)</rt></ruby>"
             }
-            let kana = captures.removeFirst().applyingTransform(.hiraganaToKatakana, reverse: true)!
+            let kana = captures.removeFirst().hiragana
             result.replaceSubrange(range, with: "<ruby>\(kanji)<rt>\(kana)</rt></ruby>")
             startIndex = result.lastIndex(of: ">")
         }
@@ -83,35 +88,15 @@ extension Node {
 
     var pitchAccents: [PitchAccent] {
         guard !pitchAccentIntegers.isEmpty else {
-            return [.unknown]
+            return [.init(mora: -1, length: 0)]
         }
         return pitchAccentIntegers.map { i in
-            let c = pronunciation.moraCount
-
-            if i == .zero {
-                return .heiban
-            }
-
-            if partOfSpeech == "動詞" || partOfSpeech == "形容詞" {
-                return .kihuku
-            }
-
-            if i == c {
-                return .odaka
-            }
-
-            if i == 1 {
-                return .atamadaka
-            }
-
-            return .nakadaka
+            return PitchAccent(mora: i, length: pronunciation.moraCount, isTwoKind: partOfSpeech == "動詞" || partOfSpeech == "形容詞")
         }
     }
 
     var isGenerallyIgnored: Bool {
         ["助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
-            ||
-        ["数詞"].contains(partOfSpeechSubType)
     }
 
     func shouldIgnore(for user: User) -> Bool {
@@ -128,7 +113,88 @@ extension Node {
 
 }
 
-enum PitchAccent: String, Content {
+struct PitchAccent: Content, Codable {
+
+    static func pitchAccent(for morphemes: [Morpheme]) -> PitchAccent {
+        if morphemes.count == 1 {
+            return morphemes[0].pitchAccents[0]
+        }
+
+        var remaining = morphemes
+        var morpheme = remaining.removeFirst()
+        var buildUpWord = morpheme.pronunciation
+        var accent = morpheme.pitchAccents[0]
+        guard accent.descriptive != .unknown else {
+            return accent
+        }
+
+        while !remaining.isEmpty {
+            morpheme = remaining.removeFirst()
+            let secondHalfAccent = morpheme.pitchAccents[0]
+            let kind = morpheme.pitchAccentCompoundKinds.first(where: { $0.canBeApplied(toPartOfSpeech: morphemes[0].partOfSpeech)})?.simple
+            switch kind {
+            case .secondHalfAccentOverride:
+                let i = buildUpWord.count + secondHalfAccent.mora
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+            case .secondHalfHeadMora:
+                let i = buildUpWord.count + 1
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+            case .firstHalfLastMora:
+                let i = buildUpWord.count
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+            case .heiban:
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: 0, length: buildUpWord.moraCount)
+            case .firstHalfAccent, .particleOriginal:
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+            case .particleSecondHalfAccentRecessive(let m):
+                if accent.descriptive == .heiban {
+                    let i = buildUpWord.count + m
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                } else {
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+                }
+            case .particleSecondHalfAccentDominant(let m):
+                let i = buildUpWord.count + m
+                buildUpWord += morpheme.pronunciation
+                accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+            default:
+                return PitchAccent(mora: -1, length: 0)
+            }
+        }
+
+        return accent
+    }
+
+    let mora: Int
+    let descriptive: DescriptivePitchAccent
+
+    init(mora i: Int, length c: Int, isTwoKind: Bool = false) {
+        mora = i
+
+        if i == -1 {
+            descriptive = .unknown
+        } else if i == .zero {
+            descriptive = .heiban
+        } else if isTwoKind {
+            descriptive = .kihuku
+        } else if i == c {
+            descriptive = .odaka
+        } else if i == 1 {
+            descriptive = .atamadaka
+        } else {
+            descriptive = .nakadaka
+        }
+    }
+}
+
+enum DescriptivePitchAccent: String, Content {
 
     case heiban
     case kihuku
@@ -151,6 +217,13 @@ struct ParseResult: Content {
     let headwords: [Headword]
     let listWords: [ListWord]
 
+}
+
+struct Offset {
+    let accentPhraseComponent: AccentPhraseComponent
+    let accentPhraseComponentOffset: Int
+    let accentPhraseOffset: Int
+    let sentenceOffset: Int
 }
 
 class ListsController: RouteCollection {
@@ -256,36 +329,51 @@ class ListsController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        sentence.post("parse") { (req: Request) -> EventLoopFuture<[ParseResult]> in
+        sentence.post("parse") { (req: Request) -> EventLoopFuture<[Sentence]> in
             let user = try req.auth.require(User.self)
-            guard let sentence = req.body.string, sentence.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
+            guard let sentenceString = req.body.string, sentenceString.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
             let mecab = try Mecab()
-            let nodes = try mecab.tokenize(string: sentence)
-            let resultsFutures: [EventLoopFuture<(Node, [Headword])>] = nodes.map { node in
-                if node.shouldIgnore(for: user) {
-                    return req.eventLoop.future((node, []))
-                }
-                return Headword.query(on: req.db)
-                    .filter(\.$text == node.original.applyingTransform(.hiraganaToKatakana, reverse: false) ?? node.original)
-                    .sort(\.$text)
-                    .limit(5)
-                    .all()
-                    .map {
-                        return (node, $0)
-                    }
-            }
-            let resultsFuture = EventLoopFuture.whenAllSucceed(resultsFutures, on: req.eventLoop)
-
-            return user.$listWords.query(on: req.db)
+            let nodes = try mecab.tokenize(string: sentenceString)
+            let listWordsFuture = user.$listWords
+                .query(on: req.db)
                 .all()
-                .and(resultsFuture)
-                .map { (listWords, results) in
-                    return results.map { (node, headwords) in
-                        let katakana = node.pronunciation
-                        let hiragana = katakana.applyingTransform(.hiraganaToKatakana, reverse: true) ?? katakana
-                        let frequencyItem = [DictionaryManager.shared.frequencyList[node.surface], DictionaryManager.shared.frequencyList[hiragana], DictionaryManager.shared.frequencyList[katakana], DictionaryManager.shared.frequencyList[node.original]].compactMap { $0 }.min()
-                        return ParseResult(surface: node.surface, original: node.original, ruby: node.ruby, shouldDisplay: node.shouldDisplay, isBasic: node.isBasic, frequency: frequencyItem?.frequency ?? .unknown, pitchAccent: node.pitchAccents.first!, headwords: Array(headwords.prefix(3)), listWords: listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } })
+            var sentences = try Sentence.parseMultiple(db: req.db, tokenizer: .init(nodes: nodes))
+            return listWordsFuture
+                .flatMap { listWords -> EventLoopFuture<[Sentence]> in
+                    let offsets = sentences.enumerated().flatMap { (sentenceOffset, sentence) in
+                        sentence.accentPhrases.enumerated().flatMap { (accentPhraseOffset, accentPhrase) in
+                            accentPhrase.components.enumerated().map { (componentOffset, component) in
+                                Offset(accentPhraseComponent: component, accentPhraseComponentOffset: componentOffset, accentPhraseOffset: accentPhraseOffset, sentenceOffset: sentenceOffset)
+                            }
+                        }
                     }
+
+                    let offsetFutures: [EventLoopFuture<(Offset, [Headword])>] = offsets.map { offset in
+                        let component = offset.accentPhraseComponent
+                        if component.isBasic {
+                            return req.eventLoop.future((offset, []))
+                        }
+                        return Headword.query(on: req.db)
+                            .group(.or) {
+                                $0.filter(\.$text == component.original.katakana)
+                                  .filter(\.$text == component.surface.katakana)
+                            }
+                            .sort(\.$text)
+                            .limit(3)
+                            .all()
+                            .map {
+                                return (offset, $0)
+                            }
+                    }
+
+                    return EventLoopFuture.whenAllSucceed(offsetFutures, on: req.eventLoop)
+                        .map {
+                            for (offset, headwords) in $0 {
+                                sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].headwords = headwords
+                                sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].listWords = listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } }
+                            }
+                            return sentences
+                        }
                 }
         }
     }

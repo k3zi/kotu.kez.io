@@ -389,6 +389,47 @@ hr {
     background-color: $red;
 }
 
+visual {
+    display: none;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+component {
+    display: inline;
+}
+
+phrase {
+    display: inline;
+}
+
+.visual-type-showPitchAccentDrops {
+    visual {
+        display: inline;
+    }
+
+    component {
+        display: none;
+    }
+
+    .page {
+        line-height: 1.75rem;
+    }
+}
+
+marking.drop {
+    display: inline-block;
+    border-top: solid $red 1px;
+    background: url('./../../../Public/images/drop.png') no-repeat right 0;
+    text-indent: 0;
+}
+
+marking.overline {
+    display: inline-block;
+    border-top: solid $red 1px;
+    text-indent: 0;
+}
+
 .visual-type-showFrequency {
     .underline {
         text-decoration: underline;
@@ -555,7 +596,7 @@ hr {
     font-size: 1.25rem;
 }
 
-.page word {
+.page component {
     background-color: transparent;
     cursor: pointer;
     border-radius: 4px;
@@ -563,12 +604,12 @@ hr {
     padding-left: 1px;
     padding-right: 1px;
 }
-.page word:hover {
+.page component:hover {
     background-color: rgba(127,127,127,.17);
 }
 
 .visual-type-none {
-    word {
+    component {
         padding-bottom: 0px;
     }
 }
