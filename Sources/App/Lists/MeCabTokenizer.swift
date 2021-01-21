@@ -1,7 +1,6 @@
 import Foundation
 import MeCab
 import FluentKit
-import Foundation
 import NIO
 import Vapor
 
@@ -113,11 +112,11 @@ public class MeCabTokenizer {
 extension String {
 
     var katakana: String {
-        applyingTransform(.hiraganaToKatakana, reverse: false) ?? self
+        self.applyingTransform(.hiraganaToKatakana, reverse: false) ?? self
     }
 
     var hiragana: String {
-        applyingTransform(.hiraganaToKatakana, reverse: true) ?? self
+        self.applyingTransform(.hiraganaToKatakana, reverse: true) ?? self
     }
 
 }
