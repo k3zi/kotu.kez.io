@@ -64,6 +64,7 @@ public class MeCabTokenizer {
 
     enum Error: Swift.Error {
         case expectFailed
+        case ranOutOfInput
     }
 
     var nodes: [Node]
@@ -81,6 +82,18 @@ public class MeCabTokenizer {
     @discardableResult
     func consume() -> Node {
         return nodes.removeFirst()
+    }
+
+    func consume(times: Int) throws -> [Node] {
+        guard nodes.count >= times else {
+            throw Error.ranOutOfInput
+        }
+
+        var result = [Node]()
+        while result.count != times {
+            result.append(consume())
+        }
+        return result
     }
 
     @discardableResult
@@ -242,37 +255,35 @@ struct Morpheme: Content {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: [Morpheme.parse(from: tokenizer.consume())])
         }
 
-        if ["接尾辞"].contains(nextMorpheme.partOfSpeech) {
+        let lastMorpheme = morphemes.last!
+
+        if ["接尾辞"].contains(nextMorpheme.partOfSpeech) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
-        let isDynamicCombo = nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPartOfSpeech: morphemes.last?.partOfSpeech ?? "*") })
+        if nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: nextMorpheme.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && nextMorpheme.features.contains("助数詞可能")) {
+            return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
+        }
 
-        if !isDynamicCombo && !["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(morphemes.last?.partOfSpeech) {
+        if !["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(morphemes.last?.partOfSpeech) {
             return morphemes
         }
 
-        let possibleNodes = morphemes + [nextMorpheme]
-        let original = possibleNodes.map { $0.original }.joined()
-        let surface = possibleNodes.map { $0.surface }.joined()
-        if isDynamicCombo || DictionaryManager.shared.frequencyList[surface] != nil || DictionaryManager.shared.frequencyList[original] != nil {
-            return morphemes + [Morpheme.parse(from: tokenizer.consume())]
-        } else {
-            return morphemes
-        }
-        /*return Headword.query(on: db)
-            .group(.or) {
-                $0.filter(\.$text == original).filter(\.$text == surface)
+        var possibleNodes = morphemes
+        var longestMatchingNodes = morphemes
+        var index = 0
+        while index < tokenizer.nodes.count && index < 10 && !tokenizer.nodes[index].isBosEos {
+            possibleNodes.append(Morpheme.parse(from: tokenizer.nodes[index]))
+            let original = possibleNodes.map { $0.original }.joined()
+            let surface = possibleNodes.map { $0.surface }.joined()
+            if DictionaryManager.shared.words.contains(surface) || DictionaryManager.shared.words.contains(original) {
+                longestMatchingNodes = possibleNodes
             }
-            .first()
-            .map { wrappedHeadword in
-                guard let headword = wrappedHeadword else {
-                    return nodes
-                }
+            index += 1
+        }
 
-                // Maybe add verification of headword here?
-                return nodes + [tokenizer.consume()]
-            }*/
+        let foundMorphemes = try tokenizer.consume(times: longestMatchingNodes.count - morphemes.count).map { Morpheme.parse(from: $0) }
+        return morphemes + foundMorphemes
     }
 
     static func parse(from node: Node) -> Morpheme {
@@ -315,7 +326,11 @@ indirect enum PitchAccentCompoundKind: Content {
     case firstHalfAccent
     case particleOriginal
     case particleSecondHalfAccentRecessive(m: Int)
+    case particleSecondHalfAccentShifting(m: Int)
     case particleSecondHalfAccentDominant(m: Int)
+    case prefixHeibanHeadElseSecondHalf
+    case prefixFlatHead
+    case prefixDominant
     case restricted(partOfSpeech: String, kind: PitchAccentCompoundKind)
 
     init(string: String) {
@@ -334,6 +349,12 @@ indirect enum PitchAccentCompoundKind: Content {
             self = .firstHalfAccent
         case "F1":
             self = .particleOriginal
+        case "P2":
+            self = .prefixHeibanHeadElseSecondHalf
+        case "P4":
+            self = .prefixFlatHead
+        case "P13":
+            self = .prefixDominant
         default:
             let parts = string.split(separator: "%")
             let atParts = string.split(separator: "@")
@@ -343,6 +364,8 @@ indirect enum PitchAccentCompoundKind: Content {
                 switch atParts[0] {
                 case "F2":
                     self = .particleSecondHalfAccentRecessive(m: Int(String(atParts[1].split(separator: ",")[0]))!)
+                case "F3":
+                    self = .particleSecondHalfAccentShifting(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 case "F4":
                     self = .particleSecondHalfAccentDominant(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 default:
@@ -378,20 +401,39 @@ indirect enum PitchAccentCompoundKind: Content {
             return "C5"
         case .particleOriginal:
             return "F1"
+        case .prefixHeibanHeadElseSecondHalf:
+            return "P2"
+        case .prefixFlatHead:
+            return "P4"
+        case .prefixDominant:
+            return "P13"
         case .restricted(let partOfSpeech, let kind):
             return "\(partOfSpeech)%\(kind)"
         case .particleSecondHalfAccentRecessive(let m):
             return "F2@\(m)"
+        case .particleSecondHalfAccentShifting(let m):
+            return "F3@\(m)"
         case .particleSecondHalfAccentDominant(let m):
             return "F4@\(m)"
         }
     }
 
-    func canBeCombined(withPartOfSpeech partOfSpeech: String) -> Bool {
+    func canBeCombined(withPrevPartOfSpeech partOfSpeech: String) -> Bool {
         switch self {
-        case .restricted(let pos, _):
-            return pos == partOfSpeech
-        case .particleOriginal, .particleSecondHalfAccentRecessive, .particleSecondHalfAccentDominant:
+        case .restricted(let pos, let kind):
+            return pos == partOfSpeech && kind.canBeCombined(withPrevPartOfSpeech: partOfSpeech)
+        case .particleOriginal, .particleSecondHalfAccentRecessive, .particleSecondHalfAccentDominant, .particleSecondHalfAccentShifting:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func canBeCombined(withNextPartOfSpeech partOfSpeech: String) -> Bool {
+        switch self {
+        case .restricted(let pos, let kind):
+            return pos == partOfSpeech && kind.canBeCombined(withNextPartOfSpeech: partOfSpeech)
+        case .prefixHeibanHeadElseSecondHalf, .prefixDominant, .prefixFlatHead:
             return true
         default:
             return false

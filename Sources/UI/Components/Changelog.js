@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/22
+- Add more pitch accent combination kinds.
+- Use EDict2 to back finding compound nouns.
 #### 2021/1/21
 - Rewrite MeCab parser to better handle compounds and to support accent phrases.
 - Add pitch drop option to reader.

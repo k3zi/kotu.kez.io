@@ -124,25 +124,68 @@ struct PitchAccent: Content, Codable {
         var morpheme = remaining.removeFirst()
         var buildUpWord = morpheme.pronunciation
         var accent = morpheme.pitchAccents[0]
-        guard accent.descriptive != .unknown else {
-            return accent
-        }
 
         while !remaining.isEmpty {
-            morpheme = remaining.removeFirst()
-            let secondHalfAccent = morpheme.pitchAccents[0]
-            let kind = morpheme.pitchAccentCompoundKinds.first(where: { $0.canBeApplied(toPartOfSpeech: morphemes[0].partOfSpeech)})?.simple
+            // Handle prefixes
+            let nextMorpheme = remaining.removeFirst()
+            var kind = morpheme.pitchAccentCompoundKinds.first(where: { $0.canBeApplied(toPartOfSpeech: nextMorpheme.partOfSpeech)})?.simple
+            let secondHalfAccent = nextMorpheme.pitchAccents[0]
+            var wasPrefix = false
+            switch kind {
+            case .prefixHeibanHeadElseSecondHalf:
+                wasPrefix = true
+                if secondHalfAccent.descriptive == .heiban || secondHalfAccent.descriptive == .odaka {
+                    let i = buildUpWord.moraCount + 1
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                } else if secondHalfAccent.descriptive != .unknown {
+                    let i = buildUpWord.moraCount + secondHalfAccent.mora
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                } else {
+                    return PitchAccent(mora: -1, length: 0)
+                }
+            case .prefixDominant:
+                wasPrefix = true
+                buildUpWord += nextMorpheme.pronunciation
+                accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+                continue
+            case .prefixFlatHead:
+                wasPrefix = true
+                if secondHalfAccent.descriptive == .heiban || secondHalfAccent.descriptive == .odaka {
+                    let i = buildUpWord.moraCount + 1
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                } else if secondHalfAccent.descriptive != .unknown {
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+                } else {
+                    return PitchAccent(mora: -1, length: 0)
+                }
+            default:
+                break
+            }
+
+            // Handle suffixes
+            if !wasPrefix && accent.descriptive == .unknown {
+                return accent
+            }
+            morpheme = nextMorpheme
+            if wasPrefix {
+                continue
+            }
+            kind = morpheme.pitchAccentCompoundKinds.first(where: { $0.canBeApplied(toPartOfSpeech: morphemes[0].partOfSpeech)})?.simple
             switch kind {
             case .secondHalfAccentOverride:
-                let i = buildUpWord.count + secondHalfAccent.mora
+                let i = buildUpWord.moraCount + secondHalfAccent.mora
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
             case .secondHalfHeadMora:
-                let i = buildUpWord.count + 1
+                let i = buildUpWord.moraCount + 1
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
             case .firstHalfLastMora:
-                let i = buildUpWord.count
+                let i = buildUpWord.moraCount
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
             case .heiban:
@@ -151,9 +194,18 @@ struct PitchAccent: Content, Codable {
             case .firstHalfAccent, .particleOriginal:
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+            case .particleSecondHalfAccentShifting(let m):
+                if accent.descriptive == .heiban {
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
+                } else {
+                    let i = buildUpWord.moraCount + m
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                }
             case .particleSecondHalfAccentRecessive(let m):
                 if accent.descriptive == .heiban {
-                    let i = buildUpWord.count + m
+                    let i = buildUpWord.moraCount + m
                     buildUpWord += morpheme.pronunciation
                     accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
                 } else {
@@ -161,7 +213,7 @@ struct PitchAccent: Content, Codable {
                     accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
                 }
             case .particleSecondHalfAccentDominant(let m):
-                let i = buildUpWord.count + m
+                let i = buildUpWord.moraCount + m
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
             default:

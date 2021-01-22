@@ -63,6 +63,20 @@ struct DictionaryManager {
         let directory = app.directory.workingDirectory
         let directoryURL = URL(fileURLWithPath: directory)
 
+        let eDictURL = directoryURL.appendingPathComponent("../Dictionaries/misc/edict2u")
+        var eDictWords = [String]()
+        if let eDictString = try? String(contentsOf: eDictURL) {
+            Array(eDictString.split(whereSeparator: \.isNewline).suffix(from: 1)).forEach { string in
+                let properties = string.split(separator: "/")
+                let cleaned = properties[0]
+                    .replacingOccurrences(of: "[", with: ";")
+                    .replacingOccurrences(of: "]", with: ";")
+                    .replacingOccurrences(of: "(P)", with: "")
+                let itemWords = cleaned.split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                eDictWords.append(contentsOf: itemWords)
+            }
+        }
+
         var frequencyList: [FrequencyListElement] = []
         let frequencyListURL = directoryURL.appendingPathComponent("../Dictionaries/frequency_lists/netflix/word_freq_report.txt")
         if let frequencyListString = try? String(contentsOf: frequencyListURL) {
@@ -103,7 +117,8 @@ struct DictionaryManager {
                     cssStrings: cssStrings,
                     cssWordMappings: cssWordMappings,
                     contentIndexes: contentIndexes,
-                    frequencyList: Swift.Dictionary(uniqueKeysWithValues: frequencyList.map { ($0.word, $0) })
+                    frequencyList: Swift.Dictionary(uniqueKeysWithValues: frequencyList.map { ($0.word, $0) }),
+                    words: Set(eDictWords)
                 )
             }
     }
@@ -113,5 +128,8 @@ struct DictionaryManager {
     let cssWordMappings: [String: [String: String]]
     let contentIndexes: [String: ContentIndex]
     let frequencyList: [String: FrequencyListElement]
+
+    /// Just a list of all possible words we should consider.
+    let words: Set<String>
 
 }
