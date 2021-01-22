@@ -1,6 +1,25 @@
 import Foundation
 import Gzip
 
+extension UInt8 {
+
+    var power2Exponent: Int {
+        switch self {
+        case 0:
+            return 0
+        case 1:
+            return 1
+        case 2:
+            return 2
+        case 4:
+            return 3
+        default:
+            fatalError()
+        }
+    }
+
+}
+
 extension Array where Element == KeyStore.Match {
 
     public static func parse(tokenizer: DataTokenizer) throws -> Self {
@@ -11,41 +30,27 @@ extension Array where Element == KeyStore.Match {
             let header = tokenizer.consume()
             // Ends in 1
             let hexStringArray = Array<Character>(String(format:"%02X", header))
-            let isSubentry = UInt8(String(hexStringArray[0]), radix: 16)!
-            let style = UInt8(String(hexStringArray[1]), radix: 16)!
-            let hasSubentry: Bool
-            if isSubentry == 1 {
-                hasSubentry = true
-            } else if isSubentry == 0 {
-                hasSubentry = false
-            } else {
-                // Does this case ever get hit?
-                fatalError()
-            }
-
-            let numberOfBytes: Int // Seems to be log2 of `style`.
-            switch style {
-            case 1:
-                numberOfBytes = 1
-            case 2:
-                numberOfBytes = 2
-            case 4:
-                numberOfBytes = 3
-            default:
-                fatalError()
-            }
+            let subentryNumberOfBytes = UInt8(String(hexStringArray[0]), radix: 16)!.power2Exponent
+            let numberOfBytes = UInt8(String(hexStringArray[1]), radix: 16)!.power2Exponent
 
             var match = tokenizer.consume(times: numberOfBytes)
             while !match.count.isMultiple(of: 4) {
-                match.insert(.zero, at: 0) // DSProductFlipping => false?
+                match.insert(.zero, at: 0)
             }
-            // bigEndian for DSProductFlipping => false?
-            // littleEndian for 
             let entryIndex = UInt32(bigEndian: match.withUnsafeBufferPointer {
                 ($0.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: 1) { $0 })
             }.pointee)
-            let subentryIndex = hasSubentry ? tokenizer.consume() : 0
-            matches.append(KeyStore.Match(entryIndex: UInt(entryIndex), subentryIndex: UInt(subentryIndex)))
+            var subentryIndex: UInt = 0
+            if subentryNumberOfBytes > 0 {
+                var match = tokenizer.consume(times: subentryNumberOfBytes)
+                while !match.count.isMultiple(of: 4) {
+                    match.insert(.zero, at: 0)
+                }
+                subentryIndex = UInt(UInt32(bigEndian: match.withUnsafeBufferPointer {
+                    ($0.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: 1) { $0 })
+                }.pointee))
+            }
+            matches.append(KeyStore.Match(entryIndex: UInt(entryIndex), subentryIndex: subentryIndex))
         }
 
         return matches

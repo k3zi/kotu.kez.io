@@ -48,6 +48,7 @@ class DictionaryController: RouteCollection {
                             .replacingOccurrences(of: "</\(original)>", with: "</\(replacement)>")
                             .replacingOccurrences(of: "\"\(original)\"", with: "\"\(replacement)\"")
                             .replacingOccurrences(of: "<entry-index id=\"index\"/>", with: "")
+                            .replacingOccurrences(of: "<entry-index xmlns=\"\" id=\"index\"/>", with: "")
                     }
                     text.replaceNonASCIIHTMLNodes()
                     return "<style>\(css)</style>\(text)"

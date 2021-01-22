@@ -25,6 +25,16 @@ extension Node {
 
 }
 
+struct MouExceptionResolver: ExceptionResolver {
+    func resolve(tokenizer: MeCabTokenizer) {
+        // もう一回 モー・イッカイ
+        // もう言った モ＼ー・イッタ
+        if tokenizer.next.id == "37569" {
+            tokenizer.nodes[0].features[24] = tokenizer.nextNext?.partOfSpeechSubType == "数詞" ? "0" : "1"
+        }
+    }
+}
+
 struct DeAruExceptionResolver: ExceptionResolver {
 
     func resolve(tokenizer: MeCabTokenizer) {
@@ -72,6 +82,7 @@ public class MeCabTokenizer {
     let resolvers: [ExceptionResolver] = [
         DeAruExceptionResolver(),
         PitchAccentCompoundResolver(),
+        MouExceptionResolver(),
         SentenceEnderResolver()
     ]
 
