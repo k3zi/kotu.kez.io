@@ -216,6 +216,16 @@ struct PitchAccent: Content, Codable {
                 let i = buildUpWord.moraCount + m
                 buildUpWord += morpheme.pronunciation
                 accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+            case .particleSecondHalfAccentDominantMultiple(let m, let l):
+                if accent.descriptive == .heiban {
+                    let i = buildUpWord.moraCount + m
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                } else {
+                    let i = buildUpWord.moraCount + l
+                    buildUpWord += morpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                }
             default:
                 return PitchAccent(mora: -1, length: 0)
             }

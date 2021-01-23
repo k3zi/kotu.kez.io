@@ -276,7 +276,7 @@ struct Morpheme: Content {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
-        if !["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(morphemes.last?.partOfSpeech) {
+        if (!["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(morphemes.last!.partOfSpeech)) || ["連体詞"].contains(morphemes.last!.partOfSpeech) {
             return morphemes
         }
 
@@ -298,10 +298,13 @@ struct Morpheme: Content {
     }
 
     static func parse(from node: Node) -> Morpheme {
+        let pitchCompounds = (node.features.count > 25 ? node.features[25] : "")
+        let kinds = pitchCompounds.match("(\\p{Han}+%)?[A-Z][0-9]+(@\\-?[0-9]+)?(,\\-?[0-9]+)*").map { $0[0] }
+
         return .init(
             id: node.id,
             pitchAccents: node.pitchAccents,
-            pitchAccentCompoundKinds: (node.features.count > 25 ? node.features[25] : "").split(separator: ",").map { PitchAccentCompoundKind(string: String($0)) },
+            pitchAccentCompoundKinds: kinds.map { PitchAccentCompoundKind(string: String($0)) },
             surface: node.surface,
             original: node.original,
             partOfSpeech: node.partOfSpeech,
@@ -339,6 +342,7 @@ indirect enum PitchAccentCompoundKind: Content {
     case particleSecondHalfAccentRecessive(m: Int)
     case particleSecondHalfAccentShifting(m: Int)
     case particleSecondHalfAccentDominant(m: Int)
+    case particleSecondHalfAccentDominantMultiple(m: Int, l: Int)
     case prefixHeibanHeadElseSecondHalf
     case prefixFlatHead
     case prefixDominant
@@ -379,6 +383,14 @@ indirect enum PitchAccentCompoundKind: Content {
                     self = .particleSecondHalfAccentShifting(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 case "F4":
                     self = .particleSecondHalfAccentDominant(m: Int(String(atParts[1].split(separator: ",")[0]))!)
+                case "F6":
+                    let numSplits = atParts[1].split(separator: ",")
+                    let m = Int(String(numSplits[0]))!
+                    var l = m
+                    if numSplits.count > 1 {
+                        l = Int(String(numSplits[1]))!
+                    }
+                    self = .particleSecondHalfAccentDominantMultiple(m: m, l: l)
                 default:
                     print("unknown pitch kind: \(string)")
                     self = .unknown
@@ -426,6 +438,8 @@ indirect enum PitchAccentCompoundKind: Content {
             return "F3@\(m)"
         case .particleSecondHalfAccentDominant(let m):
             return "F4@\(m)"
+        case .particleSecondHalfAccentDominantMultiple(let m, let l):
+            return "F6@\(m),\(l)"
         }
     }
 
@@ -433,7 +447,7 @@ indirect enum PitchAccentCompoundKind: Content {
         switch self {
         case .restricted(let pos, let kind):
             return pos == partOfSpeech && kind.canBeCombined(withPrevPartOfSpeech: partOfSpeech)
-        case .particleOriginal, .particleSecondHalfAccentRecessive, .particleSecondHalfAccentDominant, .particleSecondHalfAccentShifting:
+        case .particleOriginal, .particleSecondHalfAccentRecessive, .particleSecondHalfAccentDominant, .particleSecondHalfAccentShifting, .particleSecondHalfAccentDominantMultiple:
             return true
         default:
             return false
@@ -475,4 +489,3 @@ indirect enum PitchAccentCompoundKind: Content {
     }
 
 }
-
