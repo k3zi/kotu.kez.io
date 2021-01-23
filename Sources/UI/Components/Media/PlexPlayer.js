@@ -315,9 +315,8 @@ class PlexPlayer extends React.Component {
     }
 
     async fastestURL(urls) {
-        console.log('fastest of: ');
-        console.log(urls);
-        return urls[0];
+        const promises = urls.map(u => fetch(u.split('/video')[0]).then(() => u));
+        return await Promise.race(promises);
     }
 
     async parseMedia(medias) {

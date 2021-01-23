@@ -6,6 +6,8 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/23
+- Use fastest link for Plex videos.
 #### 2021/1/22
 - Add more pitch accent combination kinds.
 - Use EDict2 to back finding compound nouns.
