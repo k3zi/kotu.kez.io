@@ -283,7 +283,10 @@ class App extends React.Component {
                                 <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
                                 <Dropdown.Menu show className="dropdown-menu-center" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
                                     {this.state.results.map((r, i) => {
-                                        return <Dropdown.Item as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>{r.headline}</Dropdown.Item>;
+                                        return <Dropdown.Item className='d-flex align-items-center' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
+                                            <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
+                                            {r.headline}
+                                        </Dropdown.Item>;
                                     })}
                                 </Dropdown.Menu>
                             </Dropdown>

@@ -82,7 +82,9 @@ class SearchResultModal extends React.Component {
                     {this.props.headwords.length > 1 && <Col sm={4}>
                         <ListGroup variant='flush'>
                             {this.props.headwords.map((headword, i) => (
-                                <ListGroup.Item key={i} action onClick={() => this.loadHeadword(headword)}>
+                                <ListGroup.Item className='d-flex align-items-center' key={i} action onClick={() => this.loadHeadword(headword)}>
+                                    <img className='me-2' height='20px' src={`/api/dictionary/icon/${headword.dictionary.id}`} />
+                                    {' '}
                                     {headword.headline}
                                 </ListGroup.Item>
                             ))}

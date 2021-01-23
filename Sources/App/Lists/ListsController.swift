@@ -96,7 +96,7 @@ extension Node {
     }
 
     var isGenerallyIgnored: Bool {
-        ["助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
+        ["助詞", "補助記号", "補助記号", "空白"].contains(partOfSpeech)
     }
 
     func shouldIgnore(for user: User) -> Bool {

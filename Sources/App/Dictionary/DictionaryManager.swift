@@ -95,7 +95,9 @@ struct DictionaryManager {
                 var cssStrings = [String: String]()
                 var cssWordMappings = [String: [String: String]]()
                 var contentIndexes = [String: ContentIndex]()
+                var icons = [String: Data]()
                 for dictionary in dictionaries {
+                    icons[dictionary.directoryName] = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(dictionary.directoryName)/icon.png"))
                     let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(dictionary.directoryName)/style.css"))
                     var cssString = String(data: cssData, encoding: .utf8)!
                     let replacements = cssString.replaceNonASCIICharacters()
@@ -116,6 +118,7 @@ struct DictionaryManager {
                     containers: containers,
                     cssStrings: cssStrings,
                     cssWordMappings: cssWordMappings,
+                    icons: icons,
                     contentIndexes: contentIndexes,
                     frequencyList: Swift.Dictionary(uniqueKeysWithValues: frequencyList.map { ($0.word, $0) }),
                     words: Set(eDictWords)
@@ -123,12 +126,15 @@ struct DictionaryManager {
             }
     }
 
+    // MARK: Dictionary Items
     let containers: [String: CompressedFileContainer]
     let cssStrings: [String: String]
     let cssWordMappings: [String: [String: String]]
+    let icons: [String: Data]
     let contentIndexes: [String: ContentIndex]
-    let frequencyList: [String: FrequencyListElement]
 
+    // MARK: Misc
+    let frequencyList: [String: FrequencyListElement]
     /// Just a list of all possible words we should consider.
     let words: Set<String>
 

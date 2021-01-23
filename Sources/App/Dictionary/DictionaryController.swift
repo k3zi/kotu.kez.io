@@ -22,6 +22,24 @@ class DictionaryController: RouteCollection {
                 .all()
         }
 
+        dictionary.get("icon", ":dictionaryID") { (req: Request) -> EventLoopFuture<Response> in
+            let id = try req.parameters.require("dictionaryID", as: UUID.self)
+            return Dictionary
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.notFound))
+                .flatMapThrowing { dictionary in
+                    let data = DictionaryManager.shared.icons[dictionary.directoryName]!
+                    let response = Response(status: .ok)
+                    response.headers.contentType = HTTPMediaType.png
+                    let filename = "\(id.uuidString).png"
+                    response.headers.contentDisposition = .init(.attachment, filename: filename)
+                    response.body = .init(data: data)
+                    return response
+                }
+        }
+
         dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
             let id = try req.parameters.require("id", as: UUID.self)
             return Headword
