@@ -339,11 +339,46 @@ class FlashcardController: RouteCollection {
 
             return user.$noteTypes
                 .query(on: req.db)
+                .with(\.$cardTypes)
+                .with(\.$fields)
+                .with(\.$notes) {
+                    $0.with(\.$fieldValues).with(\.$cards) {
+                        $0.with(\.$deck)
+                    }
+                }
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Note type not found"))
                 .flatMap { type in
-                    type.delete(on: req.db)
+                    let cards = type.notes.flatMap { $0.cards }
+                    let fieldValues = type.notes.flatMap { $0.fieldValues }
+                    let deckUpdates: [EventLoopFuture<Void>] = Swift.Dictionary(grouping: cards, by: { $0.deck.id }).map { (id, cards) in
+                        let deck = cards.first!.deck
+                        let sm = deck.sm
+                        let ids = cards.map { $0.id }
+                        sm.queue.removeAll(where: { ids.contains($0.card) })
+                        deck.sm = sm
+                        return deck.update(on: req.db)
+                    }
+                    return EventLoopFuture.whenAllComplete(deckUpdates, on: req.eventLoop)
+                        .flatMap { _ in
+                            cards.delete(on: req.db)
+                                .flatMap {
+                                    fieldValues.delete(on: req.db)
+                                }
+                                .flatMap {
+                                    type.notes.delete(on: req.db)
+                                }
+                        }
+                        .flatMap {
+                            type.cardTypes.delete(on: req.db)
+                        }
+                        .flatMap {
+                            type.fields.delete(on: req.db)
+                        }
+                        .flatMap {
+                            type.delete(on: req.db)
+                        }
                 }
                 .map { "Note type deleted." }
         }

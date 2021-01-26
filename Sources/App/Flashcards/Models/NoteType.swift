@@ -20,6 +20,9 @@ final class NoteType: Model, Content {
     @Children(for: \.$noteType)
     var cardTypes: [CardType]
 
+    @Children(for: \.$noteType)
+    var notes: [Note]
+
     init() { }
 
     init(id: UUID? = nil, ownerID: UUID, name: String) {

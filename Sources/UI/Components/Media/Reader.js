@@ -148,7 +148,7 @@ class Reader extends React.Component {
                                 { name: 'Kihuku (起伏)', value: 'kihuku' },
                                 { name: 'Odaka (尾高)', value: 'odaka' },
                                 { name: 'Nakadaka (中高)', value: 'nakadaka' },
-                                { name: 'Atamadak (頭高)', value: 'atamadaka' },
+                                { name: 'Atamadaka (頭高)', value: 'atamadaka' },
                                 { name: 'Unknown (知らんw)', value: 'unknown' }
                             ].map(item => (
                                 <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>

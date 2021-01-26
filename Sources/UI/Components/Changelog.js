@@ -6,21 +6,30 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/25
+- Fix note type deletion.
+- Fix spelling error.
+---
 #### 2021/1/23
 - Use fastest link for Plex videos.
+---
 #### 2021/1/22
 - Add more pitch accent combination kinds.
 - Use EDict2 to back finding compound nouns.
+---
 #### 2021/1/21
 - Rewrite MeCab parser to better handle compounds and to support accent phrases.
 - Add pitch drop option to reader.
+---
 #### 2021/1/19
 - Added option for furigana based on frequency on the Reader page.
 - Added click to display dictionary entries feature to Reader.
 - Add settings page.
 - Add option to hide card note form.
+---
 #### 2021/1/18
 - Add ability to add card types.
+---
 #### 2021/1/17
 - Added browser for Anki notes.
 - Added start of help page.
