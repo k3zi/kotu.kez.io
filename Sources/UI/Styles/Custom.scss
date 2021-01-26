@@ -1,4 +1,9 @@
 @import "~bootstrap/scss/bootstrap";
+@import "./katex.min.css";
+
+p {
+    margin-bottom: 0;
+}
 
 .embed-responsive {
     @extend .ratio !optional;
@@ -594,6 +599,10 @@ marking.overline {
 .page {
     line-height: 2.5rem;
     font-size: 1.25rem;
+
+    p {
+        margin-bottom: 1rem;
+    }
 }
 
 .page component {

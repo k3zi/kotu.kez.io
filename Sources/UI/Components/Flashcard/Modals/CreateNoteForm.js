@@ -12,6 +12,7 @@ import Modal from 'react-bootstrap/Modal';
 import Row from 'react-bootstrap/Row';
 
 import ContentEditable from './../../Common/ContentEditable';
+import Helpers from './../../Helpers';
 
 class CreateNoteForm extends React.Component {
 
@@ -117,13 +118,8 @@ class CreateNoteForm extends React.Component {
     }
 
     onTextChange(e, i) {
-        const hasNoValuesBefore = this.state.fieldValues[0].value.trim().length === 0;
         this.state.fieldValues[i].value = e.target.value;
-        const hasNoValuesAfter = this.state.fieldValues[0].value.trim().length === 0;
-        const shouldUpdate = hasNoValuesBefore || hasNoValuesAfter;
-        if (shouldUpdate) {
-            this.setState({ fieldValues: this.state.fieldValues });
-        }
+        this.setState({ fieldValues: this.state.fieldValues });
     }
 
     render() {
@@ -153,10 +149,15 @@ class CreateNoteForm extends React.Component {
                 </Row>
                 <Form onSubmit={(e) => this.submit(e)}>
                     {this.state.noteType && this.state.noteType.fields.map((field, i) => {
-                        return <Form.Group key={i} className='mt-2'>
-                            <Form.Label>{field.name}</Form.Label>
-                            <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext' />
-                        </Form.Group>;
+                        return <div>
+                            <Form.Group key={i} className='mt-2'>
+                                <Form.Label>{field.name}</Form.Label>
+                                <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext' />
+                            </Form.Group>
+                            <Alert variant='secondary' className='mt-2'>
+                                <div dangerouslySetInnerHTML={{__html: Helpers.htmlForField(this.state.fieldValues[i].value)}}></div>
+                            </Alert>
+                        </div>;
                     })}
 
                     {this.state.didError && <Alert variant="danger">

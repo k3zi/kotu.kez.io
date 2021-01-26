@@ -1,5 +1,12 @@
 import _ from 'underscore';
 import { gzip } from 'pako';
+import gfm from 'remark-gfm';
+import katex from 'rehype-katex';
+import markdown from 'remark-parse';
+import math from 'remark-math';
+import remark2rehype from 'remark-rehype';
+import stringify from 'rehype-stringify';
+import unified from 'unified';
 
 const helpers = {};
 
@@ -48,7 +55,7 @@ helpers.outputAccent = (word, accent) => {
     return output;
 };
 
-helpers.generateVisualSentenceElement = async function(content, textContent, isCancelled) {
+helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
     const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
         method: 'POST',
         body: await gzip(textContent),
@@ -110,6 +117,59 @@ helpers.generateVisualSentenceElement = async function(content, textContent, isC
         }
     } while ((didRemoveNode || walker.nextNode()) && phraseIndex < phrases.length);
     return contentElement;
+};
+
+helpers.htmlForFrequency = async (sentence) => {
+    const html = `<div class='page visual-type-showFrequency'><span>${sentence}</span></div>`;
+    return await helpers.generateVisualSentenceElement(html, sentence);
+};
+
+helpers.htmlForPitch = async (sentence) => {
+    const html = `<div class='page visual-type-showPitchAccent'><span>${sentence}</span></div>`;
+    return await helpers.generateVisualSentenceElement(html, sentence);
+};
+
+helpers.htmlForField = (field) => {
+    return unified()
+        .use(markdown)
+        .use(gfm)
+        .use(math)
+        .use(remark2rehype)
+        .use(katex)
+        .use(stringify)
+        .processSync(field);
 }
+
+helpers.htmlForCard = async (baseHTML, fieldValues, autoplay) => {
+    let result = baseHTML;
+    // Replace fields.
+    for (let fieldValue of fieldValues) {
+        const fieldName = fieldValue.field.name;
+        const value = helpers.htmlForField(fieldValue.value);
+        const replace = `{{${fieldName}}}`;
+        result = result.replace(new RegExp(replace, 'g'), value);
+    }
+
+    // Handle media for front / back.
+    let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
+    let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    result = result.replace(regex, subst);
+
+    regex = /\[frequency: (.*)\]/mi;
+    let match;
+    while ((match = regex.exec(result)) !== null) {
+        const sentence = match[1];
+        const element = await helpers.generateHTMLForFrequency(sentence);
+        result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
+    }
+
+    regex = /\[pitch: (.*)\]/mi;
+    while ((match = regex.exec(result)) !== null) {
+        const sentence = match[1];
+        const element = await helpers.generateHTMLForPitch(sentence);
+        result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
+    }
+    return result;
+};
 
 export default helpers;

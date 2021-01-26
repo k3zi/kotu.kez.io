@@ -6,6 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/26
+- Show preview on note creation.
+- Support a small subset of LaTeX inside of card fields (using KaTeX).
+- Support markdown formatting inside of card fields.
 #### 2021/1/25
 - Fix note type deletion.
 - Fix spelling error.

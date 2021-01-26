@@ -8,7 +8,6 @@ import 'ace-builds/src-noconflict/mode-css';
 import 'ace-builds/src-noconflict/mode-html';
 import 'ace-builds/src-noconflict/theme-github';
 import 'ace-builds/src-noconflict/ext-language_tools';
-
 ace.config.set('basePath', '/generated');
 
 import _ from 'underscore';
@@ -56,16 +55,6 @@ class Deck extends React.Component {
         }
     }
 
-    async generateHTMLForFrequency(sentence) {
-        const html = `<div class='page visual-type-showFrequency'><span>${sentence}</span></div>`;
-        return await Helpers.generateVisualSentenceElement(html, sentence);
-    }
-
-    async generateHTMLForPitch(sentence) {
-        const html = `<div class='page visual-type-showPitchAccent'><span>${sentence}</span></div>`;
-        return await Helpers.generateVisualSentenceElement(html, sentence);
-    }
-
     async loadNextCard() {
         const availableQueue = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
         const item = availableQueue[0];
@@ -89,38 +78,6 @@ class Deck extends React.Component {
         await this.loadHTML(this.state.nextCard.cardType.backHTML, this.state.nextCard.cardType.css, 'back');
     }
 
-    async replaceFieldsFor(html, autoplay) {
-        let result = html;
-        // Replace fields.
-        for (let fieldValue of this.state.nextCard.note.fieldValues) {
-            const fieldName = fieldValue.field.name;
-            const value = fieldValue.value;
-            const replace = `{{${fieldName}}}`;
-            result = result.replace(new RegExp(replace, 'g'), value);
-        }
-
-        // Handle media for front / back.
-        let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-        let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="${location.origin}/api/media/audio/$1" type="audio/x-m4a"></audio>`;
-        result = result.replace(regex, subst);
-
-        regex = /\[frequency: (.*)\]/mi;
-        let match;
-        while ((match = regex.exec(result)) !== null) {
-            const sentence = match[1];
-            const element = await this.generateHTMLForFrequency(sentence);
-            result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
-        }
-
-        regex = /\[pitch: (.*)\]/mi;
-        while ((match = regex.exec(result)) !== null) {
-            const sentence = match[1];
-            const element = await this.generateHTMLForPitch(sentence);
-            result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
-        }
-        return result;
-    }
-
     async loadHTML(html, css, id) {
         let result = `
         <div id="${`card_${id}`}">
@@ -136,13 +93,13 @@ class Deck extends React.Component {
         </div>
         `;
 
-        result = await this.replaceFieldsFor(result, true);
+        result = await Helpers.htmlForCard(result, this.state.nextCard.note.fieldValues, true);
 
         if (id !== 'front') {
             result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
         }
 
-        result = await this.replaceFieldsFor(result, false);
+        result = await Helpers.htmlForCard(result, this.state.nextCard.note.fieldValues, false);
 
         this.setState({ loadedHTML: result });
     }

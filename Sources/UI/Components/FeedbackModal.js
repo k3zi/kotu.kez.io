@@ -63,11 +63,8 @@ class FeedbackModal extends React.Component {
     }
 
     onChange(text) {
-        const shouldUpdate = text.length === 0 || this.state.value.length === 0;
         this.state.value = text;
-        if (shouldUpdate) {
-            this.setState({ value: this.state.value });
-        }
+        this.setState({ value: this.state.value });
     }
 
     render() {
