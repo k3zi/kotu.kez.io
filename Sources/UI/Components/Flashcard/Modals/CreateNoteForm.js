@@ -13,6 +13,7 @@ import Row from 'react-bootstrap/Row';
 
 import ContentEditable from './../../Common/ContentEditable';
 import Helpers from './../../Helpers';
+import UserContext from './../../Context/User';
 
 class CreateNoteForm extends React.Component {
 
@@ -46,7 +47,9 @@ class CreateNoteForm extends React.Component {
         const response2 = await fetch('/api/flashcard/decks');
         if (response.ok && response2.ok) {
             const noteTypes = await response.json();
-            const selectedNoteType = noteTypes.filter(t => this.state.noteType && t.id === this.state.noteType.id)[0] || noteTypes[0];
+            const selectedNoteType = noteTypes.filter(t => this.state.noteType && t.id === this.state.noteType.id)[0]
+                || noteTypes.filter(t => t.id === this.context.settings.anki.lastUsedNoteTypeID)[0]
+                || noteTypes[0];
             const fieldValues = selectedNoteType.fields.map(f => {
                 const prevField = this.state.noteType && this.state.noteType.id === selectedNoteType.id && this.state.fieldValues.filter(o => o.id === f.id)[0];
                 return {
@@ -56,7 +59,9 @@ class CreateNoteForm extends React.Component {
             });
 
             const decks = await response2.json();
-            const selectedDeck = decks.filter(d => this.state.deck && d.id === this.state.deck.id)[0] || decks[0];
+            const selectedDeck = decks.filter(d => this.state.deck && d.id === this.state.deck.id)[0]
+                || decks.filter(d => d.id === this.context.settings.anki.lastUsedDeckID)[0]
+                || decks[0];
             this.setState({
                 noteTypes,
                 noteType: selectedNoteType,
@@ -154,9 +159,9 @@ class CreateNoteForm extends React.Component {
                                 <Form.Label>{field.name}</Form.Label>
                                 <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext' />
                             </Form.Group>
-                            <Alert variant='secondary' className='mt-2'>
+                            {this.context.settings.anki.showFieldPreview && <Alert variant='secondary' className='mt-2'>
                                 <div dangerouslySetInnerHTML={{__html: Helpers.htmlForField(this.state.fieldValues[i].value)}}></div>
-                            </Alert>
+                            </Alert>}
                         </div>;
                     })}
 
@@ -176,4 +181,5 @@ class CreateNoteForm extends React.Component {
     }
 }
 
+CreateNoteForm.contextType = UserContext;
 export default CreateNoteForm;

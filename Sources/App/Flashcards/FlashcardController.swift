@@ -196,6 +196,13 @@ class FlashcardController: RouteCollection {
                                     return deck.save(on: req.db)
                                 }
                         }
+                        .flatMap {
+                            var settings = user.settings
+                            settings?.anki.lastUsedDeckID = deck.id
+                            settings?.anki.lastUsedNoteTypeID = noteType.id
+                            user.settings = settings
+                            return user.save(on: req.db)
+                        }
                         .throwingFlatMap {
                             Note.find(try note.requireID(), on: req.db)
                                 .unwrap(orError: Abort(.internalServerError))

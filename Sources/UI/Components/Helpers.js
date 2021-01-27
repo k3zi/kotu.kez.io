@@ -159,14 +159,14 @@ helpers.htmlForCard = async (baseHTML, fieldValues, autoplay) => {
     let match;
     while ((match = regex.exec(result)) !== null) {
         const sentence = match[1];
-        const element = await helpers.generateHTMLForFrequency(sentence);
+        const element = await helpers.htmlForFrequency(sentence);
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
 
     regex = /\[pitch: (.*)\]/mi;
     while ((match = regex.exec(result)) !== null) {
         const sentence = match[1];
-        const element = await helpers.generateHTMLForPitch(sentence);
+        const element = await helpers.htmlForPitch(sentence);
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
     return result;

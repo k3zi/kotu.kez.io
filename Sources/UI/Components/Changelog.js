@@ -10,6 +10,9 @@ class Component extends React.Component {
 - Show preview on note creation.
 - Support a small subset of LaTeX inside of card fields (using KaTeX).
 - Support markdown formatting inside of card fields.
+- Remember the last used deck / note type for future cards.
+- Allow hiding the field preview.
+---
 #### 2021/1/25
 - Fix note type deletion.
 - Fix spelling error.
