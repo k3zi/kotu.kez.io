@@ -119,14 +119,20 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
     return contentElement;
 };
 
+helpers.textFromHTML = (html) => {
+    const span = document.createElement('span');
+    span.innerHTML = html;
+    return span.textContent || span.innerText;
+}
+
 helpers.htmlForFrequency = async (sentence) => {
     const html = `<div class='page visual-type-showFrequency'><span>${sentence}</span></div>`;
-    return await helpers.generateVisualSentenceElement(html, sentence);
+    return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
 helpers.htmlForPitch = async (sentence) => {
     const html = `<div class='page visual-type-showPitchAccent'><span>${sentence}</span></div>`;
-    return await helpers.generateVisualSentenceElement(html, sentence);
+    return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
 helpers.htmlForField = (field) => {
