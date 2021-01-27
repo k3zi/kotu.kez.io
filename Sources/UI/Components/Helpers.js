@@ -137,7 +137,7 @@ helpers.htmlForField = (field) => {
         .use(remark2rehype)
         .use(katex)
         .use(stringify)
-        .processSync(field);
+        .processSync(field).contents;
 }
 
 helpers.htmlForCard = async (baseHTML, fieldValues, autoplay) => {

@@ -127,11 +127,10 @@ class Deck extends React.Component {
                         <Col xs={0} lg={3}></Col>
                         <Col xs={12} lg={6}>
                             <div dangerouslySetInnerHTML={{ __html: this.state.loadedHTML }}></div>
-                            <hr />
                             {!this.state.showGradeButtons && <div className="d-grid">
                                 <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>
                             </div>}
-                            {this.state.showGradeButtons && <div className="text-center">
+                            {this.state.showGradeButtons && <div className="text-center mt-3">
                                 <span className='px-2'>Again</span>
                                 <ButtonGroup className="mb-2　d-block">
                                     <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>

@@ -140,7 +140,7 @@ class NoteType extends React.Component {
                                 </DropdownButton>
                             </InputGroup>
 
-                            <Row>
+                            {this.state.selectedCardType && <Row>
                                 <Col>
                                     <Tabs defaultActiveKey="front" id="code-tabs">
                                         <Tab eventKey="front" title="Front HTML">
@@ -206,7 +206,7 @@ class NoteType extends React.Component {
                                         </Tab>
                                     </Tabs>
                                 </Col>
-                            </Row>
+                            </Row>}
                         </Col>
                         <Col xs={4}>
                             <Button block variant="primary" className="mb-3" onClick={() => this.toggleCreateFieldModal(true)}>Add Field</Button>
