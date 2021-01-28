@@ -7,6 +7,8 @@ import 'intl-relative-time-format/locale-data/en';
 import 'intl-relative-time-format/locale-data/ja';
 import '../Styles/Custom.scss';
 
+import Helpers from './Helpers';
+
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -99,21 +101,7 @@ class App extends React.Component {
             }
         }
 
-        function addLiveEventListeners(selector, event, handler){
-            document.querySelector("body").addEventListener(event, (evt) => {
-                let target = evt.target;
-                while (target) {
-                    var isMatch = target.matches(selector);
-                    if (isMatch) {
-                        handler(evt, target);
-                       return;
-                   }
-                   target = target.parentElement;
-               }
-           }, true);
-       }
-
-       addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
+        Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
             e.preventDefault();
             if (e.clipboardData && e.clipboardData.getData) {
                 const text = e.clipboardData.getData("text/plain");
@@ -124,13 +112,13 @@ class App extends React.Component {
             }
         });
 
-        addLiveEventListeners('div.plaintext[contenteditable]', 'keypress', (e) => {
+        Helpers.addLiveEventListeners('div.plaintext[contenteditable]', 'keypress', (e) => {
             if (e.keyCode == 13) {
                 e.preventDefault();
             }
         });
 
-        addLiveEventListeners('component', 'click', (e, target) => {
+        Helpers.addLiveEventListeners('component', 'click', (e, target) => {
             const headwords = JSON.parse(target.dataset.headwords);
             this.setState({ headwords });
         });

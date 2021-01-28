@@ -30,6 +30,8 @@ import AddCardTypeModal from './Modals/AddCardTypeModal';
 import DeleteFieldModal from './Modals/DeleteFieldModal';
 import CreateFieldModal from './Modals/CreateFieldModal';
 
+
+import Helpers from './../Helpers';
 import scoper from './scoper';
 
 class NoteType extends React.Component {
@@ -97,22 +99,19 @@ class NoteType extends React.Component {
     }
 
     htmlFor(cardType, html, id) {
-        let result = `
-        <div id="${`card_${id}`}">
+        let result = `<div id='${`card_${id}`}'>
             <style>
                 ${scoper(cardType.css, `#card_${id}`)}
             </style>
-
-            <div id="card">
-                <div id="${id}">
-                    ${cardType[html]}
+            <div id='card'>
+                <div id='${id}'>
+                    ${Helpers.parseMarkdown(cardType[html].trim())}
                 </div>
             </div>
-        </div>
-        `;
+        </div>`;
 
         if (id !== 'front') {
-            result = result.replace(/{{FrontSide}}/g, cardType.frontHTML);
+            result = result.replace(/{{FrontSide}}/g, Helpers.parseMarkdown(cardType.frontHTML));
         }
 
         return result;
@@ -143,7 +142,7 @@ class NoteType extends React.Component {
                             {this.state.selectedCardType && <Row>
                                 <Col>
                                     <Tabs defaultActiveKey="front" id="code-tabs">
-                                        <Tab eventKey="front" title="Front HTML">
+                                        <Tab eventKey="front" title="Front">
                                             <AceEditor
                                                 mode="html"
                                                 theme="github"
@@ -160,7 +159,7 @@ class NoteType extends React.Component {
                                                 }}
                                             />
                                         </Tab>
-                                        <Tab eventKey="back" title="Back HTML">
+                                        <Tab eventKey="back" title="Back">
                                             <AceEditor
                                                 mode="html"
                                                 theme="github"

@@ -37,12 +37,17 @@ class Deck extends React.Component {
             deck: null,
             cardType: null,
             loadedHTML: null,
-            showGradeButtons: false
+            showGradeButtons: false,
+            answers: {}
         };
     }
 
     componentDidMount() {
         this.load();
+        Helpers.addLiveEventListeners('.card-field-answer', 'input', (e, target) => {
+            const digest = target.dataset.key;
+            this.state.answers[digest] = target.value;
+        });
     }
 
     async load() {
@@ -79,27 +84,38 @@ class Deck extends React.Component {
     }
 
     async loadHTML(html, css, id) {
-        let result = `
-        <div id="${`card_${id}`}">
+        let result = await Helpers.htmlForCard(html, {
+            fieldValues: this.state.nextCard.note.fieldValues,
+            autoPlay: true,
+            answers: this.state.answers,
+            answersType: id !== 'front' ? 'show' : 'none'
+        });
+
+        if (id !== 'front') {
+            result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
+        }
+
+        result = await Helpers.htmlForCard(result, {
+            fieldValues: this.state.nextCard.note.fieldValues,
+            autoPlay: false,
+            answers: this.state.answers,
+            answersType: 'echo'
+        });
+
+        result = `<div id="${`card_${id}`}">
             <style>
                 ${scoper(css, `#card_${id}`)}
             </style>
 
             <div id="card">
                 <div id="${id}">
-                    ${html}
+
+
+                ${result}
+
                 </div>
             </div>
-        </div>
-        `;
-
-        result = await Helpers.htmlForCard(result, this.state.nextCard.note.fieldValues, true);
-
-        if (id !== 'front') {
-            result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
-        }
-
-        result = await Helpers.htmlForCard(result, this.state.nextCard.note.fieldValues, false);
+        </div>`;
 
         this.setState({ loadedHTML: result });
     }

@@ -6,6 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/1/27
+- Add \`[type: ]\` feature to allow you to type in an answer on the front of a card and check it on the back.
+- Allow markdown when editing the note types.
+---
 #### 2021/1/26
 - Show preview on note creation.
 - Support a small subset of LaTeX inside of card fields (using KaTeX).

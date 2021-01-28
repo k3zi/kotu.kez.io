@@ -7,8 +7,31 @@ import math from 'remark-math';
 import remark2rehype from 'remark-rehype';
 import stringify from 'rehype-stringify';
 import unified from 'unified';
+import raw from 'rehype-raw';
 
 const helpers = {};
+
+helpers.digest = async (message) => {
+    const msgUint8 = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+};
+
+helpers.addLiveEventListeners = (selector, event, handler) => {
+    document.querySelector("body").addEventListener(event, (evt) => {
+        let target = evt.target;
+        while (target) {
+            var isMatch = target.matches(selector);
+            if (isMatch) {
+                handler(evt, target);
+               return;
+           }
+           target = target.parentElement;
+       }
+   }, true);
+};
 
 helpers.outputAccent = (word, accent) => {
     const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
@@ -135,30 +158,32 @@ helpers.htmlForPitch = async (sentence) => {
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
-helpers.htmlForField = (field) => {
+helpers.parseMarkdown = (field) => {
     return unified()
         .use(markdown)
         .use(gfm)
         .use(math)
-        .use(remark2rehype)
+        .use(remark2rehype, { allowDangerousHtml: true })
+        .use(raw)
         .use(katex)
         .use(stringify)
         .processSync(field).contents;
 }
 
-helpers.htmlForCard = async (baseHTML, fieldValues, autoplay) => {
+helpers.htmlForCard = async (baseHTML, options) => {
+    const { fieldValues, autoPlay, answers, answersType } = options;
     let result = baseHTML;
     // Replace fields.
     for (let fieldValue of fieldValues) {
         const fieldName = fieldValue.field.name;
-        const value = helpers.htmlForField(fieldValue.value);
+        const value = fieldValue.value;
         const replace = `{{${fieldName}}}`;
         result = result.replace(new RegExp(replace, 'g'), value);
     }
 
     // Handle media for front / back.
     let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    let subst = `<audio controls${autoplay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    let subst = `<audio controls${autoPlay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     result = result.replace(regex, subst);
 
     regex = /\[frequency: (.*)\]/mi;
@@ -175,7 +200,29 @@ helpers.htmlForCard = async (baseHTML, fieldValues, autoplay) => {
         const element = await helpers.htmlForPitch(sentence);
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
-    return result;
+
+    regex = /\[type: (.*)\]/mi;
+    while ((match = regex.exec(result)) !== null) {
+        const answer = match[1];
+        const digest = await helpers.digest(answer);
+        let html = '';
+        if (answersType === 'show') {
+            const answered = answers[digest];
+            const answeredDigest = await helpers.digest(answered);
+            const correct = answeredDigest === digest;
+            html = `<div class="input-group"><input type='text' class='form-control' value='${answer}' disabled readonly><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'>` : `<i class='bi bi-x fs-3 text-danger'>`}</span></div>`;
+        } else if (answersType === 'echo') {
+            const answered = answers[digest];
+            const answeredDigest = await helpers.digest(answered);
+            const correct = answeredDigest === digest;
+            html = `<div class="input-group"><input type='text' class='form-control' value='${answered}' disabled readonly><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'>` : `<i class='bi bi-x fs-3 text-danger'>`}</span></div>`;
+        } else {
+            html = `<input type='text' class='form-control card-field-answer' placeholder='Enter answer' data-key='${digest}'>`;
+        }
+        result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
+    }
+
+    return helpers.parseMarkdown(result);
 };
 
 export default helpers;
