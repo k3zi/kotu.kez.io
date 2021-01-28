@@ -92,15 +92,14 @@ class Deck extends React.Component {
         });
 
         if (id !== 'front') {
-            result = result.replace(/{{FrontSide}}/g, this.state.nextCard.cardType.frontHTML);
+            const frontSide = await Helpers.htmlForCard(this.state.nextCard.cardType.frontHTML, {
+                fieldValues: this.state.nextCard.note.fieldValues,
+                autoPlay: false,
+                answers: this.state.answers,
+                answersType: 'echo'
+            });
+            result = result.replace(/{{FrontSide}}/g, frontSide);
         }
-
-        result = await Helpers.htmlForCard(result, {
-            fieldValues: this.state.nextCard.note.fieldValues,
-            autoPlay: false,
-            answers: this.state.answers,
-            answersType: 'echo'
-        });
 
         result = `<div id="${`card_${id}`}">
             <style>

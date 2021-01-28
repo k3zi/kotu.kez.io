@@ -206,18 +206,19 @@ helpers.htmlForCard = async (baseHTML, options) => {
         const answer = match[1];
         const digest = await helpers.digest(answer);
         let html = '';
-        if (answersType === 'show') {
-            const answered = answers[digest];
-            const answeredDigest = await helpers.digest(answered);
-            const correct = answeredDigest === digest;
-            html = `<div class="input-group"><input type='text' class='form-control' value='${answer}' disabled readonly><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'>` : `<i class='bi bi-x fs-3 text-danger'>`}</span></div>`;
-        } else if (answersType === 'echo') {
-            const answered = answers[digest];
-            const answeredDigest = await helpers.digest(answered);
-            const correct = answeredDigest === digest;
-            html = `<div class="input-group"><input type='text' class='form-control' value='${answered}' disabled readonly><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'>` : `<i class='bi bi-x fs-3 text-danger'>`}</span></div>`;
-        } else {
+        if (answersType === 'none') {
             html = `<input type='text' class='form-control card-field-answer' placeholder='Enter answer' data-key='${digest}'>`;
+        } else {
+            const answered = answers[digest];
+            const answeredDigest = await helpers.digest(answered);
+            const correct = answeredDigest === digest;
+            const value = answersType === 'show' ? answer : answered;
+            html = `<div class="input-group">
+                <input type='text' class='form-control' value='${value}' disabled readonly>
+                <span class="input-group-text">
+                    ${correct ? `<i class='bi bi-check fs-3 text-success' />` : `<i class='bi bi-x fs-3 text-danger' />`}
+                </span>
+            </div>`;
         }
         result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
     }
