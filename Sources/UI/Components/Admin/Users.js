@@ -5,6 +5,7 @@ import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
+import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
@@ -33,6 +34,13 @@ class Decks extends React.Component {
         }
     }
 
+    async updatePermission(user, permission, value) {
+        await fetch(`/api/admin/user/${user.id}/permission/${permission}/${value ? 'true' : 'false'}`, {
+            method: 'PUT'
+        });
+        await this.load();
+    }
+
     async toggleCreateDeckModal(show) {
         this.setState({
             showCreateDeckModal: show
@@ -56,7 +64,6 @@ class Decks extends React.Component {
         });
 
         const resetKey = await response.text();
-        console.log(resetKey);
         const resetURL = await `${location.origin}/auth/resetPassword/${user.id}/${resetKey}`;
         this.setState({ resetURL })
     }
@@ -72,6 +79,8 @@ class Decks extends React.Component {
                         <tr>
                             <th>Username</th>
                             <th className="text-center">Created At</th>
+                            <th className="text-center">Admin</th>
+                            <th className="text-center">API Access</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -80,6 +89,13 @@ class Decks extends React.Component {
                             return (<tr key={i}>
                                 <td className="align-middle">{user.username}</td>
                                 <td className="align-middle text-center text-success">{user.createdAt}</td>
+
+                                <td className="align-middle text-center">
+                                    <Form.Check defaultChecked={user.permissions.includes('admin')} onChange={(e) => this.updatePermission(user, 'admin', e.target.checked)} type="checkbox" />
+                                </td>
+                                <td className="align-middle text-center">
+                                    <Form.Check defaultChecked={user.permissions.includes('api')} onChange={(e) => this.updatePermission(user, 'api', e.target.checked)} type="checkbox" />
+                                </td>
                                 <td className="align-middle text-center">
                                     <Button variant="warning" onClick={() => this.resetPassword(user)}><i className="bi bi-arrow-counterclockwise"></i></Button>
                                 </td>

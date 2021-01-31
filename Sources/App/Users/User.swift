@@ -35,6 +35,9 @@ final class User: Model, Content {
     @OptionalField(key: "settings")
     var settings: Settings?
 
+    @Children(for: \.$owner)
+    var tokens: [UserToken]
+
     // MARK: Transcription
 
     @Children(for: \.$owner)
@@ -296,6 +299,13 @@ extension User: ModelCredentialsAuthenticatable {
 }
 
 extension User {
+
+    func generateToken() throws -> UserToken {
+        try .init(
+            value: [UInt8].random(count: 32).base64.filter { $0 != "=" },
+            userID: self.requireID()
+        )
+    }
 
     static var guest: User {
         User(id: .init(), username: "Guest", passwordHash: "")

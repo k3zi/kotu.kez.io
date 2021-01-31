@@ -10091,8 +10091,7 @@
             "dev": true
         },
         "@babel/core": {
-            "version": "7.12.10",
-            "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.12.10.tgz",
+            "version": "https://registry.npmjs.org/@babel/core/-/core-7.12.10.tgz",
             "integrity": "sha512-eTAlQKq65zHfkHZV0sIVODCPGVgoo1HdBlbSLi9CqOzuZanMv2ihzY+4paiKr1mH+XmYESMAmJ/dpZ68eN6d8w==",
             "dev": true,
             "peer": true,
@@ -11201,8 +11200,7 @@
         "@restart/context": {
             "version": "2.1.4",
             "resolved": "https://registry.npmjs.org/@restart/context/-/context-2.1.4.tgz",
-            "integrity": "sha512-INJYZQJP7g+IoDUh/475NlGiTeMfwTXUEr3tmRneckHIxNolGOW9CTq83S8cxq0CgJwwcMzMJFchxvlwe7Rk8Q==",
-            "requires": {}
+            "integrity": "sha512-INJYZQJP7g+IoDUh/475NlGiTeMfwTXUEr3tmRneckHIxNolGOW9CTq83S8cxq0CgJwwcMzMJFchxvlwe7Rk8Q=="
         },
         "@restart/hooks": {
             "version": "0.3.25",
@@ -11315,8 +11313,7 @@
             "integrity": "sha1-DSUBJorY+ZYrdA04fEZU9fjiPlI="
         },
         "@types/youtube": {
-            "version": "0.0.38",
-            "resolved": "https://registry.npmjs.org/@types/youtube/-/youtube-0.0.38.tgz",
+            "version": "https://registry.npmjs.org/@types/youtube/-/youtube-0.0.38.tgz",
             "integrity": "sha512-rS0nLlnnZIvOfBNT4957rkKRMHjHxutoVhSEzowocYgNiTMVBmN+Hbkf/L3TeGMMtts9uKZ9gw7O2JLHREVnIw==",
             "dev": true,
             "peer": true
@@ -11631,8 +11628,7 @@
             "version": "1.2.1",
             "resolved": "https://registry.npmjs.org/@webpack-cli/serve/-/serve-1.2.1.tgz",
             "integrity": "sha512-Zj1z6AyS+vqV6Hfi7ngCjFGdHV5EwZNIHo6QfFTNe9PyW+zBU1zJ9BiOW1pmUEq950RC4+Dym6flyA/61/vhyw==",
-            "dev": true,
-            "requires": {}
+            "dev": true
         },
         "@xtuc/ieee754": {
             "version": "1.2.0",
@@ -11669,14 +11665,12 @@
         "ajv-errors": {
             "version": "1.0.1",
             "resolved": "https://registry.npmjs.org/ajv-errors/-/ajv-errors-1.0.1.tgz",
-            "integrity": "sha512-DCRfO/4nQ+89p/RK43i8Ezd41EqdGIU4ld7nGF8OQ14oc/we5rEntLCUa7+jrn3nn83BosfwZA0wb4pon2o8iQ==",
-            "requires": {}
+            "integrity": "sha512-DCRfO/4nQ+89p/RK43i8Ezd41EqdGIU4ld7nGF8OQ14oc/we5rEntLCUa7+jrn3nn83BosfwZA0wb4pon2o8iQ=="
         },
         "ajv-keywords": {
             "version": "3.5.2",
             "resolved": "https://registry.npmjs.org/ajv-keywords/-/ajv-keywords-3.5.2.tgz",
-            "integrity": "sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ==",
-            "requires": {}
+            "integrity": "sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ=="
         },
         "ansi-colors": {
             "version": "4.1.1",
@@ -11954,8 +11948,7 @@
             "version": "5.0.0-beta1",
             "resolved": "https://registry.npmjs.org/bootstrap/-/bootstrap-5.0.0-beta1.tgz",
             "integrity": "sha512-UrHApw/WRmT7l2rlDdn5iXr7Jps/LlMZtJlLn9G41aGDfss48hyDeYyHtX1C6NHKVcmdUarGG+ve0LZB5iHyTQ==",
-            "dev": true,
-            "requires": {}
+            "dev": true
         },
         "brace-expansion": {
             "version": "1.1.11",
@@ -13954,8 +13947,7 @@
             "version": "5.1.0",
             "resolved": "https://registry.npmjs.org/icss-utils/-/icss-utils-5.1.0.tgz",
             "integrity": "sha512-soFhflCVWLfRNOPU3iv5Z9VUdT44xFRbzjLsEzSr5AQmgqPMTHdU3PMT1Cf1ssx8fLNJDA1juftYl+PUcv3MqA==",
-            "dev": true,
-            "requires": {}
+            "dev": true
         },
         "ieee754": {
             "version": "1.2.1",
@@ -15482,8 +15474,7 @@
             "version": "3.0.0",
             "resolved": "https://registry.npmjs.org/postcss-modules-extract-imports/-/postcss-modules-extract-imports-3.0.0.tgz",
             "integrity": "sha512-bdHleFnP3kZ4NYDhuGlVK+CMrQ/pqUm8bx/oGL93K6gVwiclvX5x0n76fYMKuIGKzlABOy13zsvqjb0f92TEXw==",
-            "dev": true,
-            "requires": {}
+            "dev": true
         },
         "postcss-modules-local-by-default": {
             "version": "4.0.0",

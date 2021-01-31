@@ -5,9 +5,40 @@ import _ from 'underscore';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
 
 class SettingsModal extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            token: '',
+            showToken: false
+        };
+    }
+
+    componentDidMount() {
+        this.loadToken();
+    }
+
+    async loadToken() {
+        const response = await fetch('/api/settings/token');
+        const token = await response.text();
+        if (response.ok) {
+            this.setState({ token });
+        }
+    }
+
+    async regenerateToken() {
+        const response = await fetch('/api/settings/regenerateToken', {
+            method: 'POST'
+        });
+        const token = await response.text();
+        if (response.ok) {
+            this.setState({ token });
+        }
+    }
 
     async save(e, change) {
         const data = this.props.user.settings;
@@ -43,6 +74,21 @@ class SettingsModal extends React.Component {
                     <Form.Group className='mb-3' controlId="settingsShowCardForm">
                         <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
+
+                    {this.props.user.permissions.includes('api') && <>
+                        <h5>API</h5>
+                        <Form.Group className='mb-3' controlId="settingsShowCardForm">
+                            <InputGroup>
+                                <Form.Control value={this.state.showToken ? this.state.token : '(Hidden)'} readOnly />
+                                <Button variant="outline-secondary" onClick={() => this.setState({ showToken: !this.state.showToken })}>
+                                    {this.state.showToken ? 'Hide' : 'Show'}
+                                </Button>
+                                <Button variant="outline-secondary" onClick={() => this.regenerateToken()}>
+                                    Regenerate
+                                </Button>
+                            </InputGroup>
+                        </Form.Group>
+                    </>}
                 </Modal.Body>}
             </Modal>
         );

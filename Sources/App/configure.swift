@@ -57,6 +57,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Note.Migration1())
     app.migrations.add(Feedback.Migration1())
     app.migrations.add(User.Migration10())
+    app.migrations.add(UserToken.Migration())
 
     try app.autoMigrate().wait()
 
@@ -121,6 +122,7 @@ public func configure(_ app: Application) throws {
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.middleware.use(app.sessions.middleware)
     app.middleware.use(User.sessionAuthenticator())
+    app.middleware.use(UserToken.authenticator())
 
     app.views.use(.leaf)
 

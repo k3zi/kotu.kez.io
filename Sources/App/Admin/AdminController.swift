@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-private final class GuardAdminMiddleware: Middleware {
+final class GuardPermissionMiddleware: Middleware {
 
     let permission: Permission
 
@@ -28,7 +28,7 @@ class AdminController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let admin = routes.grouped("admin")
             .grouped(User.guardMiddleware())
-            .grouped(GuardAdminMiddleware(require: .admin))
+            .grouped(GuardPermissionMiddleware(require: .admin))
 
         admin.get("users") { (req: Request) -> EventLoopFuture<[User]> in
             return User
@@ -49,6 +49,25 @@ class AdminController: RouteCollection {
                     user.passwordResetKey = key
                     return user.update(on: req.db)
                         .map { key }
+                }
+        }
+
+        admin.put("user", ":userID", "permission", ":permission", ":value") { (req: Request) -> EventLoopFuture<String> in
+            guard let userID = req.parameters.get("userID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            guard let permission = req.parameters.get("permission", as: Permission.self) else { throw Abort(.badRequest, reason: "Permission not provided") }
+            guard let value = req.parameters.get("value", as: String.self) else { throw Abort(.badRequest, reason: "Value not provided") }
+            let valueBool = value == "true"
+            return User
+                .find(userID, on: req.db)
+                .unwrap(orError: Abort(.notFound))
+                .flatMap { user in
+                    if valueBool && !user.permissions.contains(permission.rawValue) {
+                        user.permissions.append(permission.rawValue)
+                    } else if !valueBool {
+                        user.permissions.removeAll(where: { $0 == permission.rawValue })
+                    }
+                    return user.update(on: req.db)
+                        .map { "Updated." }
                 }
         }
     }

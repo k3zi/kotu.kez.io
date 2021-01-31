@@ -112,12 +112,6 @@ class App extends React.Component {
             }
         });
 
-        Helpers.addLiveEventListeners('div.plaintext[contenteditable]', 'keypress', (e) => {
-            if (e.keyCode == 13) {
-                e.preventDefault();
-            }
-        });
-
         Helpers.addLiveEventListeners('component', 'click', (e, target) => {
             const headwords = JSON.parse(target.dataset.headwords);
             this.setState({ headwords });

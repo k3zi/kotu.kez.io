@@ -228,6 +228,12 @@ body {
     padding-bottom: 27px
 }
 
+.p-padding-bottom {
+    p {
+        margin-bottom: 1rem;
+    }
+}
+
 .navbar-brand {
     font-weight: bold;
     background-color: #fff;
