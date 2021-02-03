@@ -121,6 +121,61 @@ class MediaController: RouteCollection {
             }
         }
 
+        youtube.get("download") { req -> Response in
+            let startTime = try req.query.get(TimeInterval.self, at: "startTime")
+            let endTime = try req.query.get(TimeInterval.self, at: "endTime")
+            let youtubeID = try req.query.get(String.self, at: "youtubeID")
+            let object = MediaCaptureRequest(startTime: startTime, endTime: endTime, youtubeID: youtubeID)
+            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let uuid = UUID().uuidString
+
+            let task = Process()
+            task.currentDirectoryURL = directory
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
+            var env = task.environment ?? [:]
+            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+            task.environment = env
+
+            task.arguments = [
+                "youtube-dl",
+                "-q",
+                "--postprocessor-args",
+                "-ss \(Self.stringFromTimeInterval(interval: object.startTime)) -to \(Self.stringFromTimeInterval(interval: object.endTime))",
+                "--extract-audio",
+                "--audio-format", "m4a",
+                "--audio-quality", "0",
+                "-o", "\(uuid).%(ext)s",
+                "https://youtu.be/\(object.youtubeID)"
+            ]
+            try task.run()
+            task.waitUntilExit()
+            if task.terminationStatus != 0 {
+                throw Abort(.internalServerError)
+            }
+
+            let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("m4a")
+            let data = try Data(contentsOf: fileURL)
+            try FileManager.default.removeItem(at: fileURL)
+
+            let rangeString = req.headers.first(name: .range) ?? ""
+            let response = Response(status: .ok)
+            response.headers.contentType = HTTPMediaType.audio
+            let filename = "\(uuid).m4a"
+            response.headers.contentDisposition = .init(.attachment, filename: filename)
+            if rangeString.count > 0 {
+                let range = try Range.parse(tokenizer: .init(input: rangeString))
+                let partialData = data[range.startByte...min(range.endByte, data.endIndex - 1)]
+                response.headers.add(name: .contentRange, value: "bytes \(partialData.startIndex)-\(partialData.endIndex)/\(data.count)")
+                response.headers.add(name: .contentLength, value: String(partialData.count))
+                response.body = .init(data: partialData)
+            } else {
+                response.body = .init(data: data)
+            }
+            return response
+        }
+
         let plex = media.grouped("plex")
 
         plex.post("signIn") { req -> EventLoopFuture<PinRequest> in

@@ -547,7 +547,7 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <Container className='py-0'><Row noGutters className="float-right text-center gap-2 justify-content-center">
+                            {this.state.canWrite && <Container className='py-0 mt-3'><Row noGutters className="float-right text-center gap-2 justify-content-center">
                                 <Button variant='primary' className='col me-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
                                 <Button variant='primary' className='col ms-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                             </Row></Container>}
@@ -615,7 +615,10 @@ class Project extends React.Component {
                                                 return <div key={id}>
                                                     <hr className="row" style={{marginBlockStart: 0, marginBlockEnd: 0}} />
                                                     <Row className="bg-light py-3 align-items-center position-relative">
-                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ left: 0, top: 0, cursor: 'pointer', width: 'auto' }} onClick={() => this.toggleShowEditFragmentModal(fragment)}><i className="bi bi-gear text-secondary"></i></a>}
+                                                        <span className="position-absolute" style={{ left: 0, top: 0, cursor: 'pointer', width: 'auto' }}>
+                                                            {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className='me-1' onClick={() => this.toggleShowEditFragmentModal(fragment)}><i className="bi bi-gear text-secondary"></i></a>}
+                                                            <a download href={`/api/media/youtube/download?startTime=${fragment.startTime}&endTime=${fragment.endTime}&youtubeID=${this.state.project.youtubeID}`}><i className="bi bi-download text-info"></i></a>
+                                                        </span>
                                                         <Col xs="auto" className="text-center align-self-center">
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className="bg-secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
                                                         </Col>
@@ -626,7 +629,7 @@ class Project extends React.Component {
                                                         <Col xs="auto" className="text-center align-self-center">
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.endTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className='bg-secondary-inverted'>{this.formatTime(fragment.endTime)}</Badge>
                                                         </Col>
-                                                        {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className="position-absolute" style={{ right: 0, top: 0, cursor: 'pointer', width: 'auto' }} onClick={() => this.deleteFragment(fragment)}><i className="bi bi-trash text-danger"></i></a>}
+                                                        <span className="position-absolute" style={{ right: 0, top: 0, cursor: 'pointer', width: 'auto' }}>{this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a onClick={() => this.deleteFragment(fragment)}><i className="bi bi-trash text-danger"></i></a>}</span>
                                                     </Row>
                                                 </div>;
                                             })}
