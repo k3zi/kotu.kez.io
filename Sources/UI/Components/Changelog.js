@@ -6,8 +6,11 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/10
+- MeCab: Fix accent for names.
 #### 2021/2/2
 - Add ability to download audio fragments from transcription projects.
+---
 #### 2021/1/27
 - Add \`[type: ]\` feature to allow you to type in an answer on the front of a card and check it on the back.
 - Allow markdown when editing the note types.

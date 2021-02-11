@@ -116,9 +116,7 @@ class MediaController: RouteCollection {
             try FileManager.default.removeItem(at: fileURL)
 
             let file = File(owner: user, size: data.count, data: data)
-            return file.create(on: req.db).map {
-                file
-            }
+            return file.create(on: req.db).map { file }
         }
 
         youtube.get("download") { req -> Response in

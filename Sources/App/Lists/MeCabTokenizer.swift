@@ -52,8 +52,14 @@ struct DeAruExceptionResolver: ExceptionResolver {
 struct PitchAccentCompoundResolver: ExceptionResolver {
 
     func resolve(tokenizer: MeCabTokenizer) {
+        // 語 → 平板：日本語・英語・スペイン語
         if tokenizer.next.id == "13334" {
             tokenizer.nodes[0].features[25] = "C4"
+        }
+
+        // さん → 前部のアクセント
+        if tokenizer.next.id == "14495" {
+            tokenizer.nodes[0].features[25] = "C5"
         }
     }
 
