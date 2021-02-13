@@ -191,7 +191,7 @@ helpers.htmlForPitch = async (sentence) => {
 
 helpers.parseMarkdown = (rawText) => {
     let text = rawText;
-    let regex = /\[mpitch: (.*)\]/mi;
+    let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     while ((match = regex.exec(text)) !== null) {
         const sentence = match[1];
@@ -225,7 +225,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
     let subst = `<audio controls${autoPlay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     result = result.replace(regex, subst);
 
-    regex = /\[frequency: (.*)\]/mi;
+    regex = /\[frequency: (.*?)\]/mi;
     let match;
     while ((match = regex.exec(result)) !== null) {
         const sentence = match[1];
@@ -233,14 +233,14 @@ helpers.htmlForCard = async (baseHTML, options) => {
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
 
-    regex = /\[pitch: (.*)\]/mi;
+    regex = /\[pitch: (.*?)\]/mi;
     while ((match = regex.exec(result)) !== null) {
         const sentence = match[1];
         const element = await helpers.htmlForPitch(sentence);
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
 
-    regex = /\[type: (.*)\]/mi;
+    regex = /\[type: (.*?)\]/mi;
     while ((match = regex.exec(result)) !== null) {
         const answer = match[1];
         const digest = await helpers.digest(answer);
