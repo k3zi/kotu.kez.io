@@ -92,10 +92,10 @@ class BlogPosts extends React.Component {
                                 {user.permissions.includes('blog') && <a href='#'><small className='float-end'>
                                     <small><small onClick={() => this.showEditPostModal(post)}>Edit <i class="bi bi-pencil-square"></i>
                                 </small></small></small></a>}
-                                {post.isDraft && <small className='text-info ps-2'><small><small>(Draft)</small></small></small>}
                             </h3>
                             <div className='d-flex align-items-center mb-2 text-muted'>
                                 <span><i class="bi bi-person-fill"></i> @{post.owner.username}</span>
+                                {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
                             </div>
 
                             <div className='read-more' dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(post.content ? post.content : '(No Content)')}}></div>
