@@ -57,7 +57,7 @@ helpers.outputAccent = (word, accent) => {
         output += word.charAt(i);
         i++;
 
-        while (i < word.length && smallrowKatakana.includes(word.charAt(i))) {
+        while (i < word.length && (smallrowKatakana.includes(word.charAt(i)) || smallHiragana.includes(word.charAt(i)))) {
             output += word.charAt(i);
             i++;
         }
@@ -86,12 +86,25 @@ helpers.outputAccent = (word, accent) => {
 helpers.generateManualPitchElement = (rawText) => {
     const phrases = rawText.split('・');
     const text = phrases.map(p => {
-        let accent = helpers.removeYouon(p).indexOf('＼');
-        if (accent < 0) {
-            accent = 0;
+        let components = p.split('／');
+        for (let [i, c] of components.entries()) {
+            if (i > 0) {
+                const prev = components[i - 1];
+                if (prev.length == 0) { continue; }
+                const lastChar = prev[prev.length - 1];
+                components[i - 1] = prev.slice(0, -1);
+                components[i] = `${lastChar}${components[i]}`
+            }
         }
-        const clean = p.split('＼').join('');
-        return helpers.outputAccent(clean, accent);
+        components = components.filter(c => c.length > 0);
+        return components.map(c => {
+            let accent = helpers.removeYouon(c).indexOf('＼');
+            if (accent < 0) {
+                accent = 0;
+            }
+            const clean = c.split('＼').join('');
+            return helpers.outputAccent(clean, accent);
+        }).join('');
     }).map(p => `<phrase><visual>${p}</visual></phrase>`).join(' ');
     return `<span class='visual-type-showPitchAccentDrops'>${text}</span>`;
 }
