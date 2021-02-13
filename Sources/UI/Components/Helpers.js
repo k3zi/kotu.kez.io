@@ -93,7 +93,7 @@ helpers.generateManualPitchElement = (rawText) => {
         const clean = p.split('＼').join('');
         return helpers.outputAccent(clean, accent);
     }).map(p => `<phrase><visual>${p}</visual></phrase>`).join(' ');
-    return `<div class='page visual-type-showPitchAccentDrops'>${text}</div>`;
+    return `<span class='visual-type-showPitchAccentDrops'>${text}</span>`;
 }
 
 helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
@@ -167,12 +167,12 @@ helpers.textFromHTML = (html) => {
 }
 
 helpers.htmlForFrequency = async (sentence) => {
-    const html = `<div class='page visual-type-showFrequency'><span>${sentence}</span></div>`;
+    const html = `<span class='visual-type-showFrequency'><span>${sentence}</span></span>`;
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
 helpers.htmlForPitch = async (sentence) => {
-    const html = `<div class='page visual-type-showPitchAccent'><span>${sentence}</span></div>`;
+    const html = `<span class='visual-type-showPitchAccent'><span>${sentence}</span></span>`;
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
