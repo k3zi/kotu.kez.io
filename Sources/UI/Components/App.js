@@ -54,6 +54,9 @@ import AdminUsers from './Admin/Users';
 
 import ResetPassword from './ResetPassword';
 
+import BlogPost from './Blog/BlogPost';
+import BlogPosts from './Blog/BlogPosts';
+
 import UserContext from './Context/User';
 
 class App extends React.Component {
@@ -105,7 +108,7 @@ class App extends React.Component {
             e.preventDefault();
             if (e.clipboardData && e.clipboardData.getData) {
                 const text = e.clipboardData.getData("text/plain");
-                document.execCommand("insertHTML", false, text);
+                document.execCommand("insertText", false, text);
             } else if (window.clipboardData && window.clipboardData.getData) {
                 const text = window.clipboardData.getData("Text");
                 insertTextAtCursor(text);
@@ -251,6 +254,10 @@ class App extends React.Component {
                                     </LinkContainer>
                                 </NavDropdown>
 
+                                <LinkContainer exact to="/blog">
+                                    <Nav.Link active={false}>Blog</Nav.Link>
+                                </LinkContainer>
+
                                 {this.state.user.permissions.includes('admin') && <>
                                     <NavDropdown title='Admin'>
                                         <LinkContainer to="/admin/users">
@@ -280,11 +287,9 @@ class App extends React.Component {
                         </Nav>}
 
                         {this.state.user && <Nav className="order-1 order-xl-3">
-                            <Navbar.Text className="d-sm-block d-none">
-                                Logged in as: <strong>{this.state.user.username}</strong>
-                            </Navbar.Text>
-
                             <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
+                                <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
+                                <NavDropdown.Divider />
                                 <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
                                 <NavDropdown.Divider />
                                 <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
@@ -340,6 +345,13 @@ class App extends React.Component {
                             </Route>
                             <Route path="/media/reader">
                                 {this.loginProtect(<MediaReader />)}
+                            </Route>
+
+                            <Route exact path="/blog">
+                                {this.loginProtect(<BlogPosts />)}
+                            </Route>
+                            <Route path="/blog/:id">
+                                {this.loginProtect(<BlogPost />)}
                             </Route>
 
                             <Route path="/admin/users">

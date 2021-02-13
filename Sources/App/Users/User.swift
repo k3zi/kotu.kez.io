@@ -38,6 +38,11 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var tokens: [UserToken]
 
+    // MARK: Blog
+
+    @Children(for: \.$owner)
+    var blogPosts: [BlogPost]
+
     // MARK: Transcription
 
     @Children(for: \.$owner)
@@ -79,7 +84,14 @@ final class User: Model, Content {
 
     func beforeEncode() throws {
         self.passwordHash = ""
+        self.passwordResetKey = ""
+        self.passwordResetDate = nil
+        self.plexAuth = nil
         self.settings = self.settings ?? Settings()
+    }
+
+    func asResponse() throws -> Response {
+        Response(username: username)
     }
 
 }
@@ -263,6 +275,10 @@ extension User {
         let username: String
         let password: String
         let confirmPassword: String
+    }
+
+    struct Response: Content {
+        let username: String
     }
 
 }

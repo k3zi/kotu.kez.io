@@ -117,13 +117,13 @@ class MinimalPairs extends React.Component {
         return (
             <div>
                 {!this.state.started && <Row>
-                        <Col xs={0} lg={3}></Col>
-                        <Col xs={12} lg={6}>
-                            <div className="d-grid">
-                                <Button block variant="primary" onClick={() => this.start()}>Start</Button>
-                            </div>
-                        </Col>
-                        <Col xs={0} lg={3}></Col>
+                    <Col xs={0} lg={3}></Col>
+                    <Col xs={12} lg={6}>
+                        <div className="d-grid">
+                            <Button block variant="primary" onClick={() => this.start()}>Start</Button>
+                        </div>
+                    </Col>
+                    <Col xs={0} lg={3}></Col>
                 </Row>}
                 {!this.state.minimalPair && this.state.started && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
 

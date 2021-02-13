@@ -3,6 +3,7 @@ import Vapor
 
 enum Permission: String, Codable {
     case admin
+    case blog
     case api
 }
 

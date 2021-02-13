@@ -80,6 +80,7 @@ class Decks extends React.Component {
                             <th>Username</th>
                             <th className="text-center">Created At</th>
                             <th className="text-center">Admin</th>
+                            <th className="text-center">Blog</th>
                             <th className="text-center">API Access</th>
                             <th className="text-center">Actions</th>
                         </tr>
@@ -92,6 +93,9 @@ class Decks extends React.Component {
 
                                 <td className="align-middle text-center">
                                     <Form.Check defaultChecked={user.permissions.includes('admin')} onChange={(e) => this.updatePermission(user, 'admin', e.target.checked)} type="checkbox" />
+                                </td>
+                                <td className="align-middle text-center">
+                                    <Form.Check defaultChecked={user.permissions.includes('blog')} onChange={(e) => this.updatePermission(user, 'blog', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
                                     <Form.Check defaultChecked={user.permissions.includes('api')} onChange={(e) => this.updatePermission(user, 'api', e.target.checked)} type="checkbox" />

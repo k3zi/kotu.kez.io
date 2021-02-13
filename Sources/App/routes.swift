@@ -13,6 +13,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: TestsController())
     try api.register(collection: AdminController())
     try api.register(collection: ListsController())
+    try api.register(collection: BlogController())
 
     api.get("me") { req -> User in
         try req.auth.require(User.self)

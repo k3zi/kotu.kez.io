@@ -6,8 +6,12 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/12
+- Blog: Added.
+---
 #### 2021/2/10
 - MeCab: Fix accent for names.
+---
 #### 2021/2/2
 - Add ability to download audio fragments from transcription projects.
 ---
