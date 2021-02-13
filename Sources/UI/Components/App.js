@@ -56,6 +56,7 @@ import ResetPassword from './ResetPassword';
 
 import BlogPost from './Blog/BlogPost';
 import BlogPosts from './Blog/BlogPosts';
+import EditBlogPost from './Blog/EditBlogPost';
 
 import UserContext from './Context/User';
 
@@ -350,8 +351,11 @@ class App extends React.Component {
                             <Route exact path="/blog">
                                 {this.loginProtect(<BlogPosts />)}
                             </Route>
-                            <Route path="/blog/:id">
+                            <Route path="/blog/post/:id">
                                 {this.loginProtect(<BlogPost />)}
+                            </Route>
+                            <Route path="/blog/edit/:id">
+                                {this.loginProtect(<EditBlogPost />)}
                             </Route>
 
                             <Route path="/admin/users">

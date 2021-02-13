@@ -10,7 +10,6 @@ import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
 import CreatePostModal from './Modals/CreatePostModal';
-import EditPostModal from './Modals/EditPostModal';
 import DeletePostModal from './Modals/DeletePostModal';
 
 import Helpers from './../Helpers';
@@ -22,7 +21,6 @@ class BlogPosts extends React.Component {
         super(props);
         this.state = {
             showDeletePostModal: null,
-            showEditPostModal: null,
             showCreatePostModal: false,
             posts: [],
             metadata: {
@@ -63,13 +61,6 @@ class BlogPosts extends React.Component {
         await this.load();
     }
 
-    async showEditPostModal(post) {
-        this.setState({
-            showEditPostModal: post
-        });
-        this.load();
-    }
-
     loadPage(page) {
         const metadata = this.state.metadata;
         metadata.page = page;
@@ -86,16 +77,17 @@ class BlogPosts extends React.Component {
                         return (<div key={i}>
                             {i !== 0 && <hr />}
                             <h3>
-                                <LinkContainer exact to={`/blog/${post.id}`}>
-                                    <a href='#'>{post.title}</a>
+                                <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/post/${post.id}`}>
+                                    <span>{post.title}</span>
                                 </LinkContainer>
-                                {user.permissions.includes('blog') && <a href='#'><small className='float-end'>
-                                    <small><small onClick={() => this.showEditPostModal(post)}>Edit <i class="bi bi-pencil-square"></i>
-                                </small></small></small></a>}
                             </h3>
                             <div className='d-flex align-items-center mb-2 text-muted'>
                                 <span><i class="bi bi-person-fill"></i> @{post.owner.username}</span>
+                                <span className='ps-2'><i class='bi bi-calendar'></i> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
                                 {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
+                                {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/edit/${post.id}`}>
+                                    <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
+                                </LinkContainer>}
                             </div>
 
                             <div className='read-more' dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(post.content ? post.content : '(No Content)')}}></div>
@@ -104,7 +96,6 @@ class BlogPosts extends React.Component {
                     <hr />
                     <Pagination totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
                     <CreatePostModal show={this.state.showCreatePostModal} onSuccess={() => this.showCreatePostModal(false)} onHide={() => this.showCreatePostModal(false)} />
-                    <EditPostModal post={this.state.showEditPostModal} onSuccess={() => this.showEditPostModal(null)} onHide={() => this.showEditPostModal(null)} />
                     <DeletePostModal post={this.state.showDeletePostModal} didDelete={() => this.showDeletePostModal(null)} didCancel={() => this.showDeletePostModal(null)} onHide={() => this.showDeletePostModal(null)} />
                 </div>
             )

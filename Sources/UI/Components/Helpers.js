@@ -9,7 +9,13 @@ import stringify from 'rehype-stringify';
 import unified from 'unified';
 import raw from 'rehype-raw';
 
+const smallHiragana = 'ぁぃぅぇぉゃゅょゎ';
+const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
 const helpers = {};
+
+helpers.removeYouon = (text) => {
+    return text.split('').filter(c => !smallHiragana.includes(c) && !smallrowKatakana.includes(c)).join('');
+}
 
 helpers.digest = async (message) => {
     const msgUint8 = new TextEncoder().encode(message);
@@ -34,7 +40,6 @@ helpers.addLiveEventListeners = (selector, event, handler) => {
 };
 
 helpers.outputAccent = (word, accent) => {
-    const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
     let output = '';
     let mora = 0;
     let i = 0;
@@ -77,6 +82,19 @@ helpers.outputAccent = (word, accent) => {
 
     return output;
 };
+
+helpers.generateManualPitchElement = (rawText) => {
+    const phrases = rawText.split('・');
+    const text = phrases.map(p => {
+        let accent = helpers.removeYouon(p).indexOf('＼');
+        if (accent < 0) {
+            accent = 0;
+        }
+        const clean = p.split('＼').join('');
+        return helpers.outputAccent(clean, accent);
+    }).map(p => `<phrase><visual>${p}</visual></phrase>`).join(' ');
+    return `<div class='page visual-type-showPitchAccentDrops'>${text}</div>`;
+}
 
 helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
     const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
@@ -158,7 +176,15 @@ helpers.htmlForPitch = async (sentence) => {
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
-helpers.parseMarkdown = (field) => {
+helpers.parseMarkdown = (rawText) => {
+    let text = rawText;
+    let regex = /\[mpitch: (.*)\]/mi;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        const sentence = match[1];
+        const html = helpers.generateManualPitchElement(sentence);
+        text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
+    }
     return unified()
         .use(markdown)
         .use(gfm)
@@ -167,7 +193,7 @@ helpers.parseMarkdown = (field) => {
         .use(raw)
         .use(katex)
         .use(stringify)
-        .processSync(field).contents;
+        .processSync(text).contents;
 }
 
 helpers.htmlForCard = async (baseHTML, options) => {

@@ -66,9 +66,9 @@ class BlogPost extends React.Component {
                             {this.state.post.title}
                             {' '}
                             <small><small className="text-muted">@{this.state.post.owner.username}</small></small>
-                            {user.permissions.includes('blog') && <a href='#'><small className='float-end'>
-                                <small><small onClick={() => this.showEditPostModal(this.state.post)}>Edit <i class="bi bi-pencil-square"></i>
-                            </small></small></small></a>}
+                            {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/edit/${this.state.post.id}`}>
+                                <small className='float-end'><small><small>Edit <i class="bi bi-pencil-square"></i></small></small></small>
+                            </LinkContainer>}
                             {this.state.post.isDraft && <small className='text-info ps-2'><small><small>(Draft)</small></small></small>}
                         </h2>
                         <hr />

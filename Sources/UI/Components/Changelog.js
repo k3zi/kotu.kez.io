@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/13
+- Add mpitch plugin. Ex: \`[mpitch: あした＼は・がっこうに・いくつもりで＼す]\`
+---
 #### 2021/2/12
 - Blog: Added.
 ---
