@@ -47,9 +47,6 @@ class BlogController: RouteCollection {
         guardedBlog.delete(":postID") { (req: Request) -> EventLoopFuture<String> in
             let user = try req.auth.require(User.self)
             let postID = try req.parameters.require("postID", as: UUID.self)
-
-            try BlogPost.Update.validate(content: req)
-            let object = try req.content.decode(BlogPost.Update.self)
             return user.$blogPosts
                 .query(on: req.db)
                 .with(\.$owner)
@@ -63,15 +60,11 @@ class BlogController: RouteCollection {
         }
 
         guardedBlog.put(":postID") { (req: Request) -> EventLoopFuture<BlogPost> in
-            let user = try req.auth.require(User.self)
             let postID = try req.parameters.require("postID", as: UUID.self)
 
             try BlogPost.Update.validate(content: req)
             let object = try req.content.decode(BlogPost.Update.self)
-            return user.$blogPosts
-                .query(on: req.db)
-                .filter(\.$id == postID)
-                .first()
+            return BlogPost.find(postID, on: req.db)
                 .unwrap(orError: Abort(.badRequest, reason: "Blog post not found"))
                 .flatMap { blogPost in
                     blogPost.title = object.title
