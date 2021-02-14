@@ -31,7 +31,7 @@ class BlogController: RouteCollection {
             }
 
             return query
-                .sort(\.$createdAt)
+                .sort(\.$createdAt, .descending)
                 .paginate(for: req)
                 .flatMapThrowing { try $0.map { try $0.asResponse() } }
         }
