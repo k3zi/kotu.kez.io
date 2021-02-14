@@ -25,6 +25,7 @@ import ContentEditable from './../Common/ContentEditable';
 import InviteUserModal from './InviteUserModal';
 import ShareURLModal from './ShareURLModal';
 import EditFragmentModal from './EditFragmentModal';
+import FragmentEmbedModal from './FragmentEmbedModal';
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -51,6 +52,7 @@ class Project extends React.Component {
             showInviteUserModal: false,
             showShareURLModal: false,
             showEditFragmentModal: null,
+            showFragmentEmbed: null,
             videoDuration: 0,
             currentTime: 0,
             baseLanguageText: '',
@@ -473,6 +475,10 @@ class Project extends React.Component {
         }));
     }
 
+    async showFragmentEmbed(fragment) {
+        this.setState({ showFragmentEmbed: fragment });
+    }
+
     onHTMLClick(subtitle) {
         subtitle.html = null;
         return subtitle.text;
@@ -618,6 +624,7 @@ class Project extends React.Component {
                                                         <span className="position-absolute" style={{ left: 0, top: 0, cursor: 'pointer', width: 'auto' }}>
                                                             {this.state.canWrite && this.state.selectedBaseTranslation.isOriginal && <a className='me-1' onClick={() => this.toggleShowEditFragmentModal(fragment)}><i className="bi bi-gear text-secondary"></i></a>}
                                                             <a download href={`/api/media/youtube/download?startTime=${fragment.startTime}&endTime=${fragment.endTime}&youtubeID=${this.state.project.youtubeID}`}><i className="bi bi-download text-info"></i></a>
+                                                            <a className='ps-1' style={{ cursor: 'pointer' }} onClick={() => this.showFragmentEmbed(fragment)}><i className="bi bi-link-45deg text-info"></i></a>
                                                         </span>
                                                         <Col xs="auto" className="text-center align-self-center">
                                                             <Badge onClick={() => this.state.player.seekTo(fragment.startTime) && this.state.player.playVideo()} style={{ cursor: 'pointer' }} className="bg-secondary-inverted">{this.formatTime(fragment.startTime)}</Badge>
@@ -722,6 +729,7 @@ class Project extends React.Component {
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
                     <EditFragmentModal ws={this.ws} project={this.state.project} fragment={this.state.showEditFragmentModal} show={!!this.state.showEditFragmentModal} onHide={() => this.toggleShowEditFragmentModal(null)} didCancel={() => this.toggleShowEditFragmentModal(null)} onFinish={() => this.toggleShowEditFragmentModal(null)} />
+                    <FragmentEmbedModal project={this.state.project} fragment={this.state.showFragmentEmbed} onHide={() => this.showFragmentEmbed(null)} />
                     {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}
             </div>

@@ -30,7 +30,12 @@ class BlogPost extends React.Component {
 
     componentDidMount() {
         this.load();
-        Helpers.scrollToHash();
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevState.post !== this.state.post) {
+            Helpers.scrollToHash();
+        }
     }
 
     async load() {
@@ -62,7 +67,7 @@ class BlogPost extends React.Component {
         const post = this.state.post;
         return (
             <UserContext.Consumer>{user => (
-                <div>
+                <div className='showAutolinks'>
                     {post && <>
                         <h2 className='mb-0'>{post.title}</h2>
                         <div className='d-flex align-items-center mb-2 text-muted'>
