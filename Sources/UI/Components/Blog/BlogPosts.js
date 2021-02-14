@@ -71,21 +71,22 @@ class BlogPosts extends React.Component {
         return (
             <UserContext.Consumer>{user => (
                 <div>
-                    <h2>Blog <small className="text-muted">{this.state.metadata.total} Post(s)</small> {user.permissions.includes('blog') && <Button className='float-end' variant="primary" onClick={() => this.showCreatePostModal(true)}>Create Post</Button>}</h2>
+                    <h2>Articles {user.permissions.includes('blog') && <Button className='float-end' variant="primary" onClick={() => this.showCreatePostModal(true)}>Create Article</Button>}</h2>
                     <hr />
                     {this.state.posts.map((post, i) => {
                         return (<div key={i}>
                             {i !== 0 && <hr />}
-                            <h3>
-                                <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/post/${post.id}`}>
+                            <h3 className='mb-0'>
+                                <LinkContainer style={{cursor:'pointer'}} exact to={`/article/${post.id}`}>
                                     <span>{post.title}</span>
                                 </LinkContainer>
                             </h3>
                             <div className='d-flex align-items-center mb-2 text-muted'>
-                                <span><i class="bi bi-person-fill"></i> @{post.owner.username}</span>
-                                <span className='ps-2'><i class='bi bi-calendar'></i> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
+                                <span><strong>Author:</strong> {post.owner.username}</span>
+                                &nbsp;&nbsp;|
+                                <span className='ps-2'><strong>Created:</strong> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
                                 {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
-                                {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/edit/${post.id}`}>
+                                {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
                                     <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
                                 </LinkContainer>}
                             </div>

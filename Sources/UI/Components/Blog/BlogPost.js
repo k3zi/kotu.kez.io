@@ -58,20 +58,22 @@ class BlogPost extends React.Component {
     }
 
     render() {
+        const post = this.state.post;
         return (
             <UserContext.Consumer>{user => (
                 <div>
-                    {this.state.post && <>
-                        <h2>
-                            {this.state.post.title}
-                            {' '}
-                            <small><small className="text-muted">@{this.state.post.owner.username}</small></small>
-                            {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/blog/edit/${this.state.post.id}`}>
-                                <small className='float-end'><small><small>Edit <i class="bi bi-pencil-square"></i></small></small></small>
+                    {post && <>
+                        <h2 className='mb-0'>{post.title}</h2>
+                        <div className='d-flex align-items-center mb-2 text-muted'>
+                            <span><strong>Author:</strong> {post.owner.username}</span>
+                            &nbsp;&nbsp;|
+                            <span className='ps-2'><strong>Created:</strong> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
+                            {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
+                            {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
+                                <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
                             </LinkContainer>}
-                            {this.state.post.isDraft && <small className='text-info ps-2'><small><small>(Draft)</small></small></small>}
-                        </h2>
-                        <hr />
+                        </div>
+                        <hr className='mt-0' />
                         <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.post.content ? this.state.post.content : '(No Content)')}}></div>
                         <EditPostModal post={this.state.showEditPostModal} onSuccess={() => this.showEditPostModal(null)} onHide={() => this.showEditPostModal(null)} />
                         <DeletePostModal post={this.state.showDeletePostModal} didDelete={() => this.showDeletePostModal(null)} didCancel={() => this.showDeletePostModal(null)} onHide={() => this.showDeletePostModal(null)} />

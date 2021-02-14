@@ -80,7 +80,7 @@ class Decks extends React.Component {
                             <th>Username</th>
                             <th className="text-center">Created At</th>
                             <th className="text-center">Admin</th>
-                            <th className="text-center">Blog</th>
+                            <th className="text-center">Articles</th>
                             <th className="text-center">API Access</th>
                             <th className="text-center">Actions</th>
                         </tr>

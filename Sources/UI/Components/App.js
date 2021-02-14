@@ -255,8 +255,8 @@ class App extends React.Component {
                                     </LinkContainer>
                                 </NavDropdown>
 
-                                <LinkContainer exact to="/blog">
-                                    <Nav.Link active={false}>Blog</Nav.Link>
+                                <LinkContainer exact to="/articles">
+                                    <Nav.Link active={false}>Articles</Nav.Link>
                                 </LinkContainer>
 
                                 {this.state.user.permissions.includes('admin') && <>
@@ -348,14 +348,14 @@ class App extends React.Component {
                                 {this.loginProtect(<MediaReader />)}
                             </Route>
 
-                            <Route exact path="/blog">
+                            <Route ecact path="/articles">
                                 {this.loginProtect(<BlogPosts />)}
                             </Route>
-                            <Route path="/blog/post/:id">
-                                {this.loginProtect(<BlogPost />)}
-                            </Route>
-                            <Route path="/blog/edit/:id">
+                            <Route ecact path="/article/edit/:id">
                                 {this.loginProtect(<EditBlogPost />)}
+                            </Route>
+                            <Route ecact path="/article/:id">
+                                {this.loginProtect(<BlogPost />)}
                             </Route>
 
                             <Route path="/admin/users">

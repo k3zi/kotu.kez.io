@@ -10,7 +10,7 @@ class Component extends React.Component {
 - Add mpitch plugin. Ex: \`[mpitch: あした＼は・がっこうに・いくつもりで＼す]\`
 ---
 #### 2021/2/12
-- Blog: Added.
+- Articles: Added.
 ---
 #### 2021/2/10
 - MeCab: Fix accent for names.
