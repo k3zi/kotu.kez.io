@@ -10,6 +10,7 @@ import unified from 'unified';
 import raw from 'rehype-raw';
 import slug from 'rehype-slug';
 import link from 'rehype-autolink-headings';
+import breaks from 'remark-breaks';
 
 const smallHiragana = 'ぁぃぅぇぉゃゅょゎ';
 const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
@@ -192,7 +193,7 @@ helpers.htmlForPitch = async (sentence) => {
 };
 
 helpers.parseMarkdown = (rawText) => {
-    let text = rawText;
+    let text = rawText.replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm, '\n\n<br />\n\n');
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     while ((match = regex.exec(text)) !== null) {
@@ -205,6 +206,7 @@ helpers.parseMarkdown = (rawText) => {
     text = text.replace(regex, subst);
     return unified()
         .use(markdown)
+        .use(breaks)
         .use(gfm)
         .use(math)
         .use(remark2rehype, {
