@@ -8,6 +8,8 @@ import remark2rehype from 'remark-rehype';
 import stringify from 'rehype-stringify';
 import unified from 'unified';
 import raw from 'rehype-raw';
+import slug from 'rehype-slug';
+import link from 'rehype-autolink-headings';
 
 const smallHiragana = 'ぁぃぅぇぉゃゅょゎ';
 const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
@@ -202,9 +204,25 @@ helpers.parseMarkdown = (rawText) => {
         .use(markdown)
         .use(gfm)
         .use(math)
-        .use(remark2rehype, { allowDangerousHtml: true })
+        .use(remark2rehype, {
+            allowDangerousHtml: true
+        })
         .use(raw)
         .use(katex)
+        .use(slug)
+        .use(link, {
+            content: {
+                type: 'element',
+                tagName: 'span',
+                properties: {
+                    className: ['bi', 'bi-link-45deg']
+                },
+                children: []
+            },
+            properties: {
+                className: ['autolink']
+            }
+        })
         .use(stringify)
         .processSync(text).contents;
 }
@@ -263,6 +281,14 @@ helpers.htmlForCard = async (baseHTML, options) => {
     }
 
     return helpers.parseMarkdown(result);
+};
+
+helpers.scrollToHash = () => {
+    const id = window.location.hash.substr(1);
+    if (!id) { return; }
+    const anchor = document.getElementById(id);
+    if (!anchor) { return; }
+    anchor.scrollIntoView();
 };
 
 export default helpers;

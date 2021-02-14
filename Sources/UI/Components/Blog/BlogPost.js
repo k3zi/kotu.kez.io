@@ -30,6 +30,7 @@ class BlogPost extends React.Component {
 
     componentDidMount() {
         this.load();
+        Helpers.scrollToHash();
     }
 
     async load() {

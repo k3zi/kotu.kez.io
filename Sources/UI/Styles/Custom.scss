@@ -697,3 +697,24 @@ rt .underline {
 .text-break {
     white-space: pre-wrap;
 }
+
+h1, h2, h3, h4 {
+    &:hover .autolink span {
+        visibility: visible;
+    }
+
+    .autolink {
+        float: left;
+        margin-left: -20px;
+
+        span {
+            visibility: hidden;
+        }
+    }
+}
+
+h5, h6 {
+    .autolink {
+        display: none;
+    }
+}
