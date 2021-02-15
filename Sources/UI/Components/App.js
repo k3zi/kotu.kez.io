@@ -120,6 +120,10 @@ class App extends React.Component {
             const headwords = JSON.parse(target.dataset.headwords);
             this.setState({ headwords });
         });
+
+        Helpers.addLiveEventListeners('.spoiler', 'click', (e, target) => {
+            target.classList.toggle('active');
+        });
     }
 
     async loadUser() {

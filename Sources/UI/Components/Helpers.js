@@ -201,6 +201,15 @@ helpers.parseMarkdown = (rawText) => {
         const html = helpers.generateManualPitchElement(sentence);
         text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
     }
+
+    regex = /\|\|(.*?)\|\|/mi;
+    while ((match = regex.exec(text)) !== null) {
+        const s = match[1];
+        const id = Math.random().toString(36).slice(-10);
+        const html = `<span class='spoiler'>${s}</span>`;
+        text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
+    }
+
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
     let subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     text = text.replace(regex, subst);
