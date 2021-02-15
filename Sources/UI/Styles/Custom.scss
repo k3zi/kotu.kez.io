@@ -728,6 +728,8 @@ rt .underline {
     color: transparent;
     cursor: pointer;
     transition: color 0.25s, background-color 0.25s;
+    margin-bottom: 1px;
+    margin-top: 1px;
 }
 
 .spoiler > * {
