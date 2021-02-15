@@ -5,9 +5,9 @@ class BlogController: RouteCollection {
 
     func boot(routes: RoutesBuilder) throws {
         let blog = routes.grouped("blog")
-            .grouped(User.guardMiddleware())
 
         let guardedBlog = blog
+            .grouped(User.guardMiddleware())
             .grouped(GuardPermissionMiddleware(require: .blog))
 
         blog.get(":postID") { (req: Request) -> EventLoopFuture<BlogPost.Response> in
@@ -22,11 +22,11 @@ class BlogController: RouteCollection {
         }
 
         blog.get() { req -> EventLoopFuture<Page<BlogPost.Response>> in
-            let user = try req.auth.require(User.self)
+            let user = req.auth.get(User.self)
             var query = BlogPost
                 .query(on: req.db)
                 .with(\.$owner)
-            if !user.permissions.contains(Permission.blog.rawValue) {
+            if !(user?.permissions.contains(Permission.blog.rawValue) ?? false) {
                 query = query.filter(\.$isDraft == false)
             }
 

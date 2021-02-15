@@ -75,7 +75,7 @@ class BlogPost extends React.Component {
                             &nbsp;&nbsp;|
                             <span className='ps-2'><strong>Created:</strong> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
                             {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
-                            {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
+                            {user && user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
                                 <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
                             </LinkContainer>}
                         </div>

@@ -287,6 +287,9 @@ class App extends React.Component {
                         </Form>}
                         <div className="col-12 d-block d-xl-none order-2 order-xl-4"></div>
                         {!this.state.user && <Nav className="order-2 order-xl-4">
+                            <LinkContainer exact to="/articles">
+                                <Nav.Link active={false}>Articles</Nav.Link>
+                            </LinkContainer>
                             <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                             <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                         </Nav>}
@@ -353,13 +356,13 @@ class App extends React.Component {
                             </Route>
 
                             <Route ecact path="/articles">
-                                {this.loginProtect(<BlogPosts />)}
+                                <BlogPosts />
                             </Route>
                             <Route ecact path="/article/edit/:id">
                                 {this.loginProtect(<EditBlogPost />)}
                             </Route>
                             <Route ecact path="/article/:id">
-                                {this.loginProtect(<BlogPost />)}
+                                <BlogPost />
                             </Route>
 
                             <Route path="/admin/users">

@@ -71,7 +71,7 @@ class BlogPosts extends React.Component {
         return (
             <UserContext.Consumer>{user => (
                 <div>
-                    <h2>Articles {user.permissions.includes('blog') && <Button className='float-end' variant="primary" onClick={() => this.showCreatePostModal(true)}>Create Article</Button>}</h2>
+                    <h2>Articles {user && user.permissions.includes('blog') && <Button className='float-end' variant="primary" onClick={() => this.showCreatePostModal(true)}>Create Article</Button>}</h2>
                     <hr />
                     {this.state.posts.map((post, i) => {
                         return (<div key={i}>
@@ -86,7 +86,7 @@ class BlogPosts extends React.Component {
                                 &nbsp;&nbsp;|
                                 <span className='ps-2'><strong>Created:</strong> {new Intl.DateTimeFormat([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(post.createdAt))}</span>
                                 {post.isDraft && <span className='text-info ps-2'>(Draft)</span>}
-                                {user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
+                                {user && user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
                                     <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
                                 </LinkContainer>}
                             </div>
