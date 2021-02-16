@@ -44,13 +44,14 @@ class MediaController: RouteCollection {
 
     func boot(routes: RoutesBuilder) throws {
         let media = routes.grouped("media")
+
+        let guardedMedia = media
             .grouped(User.guardMiddleware())
 
         media.get("audio", ":id") { req -> EventLoopFuture<Response> in
-            let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
-            return user.$files
+            return File
                 .query(on: req.db)
                 .filter(\.$id == id)
                 .first()
@@ -74,7 +75,7 @@ class MediaController: RouteCollection {
                 }
         }
 
-        let youtube = media.grouped("youtube")
+        let youtube = guardedMedia.grouped("youtube")
 
         youtube.post("capture") { req -> EventLoopFuture<File> in
             let user = try req.auth.require(User.self)
@@ -174,7 +175,7 @@ class MediaController: RouteCollection {
             return response
         }
 
-        let plex = media.grouped("plex")
+        let plex = guardedMedia.grouped("plex")
 
         plex.post("signIn") { req -> EventLoopFuture<PinRequest> in
             Plex().signIn(client: req.client)
