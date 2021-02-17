@@ -6,6 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/17
+- [mpitch]: fix some space issues
+- [mpitch]: add functionality to mark mora as silenced by placing a full width backtick (｀) before it
+---
 #### 2021/2/16
 - Added cloze deletion cards.
 ---

@@ -400,7 +400,7 @@ hr {
     background-color: $red;
 }
 
-visual {
+.page visual {
     display: none;
     padding-left: 6px;
     padding-right: 6px;
@@ -412,6 +412,11 @@ component {
 
 phrase {
     display: inline;
+}
+
+space {
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 .visual-type-showPitchAccentDrops {
@@ -439,6 +444,22 @@ marking.overline {
     display: inline-block;
     border-top: solid $red 1px;
     text-indent: 0;
+}
+
+silenced {
+    display: inline-block;
+    position: relative;
+    margin: 0 1px;
+    padding: 2px 1px 0;
+    border: dotted #222 1px;
+    line-height: 1;
+    border-radius: 50%;
+    text-indent: 0;
+    box-sizing: border-box;
+}
+
+silenced.wide {
+    border-radius: 12px;
 }
 
 .visual-type-showFrequency {

@@ -48,6 +48,7 @@ helpers.outputAccent = (word, accent) => {
     let i = 0;
     while (i < word.length) {
         mora++;
+        let silenced = false;
 
         if (accent > 0 && mora === accent) {
             if (accent > 2) {
@@ -57,12 +58,26 @@ helpers.outputAccent = (word, accent) => {
             // drop start
             output += "<marking class='drop'>";
         }
+        if (word.charAt(i) === '｀') {
+            i++;
+            silenced = true;
+            if ((i+1) < word.length && (smallrowKatakana.includes(word.charAt(i+1)) || smallHiragana.includes(word.charAt(i+1)))) {
+                output += "<silenced class='wide'>";
+            } else {
+                output += '<silenced>';
+            }
+        }
         output += word.charAt(i);
         i++;
 
+        // add any small youon sounds
         while (i < word.length && (smallrowKatakana.includes(word.charAt(i)) || smallHiragana.includes(word.charAt(i)))) {
             output += word.charAt(i);
             i++;
+        }
+
+        if (silenced) {
+            output += '</silenced>';
         }
 
         // drop end
@@ -87,9 +102,17 @@ helpers.outputAccent = (word, accent) => {
 };
 
 helpers.generateManualPitchElement = (rawText) => {
-    const phrases = rawText.split('・');
-    const text = phrases.map(p => {
-        let components = p.split('／');
+    const regex = /([／｀＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
+    let match;
+    let result = '';
+    while ((match = regex.exec(rawText)) !== null) {
+        if (match.index === regex.lastIndex) {
+            regex.lastIndex++;
+        }
+        const text = match[1];
+        const miscText = match[2];
+
+        let components = text.split('／');
         for (let [i, c] of components.entries()) {
             if (i > 0) {
                 const prev = components[i - 1];
@@ -100,7 +123,7 @@ helpers.generateManualPitchElement = (rawText) => {
             }
         }
         components = components.filter(c => c.length > 0);
-        return components.map(c => {
+        const parsedText = components.map(c => {
             let accent = helpers.removeYouon(c).indexOf('＼');
             if (accent < 0) {
                 accent = 0;
@@ -108,8 +131,10 @@ helpers.generateManualPitchElement = (rawText) => {
             const clean = c.split('＼').join('');
             return helpers.outputAccent(clean, accent);
         }).join('');
-    }).map(p => `<phrase><visual>${p}</visual></phrase>`).join(' ');
-    return `<span class='visual-type-showPitchAccentDrops'>${text}</span>`;
+        result += `<phrase><visual>${parsedText}</visual></phrase>` + `${miscText}`;
+    }
+    result = result.replace(/<\/phrase><phrase>/g, '</phrase><space></space><phrase>');
+    return `<span class='visual-type-showPitchAccentDrops'>${result}</span>`;
 }
 
 helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
