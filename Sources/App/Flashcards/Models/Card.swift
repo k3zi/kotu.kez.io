@@ -20,13 +20,17 @@ final class Card: Model, Content {
     @Parent(key: "card_type_id")
     var cardType: CardType
 
+    @OptionalField(key: "cloze_deletion_index")
+    var clozeDeletionIndex: Int?
+
     init() { }
 
-    init(id: UUID? = nil, deckID: UUID, noteID: UUID, cardTypeID: UUID) {
+    init(id: UUID? = nil, deckID: UUID, noteID: UUID, cardTypeID: UUID, clozeDeletionIndex: Int? = nil) {
         self.id = id
         self.$deck.id = deckID
         self.$note.id = noteID
         self.$cardType.id = cardTypeID
+        self.clozeDeletionIndex = clozeDeletionIndex
     }
 
 }
@@ -47,6 +51,22 @@ extension Card {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "FlashcardCardClozeDeletionIndex" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("cloze_deletion_index", .int)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("cloze_deletion_index")
+                .update()
         }
     }
 

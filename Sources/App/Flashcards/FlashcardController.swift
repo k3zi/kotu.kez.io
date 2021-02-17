@@ -185,8 +185,16 @@ class FlashcardController: RouteCollection {
                             return note.$fieldValues.create(fieldValues, on: req.db)
                         }
                         .throwingFlatMap {
-                            let cards = try noteType.cardTypes.map {
-                                Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try $0.requireID())
+                            let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
+                            let clozeIndexes = allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }
+                            let cards = try noteType.cardTypes.flatMap { cardType  -> [Card] in
+                                if clozeIndexes.isEmpty {
+                                    return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                                }
+
+                                return try clozeIndexes.map {
+                                    Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
+                                }
                             }
                             return note.$cards.create(cards, on: req.db)
                                 .throwingFlatMap {

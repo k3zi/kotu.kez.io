@@ -88,7 +88,9 @@ class Deck extends React.Component {
             fieldValues: this.state.nextCard.note.fieldValues,
             autoPlay: true,
             answers: this.state.answers,
-            answersType: id !== 'front' ? 'show' : 'none'
+            answersType: id !== 'front' ? 'show' : 'none',
+            showClozeDeletion: id !== 'front',
+            clozeDeletionIndex: this.state.nextCard.clozeDeletionIndex
         });
 
         if (id !== 'front') {
@@ -96,7 +98,9 @@ class Deck extends React.Component {
                 fieldValues: this.state.nextCard.note.fieldValues,
                 autoPlay: false,
                 answers: this.state.answers,
-                answersType: 'echo'
+                answersType: 'echo',
+                showClozeDeletion: true,
+                clozeDeletionIndex: this.state.nextCard.clozeDeletionIndex
             });
             result = result.replace(/{{FrontSide}}/g, frontSide);
         }

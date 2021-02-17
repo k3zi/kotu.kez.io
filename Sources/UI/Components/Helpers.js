@@ -242,7 +242,7 @@ helpers.parseMarkdown = (rawText) => {
 }
 
 helpers.htmlForCard = async (baseHTML, options) => {
-    const { fieldValues, autoPlay, answers, answersType } = options;
+    const { fieldValues, autoPlay, answers, answersType, showClozeDeletion, clozeDeletionIndex } = options;
     let result = baseHTML;
     // Replace fields.
     for (let fieldValue of fieldValues) {
@@ -251,6 +251,16 @@ helpers.htmlForCard = async (baseHTML, options) => {
         const replace = `{{${fieldName}}}`;
         result = result.replace(new RegExp(replace, 'g'), value);
     }
+
+    if (clozeDeletionIndex && clozeDeletionIndex > 0) {
+        if (showClozeDeletion) {
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)(::(.*?))?\}\}`, 'g'), `<span class='cloze-deletion'>$1</span>`);
+        } else {
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)::(.*?)\}\}`, 'g'), `<span class='cloze-deletion'>[$2]</span>`);
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)\}\}`, 'g'), `<span class='cloze-deletion'>[...]</span>`);
+        }
+    }
+    result = result.replace(new RegExp(`\{\{c\\d::(.*?)(::.*?)?\}\}`, 'g'), '$1');
 
     // Handle media for front / back.
     let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;

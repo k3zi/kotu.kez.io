@@ -746,3 +746,10 @@ rt .underline {
         opacity: 1;
     }
 }
+
+.cloze-deletion {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25rem;
+    text-decoration-color: $secondary;
+}
