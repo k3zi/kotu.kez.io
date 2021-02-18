@@ -310,12 +310,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
             const answeredDigest = await helpers.digest(answered);
             const correct = answeredDigest === digest;
             const value = answersType === 'show' ? answer : answered;
-            html = `<div class="input-group">
-                <input type='text' class='form-control' value='${value}' disabled readonly>
-                <span class="input-group-text">
-                    ${correct ? `<i class='bi bi-check fs-3 text-success' />` : `<i class='bi bi-x fs-3 text-danger' />`}
-                </span>
-            </div>`;
+            html = `<div class="input-group"><input type='text' class='form-control' value='${value}' disabled readonly /><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success' />` : `<i class='bi bi-x fs-3 text-danger' />`}</span></div>`;
         }
         result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
     }
