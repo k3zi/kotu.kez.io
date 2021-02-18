@@ -400,8 +400,11 @@ hr {
     background-color: $red;
 }
 
-.page visual, #card visual {
+#card visual {
     display: none;
+}
+
+.page visual {
     padding-left: 6px;
     padding-right: 6px;
 }
