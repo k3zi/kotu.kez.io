@@ -186,7 +186,7 @@ class FlashcardController: RouteCollection {
                         }
                         .throwingFlatMap {
                             let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
-                            let clozeIndexes = allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }
+                            let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
                             let cards = try noteType.cardTypes.flatMap { cardType  -> [Card] in
                                 if clozeIndexes.isEmpty {
                                     return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
