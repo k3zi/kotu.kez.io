@@ -310,7 +310,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
             const answeredDigest = await helpers.digest(answered);
             const correct = answeredDigest === digest;
             const value = answersType === 'show' ? answer : answered;
-            html = `<span class="input-group"><span type='text' class='form-control d-flex justify-content-center align-items-center' disabled readonly>${value}</span><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success' />` : `<i class='bi bi-x fs-3 text-danger' />`}</span></span>`;
+            html = `<span class="input-group"><span type='text' class='form-control d-flex justify-content-center align-items-center' disabled readonly>${value}</span><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'></i>` : `<i class='bi bi-x fs-3 text-danger'></i>`}</span></span>`;
         }
         result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
     }
