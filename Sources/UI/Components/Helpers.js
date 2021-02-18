@@ -239,6 +239,7 @@ helpers.parseMarkdown = (rawText) => {
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
     let subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     text = text.replace(regex, subst);
+    text = text.replace(/\n/g, '\n\n');
     return unified()
         .use(markdown)
         .use(breaks)
