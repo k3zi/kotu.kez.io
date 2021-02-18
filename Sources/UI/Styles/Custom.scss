@@ -434,16 +434,16 @@ space {
 }
 
 marking.drop {
-    display: inline-block;
     border-top: solid $red 1px;
     background: url('./../../../Public/images/drop.png') no-repeat right 0;
     text-indent: 0;
+    padding-top: 2px;
 }
 
 marking.overline {
-    display: inline-block;
     border-top: solid $red 1px;
     text-indent: 0;
+    padding-top: 2px;
 }
 
 silenced {
@@ -769,8 +769,6 @@ rt .underline {
 }
 
 .cloze-deletion {
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.25rem;
-    text-decoration-color: $secondary;
+    padding: .2em;
+    background-color: #fcf8e3;
 }

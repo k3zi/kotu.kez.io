@@ -102,15 +102,16 @@ helpers.outputAccent = (word, accent) => {
 };
 
 helpers.generateManualPitchElement = (rawText) => {
-    const regex = /([／｀　 ＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
+    const regex = /([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)([／｀　 ＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
     let match;
     let result = '';
     while ((match = regex.exec(rawText)) !== null) {
         if (match.index === regex.lastIndex) {
             regex.lastIndex++;
         }
-        const text = match[1];
-        const miscText = match[2];
+        const preMiscText = match[1];
+        const text = match[2];
+        const postMiscText = match[3];
 
         let components = text.split('／');
         for (let [i, c] of components.entries()) {
@@ -131,7 +132,7 @@ helpers.generateManualPitchElement = (rawText) => {
             const clean = c.split('＼').join('');
             return helpers.outputAccent(clean, accent);
         }).join('');
-        result += `<phrase><visual>${parsedText}</visual></phrase>` + `${miscText}`;
+        result += `${preMiscText}<phrase><visual>${parsedText}</visual></phrase>${postMiscText}`;
     }
     result = result.replace(/<\/phrase><phrase>/g, '</phrase><space></space><phrase>');
     return `<span class='visual-type-showPitchAccentDrops'>${result}</span>`;
@@ -274,18 +275,8 @@ helpers.htmlForCard = async (baseHTML, options) => {
         const fieldName = fieldValue.field.name;
         const value = fieldValue.value;
         const replace = `{{${fieldName}}}`;
-        result = result.replace(new RegExp(replace, 'g'), value);
+        result = result.replace(new RegExp(replace, 'g'), value.trim());
     }
-
-    if (clozeDeletionIndex && clozeDeletionIndex > 0) {
-        if (showClozeDeletion) {
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)(::(.*?))?\}\}`, 'g'), `<span class='cloze-deletion'>$1</span>`);
-        } else {
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)::(.*?)\}\}`, 'g'), `<span class='cloze-deletion'>[$2]</span>`);
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::(.*?)\}\}`, 'g'), `<span class='cloze-deletion'>[...]</span>`);
-        }
-    }
-    result = result.replace(new RegExp(`\{\{c\\d::(.*?)(::.*?)?\}\}`, 'g'), '$1');
 
     // Handle media for front / back.
     let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
@@ -329,7 +320,18 @@ helpers.htmlForCard = async (baseHTML, options) => {
         result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
     }
 
-    return helpers.parseMarkdown(result);
+    result = helpers.parseMarkdown(result);
+
+    if (clozeDeletionIndex && clozeDeletionIndex > 0) {
+        if (showClozeDeletion) {
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)(::([^\}]*?))?\}\}`, 'g'), `<span class='cloze-deletion'>$1</span>`);
+        } else {
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)::([^\}]*?)\}\}`, 'g'), `<span class='cloze-deletion'>[$2]</span>`);
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)\}\}`, 'g'), `<span class='cloze-deletion'>[...]</span>`);
+        }
+    }
+    result = result.replace(new RegExp(`\{\{c\\d::(.*?)(::.*?)?\}\}`, 'g'), '$1');
+    return result;
 };
 
 helpers.scrollToHash = () => {
