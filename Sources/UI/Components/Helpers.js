@@ -102,7 +102,7 @@ helpers.outputAccent = (word, accent) => {
 };
 
 helpers.generateManualPitchElement = (rawText) => {
-    const regex = /([／｀＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
+    const regex = /([／｀　 ＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
     let match;
     let result = '';
     while ((match = regex.exec(rawText)) !== null) {
