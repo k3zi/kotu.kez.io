@@ -84,9 +84,6 @@ final class User: Model, Content {
 
     func beforeEncode() throws {
         self.passwordHash = ""
-        self.passwordResetKey = ""
-        self.passwordResetDate = nil
-        self.plexAuth = nil
         self.settings = self.settings ?? Settings()
     }
 
