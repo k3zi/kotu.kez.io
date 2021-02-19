@@ -20,6 +20,7 @@ struct SubtitleFile {
             case .ssa: return "ssa"
             case .ass: return "ass"
             case .srt: return "srt"
+            case .vtt: return "vtt"
             }
         }
 
@@ -28,6 +29,7 @@ struct SubtitleFile {
         case ssa
         case ass
         case srt
+        case vtt
 
         var rootType: SubtitleFileRoot.Type {
             switch self {
@@ -35,6 +37,7 @@ struct SubtitleFile {
             case .ssa: return SSAFileRoot.self
             case .ass: return ASSFileRoot.self
             case .srt: return SRTFileRoot.self
+            case .vtt: return VTTFileRoot.self
             }
         }
 
@@ -44,6 +47,7 @@ struct SubtitleFile {
             case .ssa: return "ssa"
             case .ass: return "ass"
             case .srt: return "srt"
+            case .vtt: return "vtt"
             }
         }
 
@@ -52,6 +56,7 @@ struct SubtitleFile {
             case "ssa": return .ssa
             case "ass": return .ass
             case "srt": return .srt
+            case "vtt": return .vtt
             default: return nil
             }
         }

@@ -22,15 +22,71 @@ class YouTubePlayer extends React.Component {
             youtubeVideoInfo: {},
             playerRef: null,
             isRecording: false,
-            lastFile: null
+            lastFile: null,
+            subtitles: [],
+            subtitle: null
         };
     }
 
-    loadVideo(e) {
+    componentDidMount() {
+        const self = this;
+        setInterval(() => {
+            self.loadSubtitle();
+        }, 250);
+    }
+
+    async loadVideo(e) {
         const url = e.target.value;
         let id = url.split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
         id = (id[2] !== undefined) ? id[2].split(/[^0-9a-z_\-]/i)[0] : id[0];
-        this.setState({ youtubeID: id, youtubeVideoInfo: {} });
+
+        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null });
+
+        const response = await fetch(`/api/media/youtube/subtitles/${id}`);
+        if (response.ok) {
+            const subtitles = await response.json();
+
+            this.setState({ subtitles });
+        }
+    }
+
+    loadSubtitle() {
+        if (!this.state.playerRef) {
+            return;
+        }
+        const time = this.state.playerRef.getCurrentTime();
+        const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
+        if (this.state.subtitle != subtitle) {
+            this.setState({ subtitle });
+        }
+    }
+
+    goToPreviousSub() {
+        if (!this.state.playerRef) {
+            return;
+        }
+        const time = this.state.playerRef.getCurrentTime();
+        let index = this.state.subtitles.findIndex(s => s.startTime < time && time < s.endTime);
+        if (index < 0) {
+            index = this.state.subtitles.findIndex(s => s.startTime >= time) - 1;
+        }
+        index = Math.max(index - 1, 0);
+        const subtitle = this.state.subtitles[index];
+        this.state.playerRef.seekTo(subtitle.startTime);
+    }
+
+    goToNextSub() {
+        if (!this.state.playerRef) {
+            return;
+        }
+        const time = this.state.playerRef.getCurrentTime();
+        let index = this.state.subtitles.findIndex(s => s.startTime < time && time < s.endTime);
+        if (index < 0) {
+            index = this.state.subtitles.findIndex(s => s.startTime >= time) - 1;
+        }
+        index = Math.min(index + 1, this.state.subtitles.length - 1);
+        const subtitle = this.state.subtitles[index];
+        this.state.playerRef.seekTo(subtitle.startTime);
     }
 
     videoOnReady(e) {
@@ -45,17 +101,22 @@ class YouTubePlayer extends React.Component {
         });
     }
 
-    startCapture(e) {
-        e.preventDefault();
-        this.setState({ isRecording: true, startTime: this.state.playerRef.getCurrentTime() });
-        this.state.playerRef.playVideo();
+    typeInTextarea(newText) {
+        const element = document.activeElement;
+        const selection = window.getSelection();
+        if (!selection.isCollapsed) return;
+
+        const text = element.innerText;
+        const before = text.substring(0, selection.focusOffset);
+        const after  = text.substring(selection.focusOffset, text.length);
+        element.innerText = before + newText + after;
+        const event = new Event('change');
+        element.dispatchEvent(event);
     }
 
-    async endCapture() {
-        this.state.playerRef.pauseVideo();
-        this.setState({ isRecording: false, isSubmitting: true, lastFile: null });
-        const startTime = this.state.startTime;
-        const endTime = this.state.playerRef.getCurrentTime();
+    async capture(startTime, endTime, e) {
+        this.setState({ isSubmitting: true });
+        if (e) e.preventDefault();
         const response = await fetch(`/api/media/youtube/capture`, {
             method: 'POST',
             body: JSON.stringify({
@@ -68,28 +129,40 @@ class YouTubePlayer extends React.Component {
             }
         });
         if (response.ok) {
-            function typeInTextarea(newText) {
-                const element = document.activeElement;
-                const selection = window.getSelection();
-                if (!selection.isCollapsed) return;
-
-                const text = element.innerText;
-                const before = text.substring(0, selection.focusOffset);
-                const after  = text.substring(selection.focusOffset, text.length);
-                element.innerText = before + newText + after;
-                const event = new Event('change');
-                element.dispatchEvent(event);
-            }
             const result = await response.json();
             this.setState({ lastFile: result, isSubmitting: false });
             if (document.hasFocus() && document.activeElement.contentEditable == 'true') {
                 setTimeout(() => {
-                    typeInTextarea(`[audio: ${result.id}]`);
+                    this.typeInTextarea(`[audio: ${result.id}]`);
                 }, 100);
             }
         } else {
             this.setState({ isSubmitting: false });
         }
+    }
+
+    async copy(text, e) {
+        if (e) e.preventDefault();
+
+        if (document.hasFocus() && document.activeElement.contentEditable == 'true') {
+            setTimeout(() => {
+                this.typeInTextarea(text);
+            }, 100);
+        }
+    }
+
+    startCapture(e) {
+        e.preventDefault();
+        this.setState({ isRecording: true, startTime: this.state.playerRef.getCurrentTime() });
+        this.state.playerRef.playVideo();
+    }
+
+    async endCapture() {
+        this.state.playerRef.pauseVideo();
+        this.setState({ isRecording: false, lastFile: null });
+        const startTime = this.state.startTime;
+        const endTime = this.state.playerRef.getCurrentTime();
+        await capture(startTime, endTime);
     }
 
     render() {
@@ -100,6 +173,19 @@ class YouTubePlayer extends React.Component {
                     {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
                         <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
+                    {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
+                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i class="bi bi-arrow-left"></i></span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i class="bi bi-arrow-right"></i></span>
+                    </div>}
+                    {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
+                        <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
+                            <i class="bi bi-clipboard"></i>
+                        </Button>
+                        {this.state.subtitle && <span className='fs-5'>{this.state.subtitle.text}</span>}
+                        <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} onTouchEnd={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} disabled={!this.state.subtitle || this.state.isSubmitting || !this.state.youtubeID} className='user-select-none mx-1' variant='danger'>
+                            <i class="bi bi-record2"></i>
+                        </Button>
+                    </div>}
                 </Col>
 
                 <Col xs={12} md={5}>

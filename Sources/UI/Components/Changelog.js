@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/18
+- [media.player]: add support for viewing / capturing YouTube subtitles
+---
 #### 2021/2/17
 - [mpitch]: fix some space issues
 - [mpitch]: add functionality to mark mora as silenced by placing a full width backtick (｀) before it

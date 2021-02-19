@@ -1,4 +1,4 @@
-struct SRTFileRoot: SubtitleFileRoot {
+struct VTTFileRoot: SubtitleFileRoot {
 
     static func canParse(tokenizer: Tokenizer) -> Bool {
         Subtitle.canParse(tokenizer: tokenizer)
@@ -6,7 +6,9 @@ struct SRTFileRoot: SubtitleFileRoot {
 
     // <root> ::= <sub-seq>
     // <sub-seq> ::= <sub> | <sub>\n\n<sub-seq>
-    static func parse(tokenizer: Tokenizer) throws -> SRTFileRoot {
+    static func parse(tokenizer: Tokenizer) throws -> VTTFileRoot {
+        try tokenizer.consume(expect: "WEBVTT\n")
+        tokenizer.consume(while: { a, _ in !a.isNumber })
         var subtitles = [Subtitle]()
         while Subtitle.canParse(tokenizer: tokenizer) {
             subtitles.append(try Subtitle.parse(tokenizer: tokenizer))
@@ -24,10 +26,10 @@ struct SRTFileRoot: SubtitleFileRoot {
         }
     }
 
-    static func encode(file: GenericSubtitleFile) -> SRTFileRoot {
+    static func encode(file: GenericSubtitleFile) -> VTTFileRoot {
         var subtitles = [Subtitle]()
-        for (i, genericSubtitle) in file.subtitles.enumerated() {
-            subtitles.append(.init(index: i + 1, timeRange: .init(start: .init(milliseconds: genericSubtitle.start * 1000), end: .init(milliseconds: genericSubtitle.end * 1000)), displayCoordinate: nil, text: genericSubtitle.text))
+        for genericSubtitle in file.subtitles {
+            subtitles.append(.init(timeRange: .init(start: .init(milliseconds: genericSubtitle.start * 1000), end: .init(milliseconds: genericSubtitle.end * 1000)), displayCoordinate: nil, text: genericSubtitle.text))
         }
         return .init(subtitles: subtitles)
     }

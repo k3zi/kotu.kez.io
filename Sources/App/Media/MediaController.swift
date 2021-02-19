@@ -7,6 +7,12 @@ struct MediaCaptureRequest: Content {
     let youtubeID: String
 }
 
+struct MediaSubtitle: Content {
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+    let text: String
+}
+
 extension MediaCaptureRequest: Validatable {
 
     static func validations(_ validations: inout Validations) {
@@ -173,6 +179,47 @@ class MediaController: RouteCollection {
                 response.body = .init(data: data)
             }
             return response
+        }
+
+        youtube.get("subtitles", ":youtubeID") { req -> [MediaSubtitle] in
+            let youtubeID = try req.parameters.require("youtubeID")
+            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let uuid = UUID().uuidString
+
+            let task = Process()
+            task.currentDirectoryURL = directory
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
+            var env = task.environment ?? [:]
+            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+            task.environment = env
+
+            task.arguments = [
+                "youtube-dl",
+                "-q",
+                "--write-sub",
+                "--sub-lang", "ja",
+                "--sub-format", "srt",
+                "--skip-download",
+                "-o", "\(uuid)",
+                "https://youtu.be/\(youtubeID)"
+            ]
+            try task.run()
+            task.waitUntilExit()
+            if task.terminationStatus != 0 {
+                throw Abort(.internalServerError)
+            }
+
+            let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
+            guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
+                try FileManager.default.removeItem(at: fileURL)
+                throw Abort(.internalServerError)
+            }
+            try FileManager.default.removeItem(at: fileURL)
+            return subtitleRoot.subtitles.map {
+                MediaSubtitle(startTime: Double($0.timeRange.start.milliseconds) / 1000, endTime: Double($0.timeRange.end.milliseconds) / 1000, text: $0.text)
+            }
         }
 
         let plex = guardedMedia.grouped("plex")

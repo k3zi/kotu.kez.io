@@ -239,6 +239,7 @@ helpers.parseMarkdown = (rawText) => {
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
     let subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     text = text.replace(regex, subst);
+    // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
     return unified()
         .use(markdown)
