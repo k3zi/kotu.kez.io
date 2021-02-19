@@ -1,4 +1,5 @@
 import React from 'react';
+import { withRouter } from 'react-router';
 import { LinkContainer } from 'react-router-bootstrap';
 
 import Alert from 'react-bootstrap/Alert';
@@ -33,19 +34,37 @@ class YouTubePlayer extends React.Component {
         setInterval(() => {
             self.loadSubtitle();
         }, 250);
+
+        if (this.props.match.params.id && this.props.match.params.id.length > 0) {
+            this.loadVideo(this.props.match.params.id);
+        }
     }
 
-    async loadVideo(e) {
+    componentDidUpdate(prevProps) {
+        if (this.props.match.params.id != prevProps.match.params.id && this.props.match.params.id.length > 0) {
+            this.loadVideo(this.props.match.params.id);
+        }
+    }
+
+    async goToVideo(e) {
         const url = e.target.value;
         let id = url.split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
         id = (id[2] !== undefined) ? id[2].split(/[^0-9a-z_\-]/i)[0] : id[0];
+        if (id && id.length > 0) {
+            this.props.history.push(`/media/youtube/${id}`);
+        } else {
+            this.props.history.push(`/media/youtube`);
+        }
+    }
 
+    async loadVideo(id) {
         this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null });
-
         const response = await fetch(`/api/media/youtube/subtitles/${id}`);
         if (response.ok) {
             const subtitles = await response.json();
-
+            subtitles.forEach(s => {
+                s.text = s.text.replace(/(\r\n|\n|\r)/gm, '');
+            });
             this.setState({ subtitles });
         }
     }
@@ -110,8 +129,17 @@ class YouTubePlayer extends React.Component {
         const before = text.substring(0, selection.focusOffset);
         const after  = text.substring(selection.focusOffset, text.length);
         element.innerText = before + newText + after;
-        const event = new Event('change');
-        element.dispatchEvent(event);
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        setTimeout(() => {
+            const textNode = document.activeElement.childNodes[0];
+            const range = document.createRange();
+            const end = before.length + newText.length;
+            range.setStart(textNode, end);
+            range.setEnd(textNode, end);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }, 100);
     }
 
     async capture(startTime, endTime, e) {
@@ -169,7 +197,7 @@ class YouTubePlayer extends React.Component {
         return (
             <Row>
                 <Col xs={12} md={7}>
-                    <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.loadVideo(e)} placeholder="YouTube ID / URL" />
+                    <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.goToVideo(e)} placeholder="YouTube ID / URL" defaultValue={this.props.match.params.id ? `https://youtu.be/${this.props.match.params.id}` : ''} />
                     {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
                         <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
@@ -200,4 +228,4 @@ class YouTubePlayer extends React.Component {
     }
 }
 
-export default YouTubePlayer;
+export default withRouter(YouTubePlayer);

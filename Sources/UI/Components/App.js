@@ -345,7 +345,10 @@ class App extends React.Component {
                                 {this.loginProtect(<ListsWords />)}
                             </Route>
 
-                            <Route path="/media/youtube">
+                            <Route exact path="/media/youtube/:id">
+                                {this.loginProtect(<MediaYouTubePlayer />)}
+                            </Route>
+                            <Route exact path="/media/youtube">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
                             </Route>
                             <Route path="/media/plex">
@@ -355,10 +358,10 @@ class App extends React.Component {
                                 {this.loginProtect(<MediaReader />)}
                             </Route>
 
-                            <Route ecact path="/articles">
+                            <Route exact path="/articles">
                                 <BlogPosts />
                             </Route>
-                            <Route ecact path="/article/edit/:id">
+                            <Route exact path="/article/edit/:id">
                                 {this.loginProtect(<EditBlogPost />)}
                             </Route>
                             <Route ecact path="/article/:id">

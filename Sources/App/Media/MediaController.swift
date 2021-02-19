@@ -187,38 +187,51 @@ class MediaController: RouteCollection {
             try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let uuid = UUID().uuidString
 
-            let task = Process()
-            task.currentDirectoryURL = directory
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            func downloadSubtitles(uuid: String, directory: URL, auto: Bool) throws {
+                let task = Process()
+                task.currentDirectoryURL = directory
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
 
-            var env = task.environment ?? [:]
-            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
-            task.environment = env
+                var env = task.environment ?? [:]
+                env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+                task.environment = env
 
-            task.arguments = [
-                "youtube-dl",
-                "-q",
-                "--write-sub",
-                "--sub-lang", "ja",
-                "--sub-format", "srt",
-                "--skip-download",
-                "-o", "\(uuid)",
-                "https://youtu.be/\(youtubeID)"
-            ]
-            try task.run()
-            task.waitUntilExit()
-            if task.terminationStatus != 0 {
-                throw Abort(.internalServerError)
+                task.arguments = [
+                    "youtube-dl",
+                    "-q",
+                    (auto ? "--write-auto-sub" : "--write-sub"),
+                    "--sub-lang", "ja",
+                    "--sub-format", "vtt",
+                    "--skip-download",
+                    "-o", "\(uuid)",
+                    "https://youtu.be/\(youtubeID)"
+                ]
+                try task.run()
+                task.waitUntilExit()
+                if task.terminationStatus != 0 {
+                    throw Abort(.internalServerError)
+                }
             }
 
+            var isAuto = false
+            try downloadSubtitles(uuid: uuid, directory: directory, auto: false)
             let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                try downloadSubtitles(uuid: uuid, directory: directory, auto: true)
+                isAuto = true
+            }
             guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
                 try FileManager.default.removeItem(at: fileURL)
                 throw Abort(.internalServerError)
             }
             try FileManager.default.removeItem(at: fileURL)
             return subtitleRoot.subtitles.map {
-                MediaSubtitle(startTime: Double($0.timeRange.start.milliseconds) / 1000, endTime: Double($0.timeRange.end.milliseconds) / 1000, text: $0.text)
+                var text = isAuto ? $0.text.components(separatedBy: "\n").suffix(from: 1).joined() : $0.text
+                text = text.replacingOccurrences(of: "<c>", with: "", options: .regularExpression)
+                text = text.replacingOccurrences(of: "</c>", with: "", options: .regularExpression)
+                text = text.replacingOccurrences(of: "<\\d+:\\d+:\\d+.\\d+>", with: "", options: .regularExpression)
+
+                return MediaSubtitle(startTime: Double($0.timeRange.start.milliseconds) / 1000, endTime: Double($0.timeRange.end.milliseconds) / 1000, text: text)
             }
         }
 

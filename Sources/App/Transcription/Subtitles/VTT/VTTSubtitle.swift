@@ -19,10 +19,7 @@ extension VTTFileRoot {
         static func parse(tokenizer: Tokenizer) throws -> Subtitle {
             let timeRange = try TimeRange.parse(tokenizer: tokenizer)
 
-            var displayCoordinate: DisplayCoordinate?
-            try tokenizer.ifConsume(expect: " ") {
-                displayCoordinate = try DisplayCoordinate.parse(tokenizer: tokenizer)
-            }
+            tokenizer.consume(upUntil: "\n")
 
             var text = ""
             if tokenizer.next == "\n" && tokenizer.nextNext != "\n" {
@@ -30,7 +27,7 @@ extension VTTFileRoot {
                 text = tokenizer.consume(upUntil: { n, nn in n == "\n" && nn == "\n" })
             }
 
-            return .init(timeRange: timeRange, displayCoordinate: displayCoordinate, text: text)
+            return .init(timeRange: timeRange, displayCoordinate: nil, text: text)
         }
 
         func print(output: inout String) {

@@ -8,6 +8,8 @@ class Component extends React.Component {
         let markdown = `# Changelog
 #### 2021/2/18
 - [media.player]: add support for viewing / capturing YouTube subtitles
+- [media.player]: add support for auto generated subtitles
+- [media.player]: fix some bugs for copying text
 ---
 #### 2021/2/17
 - [mpitch]: fix some space issues
