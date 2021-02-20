@@ -274,11 +274,15 @@ struct Morpheme: Content {
 
         let lastMorpheme = morphemes.last!
 
+        if lastMorpheme.pronunciation.isEmpty {
+            return morphemes
+        }
+
         if ["接尾辞"].contains(nextMorpheme.partOfSpeech) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
-        if nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: nextMorpheme.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && nextMorpheme.features.contains("助数詞可能")) {
+        if nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: nextMorpheme.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && (nextMorpheme.features.contains("助数詞可能") || nextMorpheme.features[1] == "数詞")) {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
@@ -290,10 +294,11 @@ struct Morpheme: Content {
         var longestMatchingNodes = morphemes
         var index = 0
         while index < tokenizer.nodes.count && index < 10 && !tokenizer.nodes[index].isBosEos {
-            possibleNodes.append(Morpheme.parse(from: tokenizer.nodes[index]))
+            let addedMorpheme = Morpheme.parse(from: tokenizer.nodes[index])
+            possibleNodes.append(addedMorpheme)
             let original = possibleNodes.map { $0.original }.joined()
             let surface = possibleNodes.map { $0.surface }.joined()
-            if DictionaryManager.shared.words.contains(surface) || DictionaryManager.shared.words.contains(original) {
+            if (!addedMorpheme.surface.isEmpty && DictionaryManager.shared.words.contains(surface)) || (!addedMorpheme.original.isEmpty && DictionaryManager.shared.words.contains(original)) {
                 longestMatchingNodes = possibleNodes
             }
             index += 1

@@ -60,6 +60,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(UserToken.Migration())
     app.migrations.add(BlogPost.Migration(), BlogPost.Migration1())
     app.migrations.add(Card.Migration1())
+    app.migrations.add(Deck.Migration1())
 
     try app.autoMigrate().wait()
 

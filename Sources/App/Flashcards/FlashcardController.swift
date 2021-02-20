@@ -80,7 +80,7 @@ class FlashcardController: RouteCollection {
                 .throwingFlatMap { card in
                     let deck = card.deck
                     let sm = deck.sm
-                    guard var nextItem = sm.nextItem(), nextItem.card == card.id else {
+                    guard var nextItem = sm.queue.first(where: { $0.card == card.id }), nextItem.dueDate < Date() else {
                         throw Abort(.badRequest)
                     }
                     sm.answer(grade: grade, item: &nextItem)
@@ -246,6 +246,10 @@ class FlashcardController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMap { deck in
+                    deck.scheduleOrder = object.scheduleOrder.rawValue
+                    deck.newOrder = object.newOrder.rawValue
+                    deck.reviewOrder = object.reviewOrder.rawValue
+
                     let sm = deck.sm
                     sm.requestedFI = Double(object.requestedFI)
 
@@ -428,6 +432,7 @@ class FlashcardController: RouteCollection {
             guard let fieldID = req.parameters.get("fieldID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
             return NoteField.query(on: req.db)
+                .with(\.$values)
                 .with(\.$noteType) {
                     $0.with(\.$owner)
                 }
@@ -436,7 +441,10 @@ class FlashcardController: RouteCollection {
                 .unwrap(orError: Abort(.badRequest, reason: "Note field not found"))
                 .guard({ $0.noteType.owner.id == userID && $0.$noteType.id == typeID }, else: Abort(.badRequest))
                 .flatMap { field in
-                    field.delete(on: req.db)
+                    field.values.delete(on: req.db)
+                        .flatMap {
+                            field.delete(on: req.db)
+                        }
                 }
                 .map { "Note field deleted." }
         }

@@ -169,7 +169,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
         let newText = '';
         let startIndex = 0;
         let phrase = phrases[phraseIndex];
-        let index = text.indexOf(phrase.surface, startIndex);
+        let index = text.indexOf(phrase.surface.charAt(0), startIndex);
         while (index != -1) {
             if (phrase.isBasic) {
                 newText += `<phrase><visual>${phrase.pronunciation}</visual><component>${phrase.surface}</component></phrase>`;
@@ -182,7 +182,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
             phraseIndex += 1;
             phrase = phrases[phraseIndex];
             if (phrase) {
-                index = text.indexOf(phrase.surface, startIndex);
+                index = text.indexOf(phrase.surface.charAt(0), startIndex);
                 startIndex += phrase.surface.length;
             } else {
                 index = -1

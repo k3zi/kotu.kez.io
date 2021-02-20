@@ -21,8 +21,17 @@ class EditDeckModal extends React.Component {
             didError: false,
             message: null,
             success: false,
-            requestedFI: null
+            requestedFI: null,
+            scheduleOrder: null,
+            newOrder: null,
+            reviewOrder: null
         };
+    }
+
+    componentDidUpdate(prevProps) {
+        if (this.props.deck != prevProps.deck) {
+            this.setState({ requestedFI: null, scheduleOrder: null, newOrder: null, reviewOrder: null });
+        }
     }
 
     async submit(event) {
@@ -59,6 +68,43 @@ class EditDeckModal extends React.Component {
         return this.state.requestedFI || this.props.deck.sm.requestedFI;
     }
 
+    scheduleOrder() {
+        return this.state.scheduleOrder || this.props.deck.scheduleOrder;
+    }
+
+    displayForScheduleOrder(o) {
+        const dict = {
+            'mixNewAndReview': 'Mix New / Review',
+            'newAfterReview': 'New After Review',
+            'newBeforeReview': 'New Before Review'
+        };
+        return dict[o];
+    }
+
+    newOrder() {
+        return this.state.newOrder || this.props.deck.newOrder;
+    }
+
+    displayForNewOrder(o) {
+        const dict = {
+            'random': 'Random',
+            'added': 'Added'
+        };
+        return dict[o];
+    }
+
+    reviewOrder() {
+        return this.state.reviewOrder || this.props.deck.reviewOrder;
+    }
+
+    displayForReviewOrder(o) {
+        const dict = {
+            'random': 'Random',
+            'due': 'Due'
+        };
+        return dict[o];
+    }
+
     render() {
         return (
             <Modal {...this.props} show={!!this.props.deck} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
@@ -84,6 +130,45 @@ class EditDeckModal extends React.Component {
                                 <Button variant="outline-secondary" onClick={() => this.setState({ requestedFI: Math.min(this.requestedFI() + 1, 20) })}>
                                     +
                                 </Button>
+                            </InputGroup>
+                        </Form.Group>
+
+                        <Form.Group controlId="editDeckScheduleOrder" className='mb-3'>
+                            <Form.Label>Schedule Order</Form.Label>
+                            <InputGroup className="mt-2 mt-lg-0">
+                                <Form.Control value={this.displayForScheduleOrder(this.scheduleOrder())} readOnly />
+                                <Form.Control value={this.scheduleOrder()} name='scheduleOrder' hidden />
+                                <DropdownButton variant="outline-secondary" title="Order" id="input-group-dropdown-1">
+                                    {['mixNewAndReview', 'newAfterReview', 'newBeforeReview'].map((order, i) => {
+                                        return <Dropdown.Item key={i} active={this.scheduleOrder() === order} onSelect={() => this.setState({ scheduleOrder: order })}>{this.displayForScheduleOrder(order)}</Dropdown.Item>;
+                                    })}
+                                </DropdownButton>
+                            </InputGroup>
+                        </Form.Group>
+
+                        <Form.Group controlId="editDeckNewOrder" className='mb-3'>
+                            <Form.Label>New Order <small class='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
+                            <InputGroup className="mt-2 mt-lg-0">
+                                <Form.Control value={this.displayForNewOrder(this.newOrder())} readOnly />
+                                <Form.Control value={this.newOrder()} name='newOrder' hidden />
+                                <DropdownButton variant="outline-secondary" title="Order" id="input-group-dropdown-1">
+                                    {['random', 'added'].map((order, i) => {
+                                        return <Dropdown.Item key={i} active={this.newOrder() === order} onSelect={() => this.setState({ newOrder: order })}>{this.displayForNewOrder(order)}</Dropdown.Item>;
+                                    })}
+                                </DropdownButton>
+                            </InputGroup>
+                        </Form.Group>
+
+                        <Form.Group controlId="editDeckReviewOrder" className='mb-3'>
+                            <Form.Label>Review Order <small class='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
+                            <InputGroup className="mt-2 mt-lg-0">
+                                <Form.Control value={this.displayForReviewOrder(this.reviewOrder())} readOnly />
+                                <Form.Control value={this.reviewOrder()} name='reviewOrder' hidden />
+                                <DropdownButton variant="outline-secondary" title="Order" id="input-group-dropdown-1">
+                                    {['random', 'due'].map((order, i) => {
+                                        return <Dropdown.Item key={i} active={this.reviewOrder() === order} onSelect={() => this.setState({ reviewOrder: order })}>{this.displayForReviewOrder(order)}</Dropdown.Item>;
+                                    })}
+                                </DropdownButton>
                             </InputGroup>
                         </Form.Group>
 

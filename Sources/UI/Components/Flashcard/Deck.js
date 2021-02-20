@@ -61,8 +61,40 @@ class Deck extends React.Component {
     }
 
     async loadNextCard() {
-        const availableQueue = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
-        const item = availableQueue[0];
+        const allItems = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
+        const newItems = allItems.filter(i => i.repetition === -1);
+        const reviewItems = allItems.filter(i => i.repetition !== -1);
+
+        let items = allItems;
+        let shouldRandomize = false;
+        const scheduleOrder = this.state.deck.scheduleOrder;
+        const newOrder = this.state.deck.newOrder;
+        const reviewOrder = this.state.deck.reviewOrder;
+        if (scheduleOrder === 'newAfterReview') {
+            if (reviewItems.length > 0) {
+                items = reviewItems;
+                if (reviewOrder === 'random') {
+                    items = _.shuffle(items);
+                }
+            } else if (newOrder === 'random') {
+                // all new cards
+                items = _.shuffle(items);
+            }
+        } else if (scheduleOrder === 'newBeforeReview' && newItems.length > 0) {
+            if (newItems.length > 0) {
+                items = newItems;
+                if (newOrder === 'random') {
+                    items = _.shuffle(items);
+                }
+            } else if (reviewOrder === 'random') {
+                // all review cards
+                items = _.shuffle(items);
+            }
+        } else if (reviewOrder == 'random' && newOrder == 'random') {
+            items = _.shuffle(items);
+        }
+
+        const item = items[0];
         if (!item) {
             this.props.history.push('/flashcard/decks');
             return;
@@ -150,15 +182,15 @@ class Deck extends React.Component {
                                 <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>
                             </div>}
                             {this.state.showGradeButtons && <div className="text-center mt-3">
-                                <span className='px-2'>Again</span>
+                                <span className='px-2'>Fail</span>
                                 <ButtonGroup className="mb-2　d-block">
                                     <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(2)}>2</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(3)}>3</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(4)}>4</Button>
+                                    <Button variant='danger' onClick={() => this.selectGrade(2)}>2</Button>
+                                    <Button variant='success' onClick={() => this.selectGrade(3)}>3</Button>
+                                    <Button variant='success' onClick={() => this.selectGrade(4)}>4</Button>
                                     <Button variant='success' onClick={() => this.selectGrade(5)}>5</Button>
                                 </ButtonGroup>
-                                <span className='px-2'>Easy</span>
+                                <span className='px-2'>Pass</span>
                             </div>}
                         </Col>
                         <Col xs={0} lg={3}></Col>

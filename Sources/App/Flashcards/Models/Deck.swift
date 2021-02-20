@@ -3,6 +3,22 @@ import Vapor
 
 final class Deck: Model, Content {
 
+    enum NewOrder: String, Codable {
+        case random
+        case added
+    }
+
+    enum ReviewOrder: String, Codable {
+        case random
+        case due
+    }
+
+    enum ScheduleOrder: String, Codable {
+        case mixNewAndReview
+        case newAfterReview
+        case newBeforeReview
+    }
+
     static let schema = "flashcard_decks"
 
     @ID(key: .id)
@@ -13,6 +29,15 @@ final class Deck: Model, Content {
 
     @Field(key: "name")
     var name: String
+
+    @Field(key: "schedule_order")
+    var scheduleOrder: String
+
+    @Field(key: "new_order")
+    var newOrder: String
+
+    @Field(key: "review_order")
+    var reviewOrder: String
 
     // The UUID of the individual `Card`s is used.
     @Field(key: "sweet_memo")
@@ -51,6 +76,26 @@ extension Deck {
         }
     }
 
+    struct Migration1: Fluent.Migration {
+        var name: String { "FlashcardDeckOrder" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("schedule_order", .string, .required, .sql(.default("mixNewAndReview")))
+                .field("new_order", .string, .required, .sql(.default("added")))
+                .field("review_order", .string, .required, .sql(.default("random")))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("schedule_order")
+                .deleteField("new_order")
+                .deleteField("review_order")
+                .update()
+        }
+    }
+
 }
 
 extension Deck {
@@ -62,6 +107,9 @@ extension Deck {
     struct Update: Content {
         let name: String
         let requestedFI: Int
+        let scheduleOrder: ScheduleOrder
+        let reviewOrder: ReviewOrder
+        let newOrder: NewOrder
     }
 
 }

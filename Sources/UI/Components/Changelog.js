@@ -6,6 +6,11 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/20
+- [anki]: fix deleting fields with previous values
+- [anki]: add option to change review order
+- [media.reader]: fix content with mismatching parsed nodes causing annotations to stop midway through
+---
 #### 2021/2/18
 - [media.player]: add support for viewing / capturing YouTube subtitles
 - [media.player]: add support for auto generated subtitles
