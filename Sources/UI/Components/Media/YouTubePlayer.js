@@ -190,7 +190,7 @@ class YouTubePlayer extends React.Component {
         this.setState({ isRecording: false, lastFile: null });
         const startTime = this.state.startTime;
         const endTime = this.state.playerRef.getCurrentTime();
-        await capture(startTime, endTime);
+        await this.capture(startTime, endTime);
     }
 
     render() {
