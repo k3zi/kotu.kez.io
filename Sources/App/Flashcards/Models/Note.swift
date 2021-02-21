@@ -2,7 +2,15 @@ import Fluent
 import Vapor
 
 /// A collection of field values that generate one or more cards.
-final class Note: Model, Content {
+final class Note: Model, Content, Hashable {
+
+    static func == (lhs: Note, rhs: Note) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 
     static let schema = "flashcard_notes"
 

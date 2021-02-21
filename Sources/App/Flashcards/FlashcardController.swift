@@ -278,7 +278,11 @@ class FlashcardController: RouteCollection {
 
             return deck
                 .save(on: req.db)
-                .map { deck }
+                .flatMap {
+                    // Default values not getting initialized on first load so
+                    // we have to fetch again
+                    Deck.find(deck.id, on: req.db).unwrap(or: Abort(.internalServerError))
+                }
         }
 
         guardedDeckID.delete() { (req: Request) -> EventLoopFuture<String> in
@@ -287,12 +291,25 @@ class FlashcardController: RouteCollection {
 
             return user.$decks
                 .query(on: req.db)
-                .with(\.$cards)
+                .with(\.$cards) {
+                    $0.with(\.$note) {
+                        $0.with(\.$cards).with(\.$fieldValues)
+                    }
+                }
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Deck not found"))
                 .flatMap { deck in
-                    deck.cards.delete(on: req.db)
+                    let cards = deck.cards
+                    return deck.cards.delete(on: req.db)
+                        .flatMap {
+                            let notes = Array(Set(cards.map { $0.note }))
+                            let deletableNotes = notes.filter { note in note.cards.filter { card in !cards.contains(where: { $0.id == card.id}) }.isEmpty }
+                            let fieldValues = deletableNotes.flatMap { $0.fieldValues }
+                            return fieldValues.delete(on: req.db).flatMap {
+                                return deletableNotes.delete(on: req.db)
+                            }
+                        }
                         .flatMap {
                             deck.delete(on: req.db)
                         }

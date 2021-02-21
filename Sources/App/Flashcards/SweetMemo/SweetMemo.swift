@@ -53,7 +53,7 @@ class SweetMemo: Codable {
     }
 
     private func update(grade: Double, item: inout Item, now: Date = .init()) {
-        if item.repetition > 0 {
+        if item.repetition >= 0 {
             forgettingCurves.registerPoint(sm: self, grade: grade, item: &item, now: now)
             ofm.update()
             forgettingIndexGraph.update(sm: self, grade: grade, item: item, now: now)
@@ -108,8 +108,8 @@ extension SweetMemo {
         }
 
         func afIndex() -> Int {
-            let afs = (0...rangeAF).map { minAF + Double($0) * notchAF }
-            return (0...rangeAF).reduce(0, { a, b in
+            let afs = (0..<rangeAF).map { minAF + Double($0) * notchAF }
+            return (0..<rangeAF).reduce(0, { a, b in
                 abs(af() - afs[a]) < abs(af() - afs[b]) ? a : b
             })
         }
@@ -133,7 +133,7 @@ extension SweetMemo {
             afs.append(estimatedAF)
             afs = afs.suffix(maxAFsCount)
             let x = afs.enumerated().map { i, a in a * (Double(i) + 1) }.reduce(0, +)
-            let y = (1..<afs.count).reduce(0, +)
+            let y = (1...afs.count).reduce(0, +)
             _ = af(value: x / Double(y))
         }
 
@@ -253,7 +253,7 @@ extension SweetMemo {
         let logQ = log(q)
         let X = points.map { log($0.x / p) }
         let Y = points.map { log($0.y) - logQ }
-        let b = linearRegressionThroughOrigin(points: zip(X, Y).map { Point(x: $0, y: $1) }).b
+        let b = linearRegressionThroughOrigin(points: zip(X, Y).map { Point(x: $0, y: $1) }.filter { $0.y.isFinite }).b
         return powerLawModel(a: q / pow(p, b), b: b)
     }
 
@@ -289,8 +289,8 @@ extension SweetMemo {
         var curves: [[ForgettingCurve]]
 
         static func load(sm: SweetMemo, points: [[Point]]? = nil) -> ForgettingCurves {
-            let curves = (0...rangeRepetition).map { (r: Int) -> [ForgettingCurve] in
-                (0...rangeAF).map { (a: Int) -> ForgettingCurve in
+            let curves = (0..<rangeRepetition).map { (r: Int) -> [ForgettingCurve] in
+                (0..<rangeAF).map { (a: Int) -> ForgettingCurve in
                     let dr = Double(r)
                     let da = Double(a)
                     let partialPoints: [Point]
@@ -299,7 +299,7 @@ extension SweetMemo {
                     } else {
                         let p: [Point]
                         if r > 0 {
-                            p = (0..<20).map { i -> Point in
+                            p = (0...20).map { i -> Point in
                                 Point(
                                     x: minAF + notchAF * Double(i),
                                     y: min(
@@ -311,7 +311,7 @@ extension SweetMemo {
                                 )
                             }
                         } else {
-                            p = (0..<20).map { i -> Point in
+                            p = (0...20).map { i -> Point in
                                 Point(
                                     x: minAF + notchAF * Double(i),
                                     y: min(
@@ -412,13 +412,13 @@ extension SweetMemo {
         }
 
         mutating func update() {
-            var dfs: [Double] = (0...rangeAF).map { a in
-                SweetMemo.fixedPointPowerLawRegression(points: (1...rangeRepetition).map { r in
+            var dfs: [Double] = (0..<rangeAF).map { a in
+                SweetMemo.fixedPointPowerLawRegression(points: (1..<rangeRepetition).map { r in
                     Point(x: Self.repFromIndex(r: Double(r)), y: sm.rfm.rFactor(repetition: r, afIndex: a))
                 }, fixedPoint: Point(x: Self.repFromIndex(r: 1), y: Self.afFromIndex(a: a))).b
             }
-            dfs = (0...rangeAF).map { Self.afFromIndex(a: $0) / pow(2, dfs[$0]) }
-            let decay = SweetMemo.linearRegression(points: (0...rangeAF).map { Point(x: Double($0), y: dfs[$0]) })
+            dfs = (0..<rangeAF).map { Self.afFromIndex(a: $0) / pow(2, dfs[$0]) }
+            let decay = SweetMemo.linearRegression(points: (0..<rangeAF).map { Point(x: Double($0), y: dfs[$0]) })
             self.ofm = { a in
                 let af = Self.afFromIndex(a: a)
                 let b = log(af / decay.y(Double(a))) / log(Self.repFromIndex(r: 1))
@@ -429,7 +429,7 @@ extension SweetMemo {
                 )
             }
 
-            let ofm0 = SweetMemo.exponentialRegression(points: (0...rangeAF).map { Point(x: Double($0), y: sm.rfm.rFactor(repetition: 0, afIndex: $0)) })
+            let ofm0 = SweetMemo.exponentialRegression(points: (0..<rangeAF).map { Point(x: Double($0), y: sm.rfm.rFactor(repetition: 0, afIndex: $0)) })
             self.ofm0 = { ofm0.y(Double($0)) }
         }
 
@@ -440,7 +440,7 @@ extension SweetMemo {
         }
 
         func af(repetition: Int, of of_: Double) -> Double {
-            Double(Self.afFromIndex(a: (0...rangeAF).reduce(0, { a, b -> Int in
+            Double(Self.afFromIndex(a: (0..<rangeAF).reduce(0, { a, b -> Int in
                 abs(of(repetition: repetition, afIndex: a) - of_) < abs(of(repetition: repetition, afIndex: b) - of_)
                     ? a
                     : b
@@ -481,7 +481,7 @@ extension SweetMemo {
         }
 
         mutating func registerPoint(fi: Double, g: Double) {
-            points.append(Point(x: fi, y: g))
+            points.append(Point(x: fi, y: g + gradeOffset))
             points = points.suffix(maxPoints)
         }
 

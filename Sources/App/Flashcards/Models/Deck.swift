@@ -96,6 +96,40 @@ extension Deck {
         }
     }
 
+    struct Migration2: Fluent.Migration {
+        var name: String { "FlashcardDeckOffsetGrade" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            Deck.query(on: database)
+                .all()
+                .flatMap { decks in
+                    for deck in decks {
+                        let sm = deck.sm
+                        sm.forgettingIndexGraph.points = sm.forgettingIndexGraph.points.map {
+                            SweetMemo.Point(x: $0.x, y: $0.y + 1)
+                        }
+                        deck.sm = sm
+                    }
+                    return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            Deck.query(on: database)
+                .all()
+                .flatMap { decks in
+                    for deck in decks {
+                        let sm = deck.sm
+                        sm.forgettingIndexGraph.points = sm.forgettingIndexGraph.points.map {
+                            SweetMemo.Point(x: $0.x, y: $0.y - 1)
+                        }
+                        deck.sm = sm
+                    }
+                    return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
+                }
+        }
+    }
+
 }
 
 extension Deck {

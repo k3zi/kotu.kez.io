@@ -63,14 +63,11 @@ class DeleteNoteTypeModal extends React.Component {
                     {this.state.didError && <Alert variant="danger">
                         {this.state.message}
                     </Alert>}
-                    {!this.state.didError && this.state.message && <Alert variant="info">
-                        {this.state.message}
-                    </Alert>}
 
-                    {!this.state.success && <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
-                    {!this.state.success && <Button variant="danger" disabled={this.state.isSubmitting} onClick={() => this.confirmDelete()}>
+                    <Button variant="secondary" disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>
+                    <Button variant="danger" disabled={this.state.isSubmitting} onClick={() => this.confirmDelete()}>
                         {this.state.isSubmitting ? 'Deleting...' : 'Delete'}
-                    </Button>}
+                    </Button>
                 </Modal.Footer>
             </Modal>
         );

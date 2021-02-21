@@ -6,6 +6,11 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/21
+- [anki]: offset grades to prevent log of zero
+- [anki]: small superfluous range adjustments in algorithm
+- [anki]: fix bug were deck creation would crash due to default values not getting sent back
+---
 #### 2021/2/20
 - [anki]: fix deleting fields with previous values
 - [anki]: add option to change review order
