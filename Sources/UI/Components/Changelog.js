@@ -7,23 +7,27 @@ class Component extends React.Component {
     render() {
         let markdown = `# Changelog
 #### 2021/2/21
-- [anki]: offset grades to prevent log of zero
-- [anki]: small superfluous range adjustments in algorithm
-- [anki]: fix bug were deck creation would crash due to default values not getting sent back
+- **[media]:** caches subtitle requests
+- **[search]:** add option to search for subtitles
+---
+#### 2021/2/21
+- **[anki]:** offset grades to prevent log of zero
+- **[anki]:** small superfluous range adjustments in algorithm
+- **[anki]:** fix bug were deck creation would crash due to default values not getting sent back
 ---
 #### 2021/2/20
-- [anki]: fix deleting fields with previous values
-- [anki]: add option to change review order
-- [media.reader]: fix content with mismatching parsed nodes causing annotations to stop midway through
+- **[anki]:** fix deleting fields with previous values
+- **[anki]:** add option to change review order
+- **[media.reader]:** fix content with mismatching parsed nodes causing annotations to stop midway through
 ---
 #### 2021/2/18
-- [media.player]: add support for viewing / capturing YouTube subtitles
-- [media.player]: add support for auto generated subtitles
-- [media.player]: fix some bugs for copying text
+- **[media.player]:** add support for viewing / capturing YouTube subtitles
+- **[media.player]:** add support for auto generated subtitles
+- **[media.player]:** fix some bugs for copying text
 ---
 #### 2021/2/17
-- [mpitch]: fix some space issues
-- [mpitch]: add functionality to mark mora as silenced by placing a full width backtick (｀) before it
+- **[mpitch]:** fix some space issues
+- **[mpitch]:** add functionality to mark mora as silenced by placing a full width backtick (｀) before it
 ---
 #### 2021/2/16
 - Added cloze deletion cards.

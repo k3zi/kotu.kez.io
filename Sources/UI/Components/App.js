@@ -13,7 +13,9 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 import { LinkContainer } from 'react-router-bootstrap';
 import Modal from 'react-bootstrap/Modal';
 import Nav from 'react-bootstrap/Nav';
@@ -78,7 +80,9 @@ class App extends React.Component {
 
             query: '',
             results: [],
-            headwords: []
+            subtitles: [],
+            headwords: [],
+            searchNavSelectedOption: 'Words'
         };
     }
 
@@ -182,7 +186,13 @@ class App extends React.Component {
         const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
             const results = await response.json();
-            this.setState({ results, isLoading: false });
+            this.setState({ results });
+        }
+
+        const response2 = await fetch(`/api/media/youtube/subtitles/search?q=${encodeURIComponent(query)}`);
+        if (response2.ok) {
+            const subtitles = await response2.json();
+            this.setState({ subtitles, isLoading: false });
         }
     }
 
@@ -274,13 +284,29 @@ class App extends React.Component {
                         </div>
                         {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-4 d-inline order-3 order-xl-1">
                             <Dropdown>
-                                <Form.Control type="text" placeholder="Search" className="mr-sm-2 text-center" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
-                                <Dropdown.Menu show className="dropdown-menu-center" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
-                                    {this.state.results.map((r, i) => {
-                                        return <Dropdown.Item className='d-flex align-items-center' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
+                                <InputGroup className="mr-sm-2">
+                                    <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
+                                    <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
+                                        {['Words', 'Examples'].map((option, i) => {
+                                            return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
+                                        })}
+                                    </DropdownButton>
+                                </InputGroup>
+                                <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
+                                    {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
+                                        return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
                                             <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
                                             {r.headline}
                                         </Dropdown.Item>;
+                                    })}
+
+                                    {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
+                                        return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
+                                            <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                                <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
+                                                {s.text}
+                                            </Dropdown.Item>
+                                        </LinkContainer>;
                                     })}
                                 </Dropdown.Menu>
                             </Dropdown>
@@ -345,6 +371,9 @@ class App extends React.Component {
                                 {this.loginProtect(<ListsWords />)}
                             </Route>
 
+                            <Route exact path="/media/youtube/:id/:startTime">
+                                {this.loginProtect(<MediaYouTubePlayer />)}
+                            </Route>
                             <Route exact path="/media/youtube/:id">
                                 {this.loginProtect(<MediaYouTubePlayer />)}
                             </Route>

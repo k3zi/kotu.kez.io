@@ -13,6 +13,14 @@ struct MediaSubtitle: Content {
     let text: String
 }
 
+struct MediaYouTubeInfo: Decodable {
+    struct Thumbnail: Decodable {
+        let url: URL
+    }
+    let title: String
+    let thumbnails: [Thumbnail]
+}
+
 extension MediaCaptureRequest: Validatable {
 
     static func validations(_ validations: inout Validations) {
@@ -181,58 +189,109 @@ class MediaController: RouteCollection {
             return response
         }
 
-        youtube.get("subtitles", ":youtubeID") { req -> [MediaSubtitle] in
+        youtube.get("subtitles", "search") { req -> EventLoopFuture<[YouTubeSubtitle]> in
+            let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            return YouTubeSubtitle.query(on: req.db)
+                .filter(\.$text ~~ q)
+                .with(\.$youtubeVideo)
+                .limit(25)
+                .all()
+        }
+
+        youtube.get("subtitles", ":youtubeID") { req -> EventLoopFuture<[MediaSubtitle]> in
             let youtubeID = try req.parameters.require("youtubeID")
-            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
-            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let uuid = UUID().uuidString
+            return YouTubeVideo.query(on: req.db)
+                .filter(\.$youtubeID == youtubeID)
+                .with(\.$subtitles)
+                .first()
+                .throwingFlatMap { video -> EventLoopFuture<[MediaSubtitle]> in
+                    if let video = video, video.subtitles.count > 0 {
+                        let subtitles = video.subtitles.map {
+                            MediaSubtitle(startTime: $0.startTime, endTime: $0.endTime, text: $0.text)
+                        }
+                        return req.eventLoop.future(subtitles)
+                    }
 
-            func downloadSubtitles(uuid: String, directory: URL, auto: Bool) throws {
-                let task = Process()
-                task.currentDirectoryURL = directory
-                task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let uuid = UUID().uuidString
 
-                var env = task.environment ?? [:]
-                env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
-                task.environment = env
+                    func downloadSubtitles(uuid: String, directory: URL, auto: Bool) throws {
+                        let task = Process()
+                        task.currentDirectoryURL = directory
+                        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
 
-                task.arguments = [
-                    "youtube-dl",
-                    "-q",
-                    (auto ? "--write-auto-sub" : "--write-sub"),
-                    "--sub-lang", "ja",
-                    "--sub-format", "vtt",
-                    "--skip-download",
-                    "-o", "\(uuid)",
-                    "https://youtu.be/\(youtubeID)"
-                ]
-                try task.run()
-                task.waitUntilExit()
-                if task.terminationStatus != 0 {
-                    throw Abort(.internalServerError)
+                        var env = task.environment ?? [:]
+                        env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+                        task.environment = env
+
+                        task.arguments = [
+                            "youtube-dl",
+                            "-q",
+                            (auto ? "--write-auto-sub" : "--write-sub"),
+                            "--sub-lang", "ja",
+                            "--sub-format", "vtt",
+                            "--skip-download",
+                            "-o", "\(uuid)",
+                            "--write-info-json",
+                            "--no-warnings",
+                            "https://youtu.be/\(youtubeID)"
+                        ]
+                        try task.run()
+                        task.waitUntilExit()
+                        if task.terminationStatus != 0 {
+                            throw Abort(.internalServerError)
+                        }
+                    }
+
+                    var isAuto = false
+                    try downloadSubtitles(uuid: uuid, directory: directory, auto: false)
+                    let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
+                    let infoURL = directory.appendingPathComponent(uuid).appendingPathExtension("info.json")
+                    if !FileManager.default.fileExists(atPath: fileURL.path) {
+                        try downloadSubtitles(uuid: uuid, directory: directory, auto: true)
+                        isAuto = true
+                    }
+                    guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
+                        try FileManager.default.removeItem(at: fileURL)
+                        throw Abort(.internalServerError)
+                    }
+                    let infoData = try Data(contentsOf: infoURL)
+                    let info = try JSONDecoder().decode(MediaYouTubeInfo.self, from: infoData)
+                    try FileManager.default.removeItem(at: infoURL)
+                    try FileManager.default.removeItem(at: fileURL)
+                    let subtitles: [MediaSubtitle] = subtitleRoot.subtitles.map {
+                        var text = isAuto ? $0.text.components(separatedBy: "\n").suffix(from: 1).joined() : $0.text
+                        text = text.replacingOccurrences(of: "<c>", with: "", options: .regularExpression)
+                        text = text.replacingOccurrences(of: "</c>", with: "", options: .regularExpression)
+                        text = text.replacingOccurrences(of: "<\\d+:\\d+:\\d+.\\d+>", with: "", options: .regularExpression)
+
+                        return MediaSubtitle(startTime: Double($0.timeRange.start.milliseconds) / 1000, endTime: Double($0.timeRange.end.milliseconds) / 1000, text: text)
+                    }
+
+                    if isAuto {
+                        return req.eventLoop.future(subtitles)
+                    }
+
+                    return YouTubeVideo.query(on: req.db)
+                        .filter(\.$youtubeID == youtubeID)
+                        .count()
+                        .flatMap {
+                            if $0 > 0 {
+                                return req.eventLoop.future(subtitles)
+                            }
+
+                            let video = YouTubeVideo(youtubeID: youtubeID, title: info.title, thumbnailURL: info.thumbnails.suffix(2).first!.url.absoluteString)
+                            return video.create(on: req.db)
+                                .flatMap {
+                                    subtitles.map {
+                                        YouTubeSubtitle(youtubeVideo: video, text: $0.text, startTime: $0.startTime, endTime: $0.endTime)
+                                    }.create(on: req.db)
+                                }
+                                .map { subtitles }
+                        }
                 }
-            }
-
-            var isAuto = false
-            try downloadSubtitles(uuid: uuid, directory: directory, auto: false)
-            let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
-            if !FileManager.default.fileExists(atPath: fileURL.path) {
-                try downloadSubtitles(uuid: uuid, directory: directory, auto: true)
-                isAuto = true
-            }
-            guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
-                try FileManager.default.removeItem(at: fileURL)
-                throw Abort(.internalServerError)
-            }
-            try FileManager.default.removeItem(at: fileURL)
-            return subtitleRoot.subtitles.map {
-                var text = isAuto ? $0.text.components(separatedBy: "\n").suffix(from: 1).joined() : $0.text
-                text = text.replacingOccurrences(of: "<c>", with: "", options: .regularExpression)
-                text = text.replacingOccurrences(of: "</c>", with: "", options: .regularExpression)
-                text = text.replacingOccurrences(of: "<\\d+:\\d+:\\d+.\\d+>", with: "", options: .regularExpression)
-
-                return MediaSubtitle(startTime: Double($0.timeRange.start.milliseconds) / 1000, endTime: Double($0.timeRange.end.milliseconds) / 1000, text: text)
-            }
         }
 
         let plex = guardedMedia.grouped("plex")

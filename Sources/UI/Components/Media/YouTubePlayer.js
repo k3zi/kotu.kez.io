@@ -25,7 +25,8 @@ class YouTubePlayer extends React.Component {
             isRecording: false,
             lastFile: null,
             subtitles: [],
-            subtitle: null
+            subtitle: null,
+            didDoInitialSeek: false
         };
     }
 
@@ -41,8 +42,15 @@ class YouTubePlayer extends React.Component {
     }
 
     componentDidUpdate(prevProps) {
-        if (this.props.match.params.id != prevProps.match.params.id && this.props.match.params.id.length > 0) {
+        if (this.props.match.params.id != prevProps.match.params.id && this.props.match.params.id && this.props.match.params.id.length > 0) {
             this.loadVideo(this.props.match.params.id);
+        } else if (this.props.match.params.startTime != prevProps.match.params.startTime && this.state.didDoInitialSeek) {
+            this.state.playerRef.seekTo(this.props.match.params.startTime);
+        }
+
+        if (this.props.match.params.startTime && this.state.playerRef && !this.state.didDoInitialSeek) {
+            this.state.playerRef.seekTo(this.props.match.params.startTime);
+            this.setState({ didDoInitialSeek: true });
         }
     }
 
@@ -58,7 +66,7 @@ class YouTubePlayer extends React.Component {
     }
 
     async loadVideo(id) {
-        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null });
+        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null,  });
         const response = await fetch(`/api/media/youtube/subtitles/${id}`);
         if (response.ok) {
             const subtitles = await response.json();
