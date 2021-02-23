@@ -6,6 +6,7 @@ import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
+import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
@@ -27,8 +28,10 @@ class YouTubePlayer extends React.Component {
             lastFile: null,
             subtitles: [],
             subtitle: null,
-            subtitlePitch: null,
-            didDoInitialSeek: false
+            subtitleHTML: null,
+            didDoInitialSeek: false,
+            visualType: 'none',
+            rubyType: 'none'
         };
     }
 
@@ -87,9 +90,9 @@ class YouTubePlayer extends React.Component {
         const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
         if (this.state.subtitle != subtitle) {
             this.setState({ subtitle });
-            const element = await Helpers.htmlForPitch(subtitle.text);
+            const element = await Helpers.generateVisualSentenceElement(`<div class='page'><span>${subtitle.text}</span></div>`, subtitle.text);
             if (this.state.subtitle == subtitle) {
-                this.setState({ subtitlePitch: element.innerHTML });
+                this.setState({ subtitleHTML: element.innerHTML });
             }
         }
     }
@@ -207,6 +210,25 @@ class YouTubePlayer extends React.Component {
         await this.capture(startTime, endTime);
     }
 
+    frequencyOptions() {
+        return [
+            { name: 'Very Common', value: 'veryCommon' },
+            { name: 'Common', value: 'common' },
+            { name: 'Uncommon', value: 'uncommon' },
+            { name: 'Rare', value: 'rare' },
+            { name: 'Very Rare', value: 'veryRare' },
+            { name: 'Unknown', value: 'unknown' }
+        ];
+    }
+
+    visualOptions() {
+        return [{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'Show Pitch Drops', value: 'showPitchAccentDrops' }, { name: 'None', value: 'none' }];
+    }
+
+    furiganaFrequencyOptions() {
+        return [{ name: 'Hide Furigana', value: 'none' }, ...this.frequencyOptions()];
+    }
+
     render() {
         return (
             <Row>
@@ -217,19 +239,42 @@ class YouTubePlayer extends React.Component {
                     </ResponsiveEmbed>}
                     {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
                         <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i class="bi bi-arrow-left"></i></span>
+                        <span>
+                            <Dropdown as='span'>
+                                <Dropdown.Toggle as='span' className='pe-1'>
+                                    Visual: {this.visualOptions().filter(f => f.value === this.state.visualType)[0].name}
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu>
+                                    {this.visualOptions().map((item, i) => {
+                                        return <Dropdown.Item key={i} active={this.state.visualType === item.value} onSelect={(e) => this.setState({ visualType: item.value })}>{item.name}</Dropdown.Item>;
+                                    })}
+                                </Dropdown.Menu>
+                            </Dropdown>
+                            ｜
+                            <Dropdown as='span'>
+                                <Dropdown.Toggle as='span' className='ps-1'>
+                                    Frequency: {this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name}
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu>
+                                    {this.furiganaFrequencyOptions().map((item, i) => {
+                                        return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
+                                    })}
+                                </Dropdown.Menu>
+                            </Dropdown>
+                        </span>
                         <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i class="bi bi-arrow-right"></i></span>
                     </div>}
                     {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
                         <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
                             <i class="bi bi-clipboard"></i>
                         </Button>
-                        {this.state.subtitle && <span className='fs-5'>{this.state.subtitle.text}</span>}
+                        {this.state.subtitleHTML && <span className={`fs-5 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType} text-center`} dangerouslySetInnerHTML={{__html: this.state.subtitleHTML}}></span>}
                         <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} onTouchEnd={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} disabled={!this.state.subtitle || this.state.isSubmitting || !this.state.youtubeID} className='user-select-none mx-1' variant='danger'>
                             <i class="bi bi-record2"></i>
                         </Button>
                     </div>}
-
-                    {this.state.subtitlePitch && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center page' dangerouslySetInnerHTML={{__html: this.state.subtitlePitch}}></div>}
                 </Col>
 
                 <Col xs={12} md={5}>
