@@ -73,7 +73,7 @@ class YouTubePlayer extends React.Component {
     }
 
     async loadVideo(id) {
-        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null, subtitleHTML: null, isLoadingSubtitles: true  });
+        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null, subtitleHTML: null, isLoadingSubtitles: true, didDoInitialSeek: false  });
         const response = await fetch(`/api/media/youtube/subtitles/${id}`);
         if (response.ok) {
             const subtitles = await response.json();
