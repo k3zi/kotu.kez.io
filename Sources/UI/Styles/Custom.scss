@@ -651,6 +651,10 @@ silenced.wide {
     background-color: rgba(127,127,127,.17);
 }
 
+.page.dark component:hover {
+    background-color: rgba(0,0,0,0.17);
+}
+
 .visual-type-none {
     component {
         padding-bottom: 0px;

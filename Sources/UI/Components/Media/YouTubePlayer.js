@@ -10,6 +10,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
+import Spinner from 'react-bootstrap/Spinner';
 import Table from 'react-bootstrap/Table';
 import YouTube from 'react-youtube';
 
@@ -31,7 +32,8 @@ class YouTubePlayer extends React.Component {
             subtitleHTML: null,
             didDoInitialSeek: false,
             visualType: 'none',
-            rubyType: 'none'
+            rubyType: 'none',
+            isLoadingSubtitles: false
         };
     }
 
@@ -71,14 +73,16 @@ class YouTubePlayer extends React.Component {
     }
 
     async loadVideo(id) {
-        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null,  });
+        this.setState({ youtubeID: id, youtubeVideoInfo: {}, subtitles: [], subtitle: null, subtitleHTML: null, isLoadingSubtitles: true  });
         const response = await fetch(`/api/media/youtube/subtitles/${id}`);
         if (response.ok) {
             const subtitles = await response.json();
             subtitles.forEach(s => {
                 s.text = s.text.replace(/(\r\n|\n|\r)/gm, '');
             });
-            this.setState({ subtitles });
+            this.setState({ subtitles, isLoadingSubtitles: false });
+        } else {
+            this.setState({ isLoadingSubtitles: false });
         }
     }
 
@@ -89,8 +93,8 @@ class YouTubePlayer extends React.Component {
         const time = this.state.playerRef.getCurrentTime();
         const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
         if (this.state.subtitle != subtitle) {
-            this.setState({ subtitle });
-            const element = await Helpers.generateVisualSentenceElement(`<div class='page'><span>${subtitle.text}</span></div>`, subtitle.text);
+            this.setState({ subtitle, subtitleHTML: null });
+            const element = await Helpers.generateVisualSentenceElement(`<div class='page dark'><span>${subtitle.text}</span></div>`, subtitle.text);
             if (this.state.subtitle == subtitle) {
                 this.setState({ subtitleHTML: element.innerHTML });
             }
@@ -126,15 +130,21 @@ class YouTubePlayer extends React.Component {
     }
 
     videoOnReady(e) {
-        const info = e.target.getVideoData();
+        const playerRef = e.target;
+        const info = playerRef.getVideoData();
         this.setState({
             youtubeVideoInfo: {
                 author: info.author,
                 videoID: info.video_id,
                 title: info.title
             },
-            playerRef: e.target
+            playerRef
         });
+
+        if (this.props.match.params.startTime && !this.state.didDoInitialSeek) {
+            playerRef.seekTo(this.props.match.params.startTime);
+            this.setState({ didDoInitialSeek: true });
+        }
     }
 
     typeInTextarea(newText) {
@@ -226,7 +236,7 @@ class YouTubePlayer extends React.Component {
     }
 
     furiganaFrequencyOptions() {
-        return [{ name: 'Hide Furigana', value: 'none' }, ...this.frequencyOptions()];
+        return [{ name: 'Hide', value: 'none' }, ...this.frequencyOptions()];
     }
 
     render() {
@@ -240,7 +250,7 @@ class YouTubePlayer extends React.Component {
                     {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
                         <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i class="bi bi-arrow-left"></i></span>
                         <span>
-                            <Dropdown as='span'>
+                            <Dropdown as='span' style={{cursor: 'pointer'}}>
                                 <Dropdown.Toggle as='span' className='pe-1'>
                                     Visual: {this.visualOptions().filter(f => f.value === this.state.visualType)[0].name}
                                 </Dropdown.Toggle>
@@ -252,9 +262,9 @@ class YouTubePlayer extends React.Component {
                                 </Dropdown.Menu>
                             </Dropdown>
                             ｜
-                            <Dropdown as='span'>
+                            <Dropdown as='span' style={{cursor: 'pointer'}}>
                                 <Dropdown.Toggle as='span' className='ps-1'>
-                                    Frequency: {this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name}
+                                    Furigana: {this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name}
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu>
@@ -266,6 +276,9 @@ class YouTubePlayer extends React.Component {
                         </span>
                         <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i class="bi bi-arrow-right"></i></span>
                     </div>}
+                    {this.state.isLoadingSubtitles && <div className='bg-secondary text-light text-center p-3'>
+                        <h1 className="text-center"><Spinner animation="border" variant="light" /></h1>
+                    </div>}
                     {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
                         <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
                             <i class="bi bi-clipboard"></i>
@@ -275,6 +288,29 @@ class YouTubePlayer extends React.Component {
                             <i class="bi bi-record2"></i>
                         </Button>
                     </div>}
+
+                    {this.state.visualType === 'showFrequency' && <>
+                        <hr />
+                        {this.frequencyOptions().map(item => (
+                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                        ))}
+                    </>}
+
+                    {this.state.visualType === 'showPitchAccent' && <>
+                        <hr />
+                        {[
+                            { name: 'Heiban (平板)', value: 'heiban' },
+                            { name: 'Kihuku (起伏)', value: 'kihuku' },
+                            { name: 'Odaka (尾高)', value: 'odaka' },
+                            { name: 'Nakadaka (中高)', value: 'nakadaka' },
+                            { name: 'Atamadaka (頭高)', value: 'atamadaka' },
+                            { name: 'Unknown (知らんw)', value: 'unknown' }
+                        ].map(item => (
+                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                        ))}
+                        <br />
+                        <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
+                    </>}
                 </Col>
 
                 <Col xs={12} md={5}>

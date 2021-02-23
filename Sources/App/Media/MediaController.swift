@@ -195,6 +195,7 @@ class MediaController: RouteCollection {
             return YouTubeSubtitle.query(on: req.db)
                 .filter(\.$text ~~ q)
                 .with(\.$youtubeVideo)
+                .sort(\.$startTime)
                 .limit(25)
                 .all()
         }
