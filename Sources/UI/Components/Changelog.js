@@ -6,7 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
-#### 2021/2/21
+#### 2021/2/22
+- **[media]:** add pitch to sentences
+---
+#### 2021/2/22
 - **[media]:** caches subtitle requests
 - **[search]:** add option to search for subtitles
 ---

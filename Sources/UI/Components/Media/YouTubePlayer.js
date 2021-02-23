@@ -13,6 +13,7 @@ import Table from 'react-bootstrap/Table';
 import YouTube from 'react-youtube';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
+import Helpers from './../Helpers';
 
 class YouTubePlayer extends React.Component {
 
@@ -26,6 +27,7 @@ class YouTubePlayer extends React.Component {
             lastFile: null,
             subtitles: [],
             subtitle: null,
+            subtitlePitch: null,
             didDoInitialSeek: false
         };
     }
@@ -77,7 +79,7 @@ class YouTubePlayer extends React.Component {
         }
     }
 
-    loadSubtitle() {
+    async loadSubtitle() {
         if (!this.state.playerRef) {
             return;
         }
@@ -85,6 +87,10 @@ class YouTubePlayer extends React.Component {
         const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
         if (this.state.subtitle != subtitle) {
             this.setState({ subtitle });
+            const element = await Helpers.htmlForPitch(subtitle.text);
+            if (this.state.subtitle == subtitle) {
+                this.setState({ subtitlePitch: element.innerHTML });
+            }
         }
     }
 
@@ -222,6 +228,8 @@ class YouTubePlayer extends React.Component {
                             <i class="bi bi-record2"></i>
                         </Button>
                     </div>}
+
+                    {this.state.subtitlePitch && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center page' dangerouslySetInnerHTML={{__html: this.state.subtitlePitch}}></div>}
                 </Col>
 
                 <Col xs={12} md={5}>
