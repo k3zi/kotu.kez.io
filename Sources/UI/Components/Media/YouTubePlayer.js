@@ -53,11 +53,7 @@ class YouTubePlayer extends React.Component {
             this.loadVideo(this.props.match.params.id);
         } else if (this.props.match.params.startTime != prevProps.match.params.startTime && this.state.didDoInitialSeek) {
             this.state.playerRef.seekTo(this.props.match.params.startTime);
-        }
-
-        if (this.props.match.params.startTime && this.state.playerRef && !this.state.didDoInitialSeek) {
-            this.state.playerRef.seekTo(this.props.match.params.startTime);
-            this.setState({ didDoInitialSeek: true });
+            this.state.playerRef.playVideo();
         }
     }
 
@@ -94,9 +90,11 @@ class YouTubePlayer extends React.Component {
         const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
         if (this.state.subtitle != subtitle) {
             this.setState({ subtitle });
-            const element = await Helpers.generateVisualSentenceElement(`<div class='page dark'><span>${subtitle.text}</span></div>`, subtitle.text);
-            if (this.state.subtitle == subtitle) {
-                this.setState({ subtitleHTML: element.innerHTML });
+            if (subtitle) {
+                const element = await Helpers.generateVisualSentenceElement(`<div class='page dark'><span>${subtitle.text}</span></div>`, subtitle.text);
+                if (this.state.subtitle == subtitle) {
+                    this.setState({ subtitleHTML: element.innerHTML });
+                }
             }
         }
     }
@@ -143,6 +141,15 @@ class YouTubePlayer extends React.Component {
 
         if (this.props.match.params.startTime && !this.state.didDoInitialSeek) {
             playerRef.seekTo(this.props.match.params.startTime);
+            playerRef.playVideo();
+            this.setState({ didDoInitialSeek: true });
+        }
+    }
+
+    onStateChange(e) {
+        if (e.data === -1 && this.props.match.params.startTime) return this.state.playerRef.playVideo();
+        if (e.data === 1 && this.props.match.params.startTime && !this.state.didDoInitialSeek) {
+            this.state.playerRef.seekTo(this.props.match.params.startTime);
             this.setState({ didDoInitialSeek: true });
         }
     }
@@ -245,7 +252,7 @@ class YouTubePlayer extends React.Component {
                 <Col xs={12} md={7}>
                     <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.goToVideo(e)} placeholder="YouTube ID / URL" defaultValue={this.props.match.params.id ? `https://youtu.be/${this.props.match.params.id}` : ''} />
                     {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
-                        <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
+                        <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} onStateChange={(e) => this.onStateChange(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
                     {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
                         <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i class="bi bi-arrow-left"></i></span>
