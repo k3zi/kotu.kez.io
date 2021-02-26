@@ -57,12 +57,26 @@ extension NoteFieldValue {
         let value: String
     }
 
+    struct Update: Content {
+        let id: UUID
+        let value: String
+    }
+
 }
 
 extension NoteFieldValue.Create: Validatable {
 
     static func validations(_ validations: inout Validations) {
         validations.add("fieldID", as: UUID.self)
+        validations.add("value", as: String.self, is: !.empty)
+    }
+
+}
+
+extension NoteFieldValue.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("id", as: UUID.self)
         validations.add("value", as: String.self, is: !.empty)
     }
 

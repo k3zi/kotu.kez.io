@@ -140,7 +140,9 @@ class FlashcardController: RouteCollection {
             let userID = try user.requireID()
             return Note
                 .query(on: req.db)
-                .with(\.$noteType)
+                .with(\.$noteType) {
+                    $0.with(\.$fields)
+                }
                 .with(\.$fieldValues) {
                     $0.with(\.$field)
                 }
@@ -217,6 +219,93 @@ class FlashcardController: RouteCollection {
                         }
                 }
 
+        }
+
+        guardedNoteID.put() { req -> EventLoopFuture<Note> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("noteID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            try Note.Update.validate(content: req)
+            let object = try req.content.decode(Note.Update.self)
+            let noteCall = Note
+                .query(on: req.db)
+                .with(\.$noteType) {
+                    $0.with(\.$owner).with(\.$cardTypes)
+                }
+                .with(\.$cards) {
+                    $0.with(\.$deck)
+                }
+                .with(\.$targetDeck)
+                .with(\.$fieldValues)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(or: Abort(.notFound))
+                .guard({ $0.noteType.owner.id == userID }, else: Abort(.forbidden))
+
+            return noteCall
+                .throwingFlatMap { note -> EventLoopFuture<Note> in
+                    guard let deck = note.targetDeck ?? note.cards.first?.deck else {
+                        throw Abort(.internalServerError)
+                    }
+                    let noteType = note.noteType
+                    let previousClozeIndexes = note.cards.flatMap { $0.clozeDeletionIndex }
+                    for fieldValue in note.fieldValues {
+                        let newValue = object.fieldValues.first(where: { $0.id == fieldValue.id })?.value
+                        fieldValue.value = newValue ?? ""
+                    }
+
+                    return EventLoopFuture<Void>.andAllSucceed(note.fieldValues.map { $0.save(on: req.db) }, on: req.eventLoop)
+                        .throwingFlatMap {
+                            let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
+                            let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
+                            let createClozeIndexes = clozeIndexes.filter { !previousClozeIndexes.contains($0) }
+                            let cards = try noteType.cardTypes.flatMap { cardType -> [Card] in
+                                if !previousClozeIndexes.isEmpty && clozeIndexes.isEmpty {
+                                    // Removed all cloze cards
+                                    // Create a regular card
+                                    return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                                }
+                                if previousClozeIndexes.isEmpty && clozeIndexes.isEmpty {
+                                    // There were never any cloze cards
+                                    return []
+                                }
+
+                                return try createClozeIndexes.map {
+                                    Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
+                                }
+                            }
+
+                            let deleteClozeIndexes = previousClozeIndexes.filter { !clozeIndexes.contains($0) }
+                            let deletableCards = note.cards.filter {
+                                // No previous cloze deletion cards but now there
+                                // are so remove previous non cloze deletion cards.
+                                if previousClozeIndexes.isEmpty && !createClozeIndexes.isEmpty {
+                                    return true
+                                }
+                                guard let i = $0.clozeDeletionIndex else { return false }
+                                return deleteClozeIndexes.contains(i)
+                            }
+                            let deletableCardIDs = deletableCards.map { $0.id }
+
+                            // Delete removed cloze deletion cards
+                            return deletableCards.delete(on: req.db).flatMap {
+                                // Add newly created cards
+                                return note.$cards.create(cards, on: req.db)
+                                    .throwingFlatMap {
+                                        let sm = deck.sm
+                                        try cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
+                                        sm.queue.removeAll(where: { deletableCardIDs.contains($0.card) })
+                                        deck.sm = sm
+                                        return deck.save(on: req.db)
+                                    }
+                            }
+                                .throwingFlatMap {
+                                    Note.find(try note.requireID(), on: req.db)
+                                        .unwrap(orError: Abort(.internalServerError))
+                                }
+                        }
+                }
         }
 
         // MARK: Decks
@@ -433,12 +522,21 @@ class FlashcardController: RouteCollection {
             return user.$noteTypes
                 .query(on: req.db)
                 .filter(\.$id == id)
+                .with(\.$notes)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Note type not found"))
                 .throwingFlatMap { type in
                     let field = NoteField(noteTypeID: try type.requireID(), name: object.name)
                     return type.$fields.create(field, on: req.db)
-                        .map { field }
+                        .throwingFlatMap {
+                            let fieldValues = try type.notes.map {
+                                NoteFieldValue(noteID: try $0.requireID(), fieldID: try field.requireID(), value: "")
+                            }
+                            return fieldValues.create(on: req.db)
+                        }
+                        .map {
+                            field
+                        }
                 }
         }
 

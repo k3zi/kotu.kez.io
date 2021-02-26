@@ -53,6 +53,7 @@ import MediaReader from './Media/Reader';
 import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
 
 import AdminUsers from './Admin/Users';
+import AdminFeedback from './Admin/Feedback';
 
 import ResetPassword from './ResetPassword';
 
@@ -278,6 +279,9 @@ class App extends React.Component {
                                         <LinkContainer to="/admin/users">
                                             <NavDropdown.Item active={false}>Users</NavDropdown.Item>
                                         </LinkContainer>
+                                        <LinkContainer to="/admin/feedback">
+                                            <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
+                                        </LinkContainer>
                                     </NavDropdown>
                                 </>}
                             </Nav>}
@@ -399,6 +403,9 @@ class App extends React.Component {
 
                             <Route path="/admin/users">
                                 {this.loginProtect(<AdminUsers />)}
+                            </Route>
+                            <Route path="/admin/feedback">
+                                {this.loginProtect(<AdminFeedback />)}
                             </Route>
 
                             <Route path="/auth/resetPassword/:userID/:key">

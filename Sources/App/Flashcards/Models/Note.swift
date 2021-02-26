@@ -20,6 +20,9 @@ final class Note: Model, Content, Hashable {
     @Parent(key: "note_type_id")
     var noteType: NoteType
 
+    @OptionalParent(key: "target_deck_id")
+    var targetDeck: Deck?
+
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
@@ -71,15 +74,34 @@ extension Note {
         }
     }
 
+    struct Migration2: Fluent.Migration {
+        var name: String { "CreateNoteParentDeck" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("target_deck_id", .uuid, .references("flashcard_decks", "id"))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("target_deck_id")
+                .update()
+        }
+    }
+
 }
 
 extension Note {
 
     struct Create: Content {
         let targetDeckID: UUID
-
         let noteTypeID: UUID
         let fieldValues: [NoteFieldValue.Create]
+    }
+
+    struct Update: Content {
+        let fieldValues: [NoteFieldValue.Update]
     }
 
 }
@@ -91,6 +113,14 @@ extension Note.Create: Validatable {
 
         validations.add("noteTypeID", as: UUID.self)
         validations.add("fieldValues", as: [NoteFieldValue.Create].self)
+    }
+
+}
+
+extension Note.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("fieldValues", as: [NoteFieldValue.Update].self)
     }
 
 }

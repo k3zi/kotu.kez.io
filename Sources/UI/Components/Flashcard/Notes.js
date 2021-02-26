@@ -10,6 +10,7 @@ import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
 import DeleteNoteModal from './Modals/DeleteNoteModal';
+import EditNoteModal from './Modals/EditNoteModal';
 
 class Notes extends React.Component {
 
@@ -17,6 +18,7 @@ class Notes extends React.Component {
         super(props);
         this.state = {
             showDeleteNoteModal: null,
+            showEditNoteModal: null,
             notes: [],
             metadata: {
                 page: 1,
@@ -49,6 +51,17 @@ class Notes extends React.Component {
         await this.load();
     }
 
+    async showEditNoteModal(note) {
+        this.setState({
+            showEditNoteModal: note
+        });
+        if (!note) {
+            await this.load();
+        }
+    }
+
+
+
     loadPage(page) {
         const metadata = this.state.metadata;
         metadata.page = page;
@@ -76,9 +89,7 @@ class Notes extends React.Component {
                                 <td className="align-middle text-center text-primary">{note.cards.length}</td>
                                 <td className="align-middle text-center text-primary">{note.noteType.name}</td>
                                 <td className="align-middle text-center">
-                                    <LinkContainer to={`/flashcard/note/${note.id}`}>
-                                        <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
-                                    </LinkContainer>
+                                    <Button variant="primary" onClick={() => this.showEditNoteModal(note)}><i className="bi bi-arrow-right"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteNoteModal(note)}><i className="bi bi-trash"></i></Button>
                                 </td>
@@ -90,6 +101,7 @@ class Notes extends React.Component {
                 <Pagination totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
 
                 <DeleteNoteModal note={this.state.showDeleteNoteModal} didDelete={() => this.showDeleteNoteModal(null)} didCancel={() => this.showDeleteNoteModal(null)} onHide={() => this.showDeleteNoteModal(null)} />
+                <EditNoteModal note={this.state.showEditNoteModal} onSuccess={() => this.showEditNoteModal(null)} onHide={() => this.showEditNoteModal(null)} />
             </div>
         );
     }

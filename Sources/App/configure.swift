@@ -63,6 +63,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Deck.Migration1())
     app.migrations.add(Deck.Migration2())
     app.migrations.add(YouTubeVideo.Migration(), YouTubeSubtitle.Migration(), YouTubeSubtitle.Migration1())
+    app.migrations.add(Note.Migration2())
 
     try app.autoMigrate().wait()
 

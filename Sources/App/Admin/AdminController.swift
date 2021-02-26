@@ -30,6 +30,13 @@ class AdminController: RouteCollection {
             .grouped(User.guardMiddleware())
             .grouped(GuardPermissionMiddleware(require: .admin))
 
+        admin.get("feedback") { (req: Request) -> EventLoopFuture<[Feedback]> in
+            return Feedback
+                .query(on: req.db)
+                .sort(\.$createdAt)
+                .all()
+        }
+
         admin.get("users") { (req: Request) -> EventLoopFuture<[User]> in
             return User
                 .query(on: req.db)
