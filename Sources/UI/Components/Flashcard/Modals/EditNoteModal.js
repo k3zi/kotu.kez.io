@@ -82,6 +82,9 @@ class EditNoteModal extends React.Component {
                     <Form onSubmit={(e) => this.submit(e)}>
                         {this.state.note && this.state.note.noteType.fields.map((field, i) => {
                             const fieldValueIndex = this.state.note.fieldValues.findIndex(v => v.field.id === field.id);
+                            if (fieldValueIndex < 0) {
+                                return <div></div>;
+                            }
                             return <div key={i}>
                                 <Form.Group className='mt-2'>
                                     <Form.Label>{field.name}</Form.Label>

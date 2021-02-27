@@ -79,7 +79,7 @@ class ContextMenu extends React.Component {
     render() {
         return (
             <>
-                <div className={`dropdown-menu ${!!this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050 }}>
+                <div className={`dropdown-menu ${!!this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed' }}>
                     <Dropdown.Item onClick={() => this.addClozeDeletion()} disabled={!this.props.selection}>+ Cloze Deletion</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addAutoPitch()} disabled={!this.props.selection}>+ Auto Pitch</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addManualPitch()} disabled={!this.props.selection}>+ Manual Pitch</Dropdown.Item>
