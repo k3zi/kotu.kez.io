@@ -157,7 +157,7 @@ class CreateNoteForm extends React.Component {
                         return <div>
                             <Form.Group key={i} className='mt-2'>
                                 <Form.Label>{field.name}</Form.Label>
-                                <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext' />
+                                <ContentEditable value={this.state.fieldValues[i].value} onChange={(e) => this.onTextChange(e, i)} className='form-control h-auto text-break plaintext clickable' />
                             </Form.Group>
                             {this.context.settings.anki.showFieldPreview && <Alert variant='secondary' className='mt-2'>
                                 <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.fieldValues[i].value)}}></div>

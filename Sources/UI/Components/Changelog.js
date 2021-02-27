@@ -6,6 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/2/27
+- **[anki]:** add context menu for quick access to plugins
+- **[ui]:** add dark style to dropdown menus when in dark mode
+---
 #### 2021/2/26
 - **[anki]:** add ability to edit notes
 ---

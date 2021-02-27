@@ -85,7 +85,7 @@ class EditNoteModal extends React.Component {
                             return <div key={i}>
                                 <Form.Group className='mt-2'>
                                     <Form.Label>{field.name}</Form.Label>
-                                    <ContentEditable value={this.state.note.fieldValues[fieldValueIndex].value} onChange={(e) => this.onTextChange(e, fieldValueIndex)} className='form-control h-auto text-break plaintext' />
+                                    <ContentEditable value={this.state.note.fieldValues[fieldValueIndex].value} onChange={(e) => this.onTextChange(e, fieldValueIndex)} className='form-control h-auto text-break plaintext clickable' />
                                 </Form.Group>
                                 {this.context.settings.anki.showFieldPreview && <Alert variant='secondary' className='mt-2'>
                                     <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.note.fieldValues[fieldValueIndex].value)}}></div>

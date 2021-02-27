@@ -28,18 +28,17 @@ helpers.digest = async (message) => {
     return hashHex;
 };
 
-helpers.addLiveEventListeners = (selector, event, handler) => {
-    document.querySelector("body").addEventListener(event, (evt) => {
+helpers.addLiveEventListeners = (selector, event, handler, useCapture, querySelector) => {
+    document.querySelector((typeof querySelector === 'undefined') ? 'body' : querySelector).addEventListener(event, (evt) => {
         let target = evt.target;
         while (target) {
             var isMatch = target.matches(selector);
             if (isMatch) {
-                handler(evt, target);
-               return;
+                return handler(evt, target);
            }
            target = target.parentElement;
        }
-   }, true);
+   }, (typeof useCapture === 'undefined') ? true : useCapture);
 };
 
 helpers.outputAccent = (word, accent) => {

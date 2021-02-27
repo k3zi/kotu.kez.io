@@ -32,6 +32,7 @@ import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 import SearchResultModal from './SearchResultModal';
 import SettingsModal from './SettingsModal';
+import ContextMenu from './ContextMenu';
 
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
@@ -76,6 +77,7 @@ class App extends React.Component {
             showSettingsModal: false,
             user: null,
             isReady: false,
+            showContextMenu: {},
 
             numberOfReviews: 0,
 
@@ -119,6 +121,17 @@ class App extends React.Component {
                 const text = window.clipboardData.getData("Text");
                 insertTextAtCursor(text);
             }
+        });
+
+        Helpers.addLiveEventListeners('.clickable[contenteditable]', 'contextmenu', (e, target) => {
+            e.preventDefault();
+            const contextMenu = {
+                y: e.clientY,
+                x: e.clientX,
+                selection: window.getSelection().toString(),
+                target
+            };
+            this.setState({ showContextMenu: contextMenu });
         });
 
         Helpers.addLiveEventListeners('component', 'click', (e, target) => {
@@ -443,6 +456,7 @@ class App extends React.Component {
                     <AddSentenceModal show={this.state.showAddSentenceModal} onHide={() => this.toggleAddSentenceModal(false)} onSuccess={() => this.toggleAddSentenceModal(false)} />
                     <SearchResultModal headwords={this.state.headwords} show={this.state.headwords.length > 0} onHide={() => this.setState({ headwords: [], isFocused: false })} />
                     <SettingsModal user={this.state.user} show={this.state.showSettingsModal} onHide={() => this.toggleShowSettingsModal(false)} onSave={() => this.loadUser()} />
+                    <ContextMenu {...this.state.showContextMenu} onHide={() => this.setState({ showContextMenu: {} })} />
                 </Router>
             </UserContext.Provider>
         );
