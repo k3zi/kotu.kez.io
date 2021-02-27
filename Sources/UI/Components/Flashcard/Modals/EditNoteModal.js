@@ -71,7 +71,7 @@ class EditNoteModal extends React.Component {
 
     render() {
         return (
-            <Modal {...this.props} show={!!this.state.note} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
+            <Modal {...this.props} show={!!this.props.note} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
                         Edit Note
