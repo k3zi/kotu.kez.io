@@ -11,6 +11,7 @@
             "dependencies": {
                 "@mozilla/readability": "^0.4.0",
                 "buffer": "^6.0.3",
+                "clipboard-polyfill": "^3.0.2",
                 "dashjs": "^3.2.0",
                 "html-whitespace-sensitive-tag-names": "^1.0.3",
                 "pako": "^2.0.3",
@@ -2772,6 +2773,11 @@
             "version": "2.2.6",
             "resolved": "https://registry.npmjs.org/classnames/-/classnames-2.2.6.tgz",
             "integrity": "sha512-JR/iSQOSt+LQIWwrwEzJ9uk0xfN3mTVYMwt1Ir5mUcSN6pU+V4zQFFaJsclJbPuAUQH+yfWef6tm7l1quW3C8Q=="
+        },
+        "node_modules/clipboard-polyfill": {
+            "version": "3.0.2",
+            "resolved": "https://registry.npmjs.org/clipboard-polyfill/-/clipboard-polyfill-3.0.2.tgz",
+            "integrity": "sha512-1DTdwGicGBAhK4/VjOwFYG3fAu1aj1n/jC/00qkRyDobKSB/PF8mhJkbAlDGbNEc8hIrPElv5j96OE5PwHMUfA=="
         },
         "node_modules/codem-isoboxer": {
             "version": "0.3.6",
@@ -12415,6 +12421,11 @@
             "version": "2.2.6",
             "resolved": "https://registry.npmjs.org/classnames/-/classnames-2.2.6.tgz",
             "integrity": "sha512-JR/iSQOSt+LQIWwrwEzJ9uk0xfN3mTVYMwt1Ir5mUcSN6pU+V4zQFFaJsclJbPuAUQH+yfWef6tm7l1quW3C8Q=="
+        },
+        "clipboard-polyfill": {
+            "version": "3.0.2",
+            "resolved": "https://registry.npmjs.org/clipboard-polyfill/-/clipboard-polyfill-3.0.2.tgz",
+            "integrity": "sha512-1DTdwGicGBAhK4/VjOwFYG3fAu1aj1n/jC/00qkRyDobKSB/PF8mhJkbAlDGbNEc8hIrPElv5j96OE5PwHMUfA=="
         },
         "codem-isoboxer": {
             "version": "0.3.6",
