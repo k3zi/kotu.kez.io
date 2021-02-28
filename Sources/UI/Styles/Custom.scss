@@ -827,3 +827,12 @@ rt .underline {
     padding: .2em;
     background-color: #fcf8e3;
 }
+
+blockquote {
+    @extend .text-muted;
+    @extend .m-0;
+    @extend .border-start;
+    @extend .border-4;
+    @extend .border-secondary;
+    @extend .ps-2;
+}

@@ -218,7 +218,7 @@ helpers.htmlForPitch = async (sentence) => {
 };
 
 helpers.parseMarkdown = (rawText) => {
-    let text = rawText.replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm, '\n\n<br />\n\n');
+    let text = rawText.trim().replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s+$/gm, '\n\n<br />\n\n');
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     while ((match = regex.exec(text)) !== null) {
