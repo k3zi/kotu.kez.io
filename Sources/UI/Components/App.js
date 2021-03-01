@@ -348,7 +348,7 @@ class App extends React.Component {
                         </Nav>}
                     </Navbar>
 
-                    <Container className='p-4'>
+                    <Container id='app-container' className='p-4'>
                         {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                         {this.state.isReady && <Switch>
                             <Route exact path="/">

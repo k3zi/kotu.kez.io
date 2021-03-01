@@ -225,7 +225,26 @@ mark-gray {
 
 body {
     background-color: #444;
-    padding-bottom: 27px
+    padding-bottom: 27px;
+}
+
+body.fit-content {
+    padding: 0;
+    height: 100vh;
+
+    #app {
+        display: flex;
+        flex-flow: column;
+        height: 100%;
+
+        .navbar {
+            flex: none;
+        }
+    }
+
+    #app-container {
+        overflow-y: auto;
+    }
 }
 
 .p-padding-bottom {
@@ -414,6 +433,7 @@ hr {
 }
 
 component {
+    @extend .user-select-all;
     display: inline;
 }
 
@@ -677,6 +697,10 @@ rt .underline {
 }
 
 @media (prefers-color-scheme: dark) {
+
+    * {
+        scrollbar-color: light;
+    }
 
     body {
         background-color: #000;

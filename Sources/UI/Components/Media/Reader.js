@@ -36,6 +36,13 @@ class Reader extends React.Component {
         this.currentRequestID = 0;
     }
 
+    componentWillMount() {
+        document.body.classList.add('fit-content');
+    }
+    componentWillUnmount() {
+        document.body.classList.remove('fit-content');
+    }
+
     load(e) {
         const text = e.target.value;
         this.setState({ article: null, isLoading: true, html: null });
@@ -110,54 +117,56 @@ class Reader extends React.Component {
     render() {
         return (
             <UserContext.Consumer>{user => (
-                <Row>
-                    <Col xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
-                        <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
-                        <InputGroup className="mt-3">
-                            <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name} readOnly />
-                            <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
-                                {this.furiganaFrequencyOptions().map((item, i) => {
-                                    return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
-                                })}
-                            </DropdownButton>
-                        </InputGroup>
-                        <ButtonGroup className='my-3 d-flex' toggle>
-                            {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'Show Pitch Drops', value: 'showPitchAccentDrops' }, { name: 'None', value: 'none' }].map((item, i) => (
-                                <ToggleButton
-                                    id={`visualType${item.value}`}
-                                    key={i}
-                                    type="radio"
-                                    variant="secondary"
-                                    name="visualType"
-                                    value={item.value}
-                                    checked={this.state.visualType === item.value}
-                                    onChange={(e) => this.setState({ visualType: e.target.value })}>
-                                    {item.name}
-                                </ToggleButton>
-                            ))}
-                        </ButtonGroup>
-                        {this.state.visualType === 'showFrequency' && <>
-                            {this.frequencyOptions().map(item => (
-                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                            ))}
-                        </>}
+                <Row className='h-100'>
+                    <Col className='h-100 d-flex flex-column' xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
+                        <div>
+                            <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.load(e)} placeholder="Text / Article URL" />
+                            <InputGroup className="mt-3">
+                                <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name} readOnly />
+                                <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
+                                    {this.furiganaFrequencyOptions().map((item, i) => {
+                                        return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
+                                    })}
+                                </DropdownButton>
+                            </InputGroup>
+                            <ButtonGroup className='my-3 d-flex' toggle>
+                                {[{ name: 'Underline Frequency', value: 'showFrequency' }, { name: 'Underline Pitch Accent', value: 'showPitchAccent' }, { name: 'Show Pitch Drops', value: 'showPitchAccentDrops' }, { name: 'None', value: 'none' }].map((item, i) => (
+                                    <ToggleButton
+                                        id={`visualType${item.value}`}
+                                        key={i}
+                                        type="radio"
+                                        variant="secondary"
+                                        name="visualType"
+                                        value={item.value}
+                                        checked={this.state.visualType === item.value}
+                                        onChange={(e) => this.setState({ visualType: e.target.value })}>
+                                        {item.name}
+                                    </ToggleButton>
+                                ))}
+                            </ButtonGroup>
+                            {this.state.visualType === 'showFrequency' && <>
+                                {this.frequencyOptions().map(item => (
+                                    <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                                ))}
+                            </>}
 
-                        {this.state.visualType === 'showPitchAccent' && <>
-                            {[
-                                { name: 'Heiban (平板)', value: 'heiban' },
-                                { name: 'Kihuku (起伏)', value: 'kihuku' },
-                                { name: 'Odaka (尾高)', value: 'odaka' },
-                                { name: 'Nakadaka (中高)', value: 'nakadaka' },
-                                { name: 'Atamadaka (頭高)', value: 'atamadaka' },
-                                { name: 'Unknown (知らんw)', value: 'unknown' }
-                            ].map(item => (
-                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                            ))}
-                            <br />
-                            <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
-                        </>}
+                            {this.state.visualType === 'showPitchAccent' && <>
+                                {[
+                                    { name: 'Heiban (平板)', value: 'heiban' },
+                                    { name: 'Kihuku (起伏)', value: 'kihuku' },
+                                    { name: 'Odaka (尾高)', value: 'odaka' },
+                                    { name: 'Nakadaka (中高)', value: 'nakadaka' },
+                                    { name: 'Atamadaka (頭高)', value: 'atamadaka' },
+                                    { name: 'Unknown (知らんw)', value: 'unknown' }
+                                ].map(item => (
+                                    <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                                ))}
+                                <br />
+                                <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
+                            </>}
+                        </div>
                         <hr />
-                        {this.state.html && <div className={`p-3 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
+                        {this.state.html && <div className={`px-3 overflow-auto visual-type-${this.state.visualType} ruby-type-${this.state.rubyType}`} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                         {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                     </Col>
 
