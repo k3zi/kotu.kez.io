@@ -25,16 +25,6 @@ extension Node {
 
 }
 
-struct MouExceptionResolver: ExceptionResolver {
-    func resolve(tokenizer: MeCabTokenizer) {
-        // もう一回 モー・イッカイ
-        // もう言った モ＼ー・イッタ
-        if tokenizer.next.id == "37569" {
-            tokenizer.nodes[0].features[24] = tokenizer.nextNext?.partOfSpeechSubType == "数詞" ? "0" : "1"
-        }
-    }
-}
-
 struct DeAruExceptionResolver: ExceptionResolver {
 
     func resolve(tokenizer: MeCabTokenizer) {
@@ -49,17 +39,54 @@ struct DeAruExceptionResolver: ExceptionResolver {
 
 }
 
-struct PitchAccentCompoundResolver: ExceptionResolver {
+struct PitchAccentResolver: ExceptionResolver {
+
+    func isPostNoun(node: Node) -> Bool {
+        node.partOfSpeech == "助動詞" || node.partOfSpeech == "助詞"
+    }
 
     func resolve(tokenizer: MeCabTokenizer) {
+        // MARK: Compound Correction
         // 語 → 平板：日本語・英語・スペイン語
         if tokenizer.next.id == "13334" {
             tokenizer.nodes[0].features[25] = "C4"
         }
-
         // さん → 前部のアクセント
         if tokenizer.next.id == "14495" {
             tokenizer.nodes[0].features[25] = "C5"
+        }
+
+        //  MARK: Usage Correction
+        // もう一回 モー・イッカイ
+        // もう言った モ＼ー・イッタ
+        if tokenizer.next.id == "37569" {
+            tokenizer.nodes[0].features[24] = tokenizer.nextNext?.partOfSpeechSubType == "数詞" ? "0" : "1"
+        }
+
+        // そうだね
+        // そういうことか
+        if tokenizer.next.id == "20935", let nextNext = tokenizer.nextNext {
+            if isPostNoun(node: nextNext) {
+                tokenizer.nodes[0].features[24] = "1"
+            } else {
+                tokenizer.nodes[0].features[24] = "0"
+            }
+        }
+    }
+
+}
+
+struct PronunciationResolver: ExceptionResolver {
+
+    func resolve(tokenizer: MeCabTokenizer) {
+        // いう(ユー) → いう(イウ)
+        if tokenizer.next.id == "1571" {
+            if tokenizer.next.surface.katakana == "イウ" {
+                tokenizer.nodes[0].features[10] = "イウ"
+                tokenizer.nodes[0].features[12] = "イウ"
+                tokenizer.nodes[0].features[22] = "イウ"
+                tokenizer.nodes[0].features[23] = "イウ"
+            }
         }
     }
 
@@ -87,8 +114,8 @@ public class MeCabTokenizer {
 
     let resolvers: [ExceptionResolver] = [
         DeAruExceptionResolver(),
-        PitchAccentCompoundResolver(),
-        MouExceptionResolver(),
+        PitchAccentResolver(),
+        PronunciationResolver(),
         SentenceEnderResolver()
     ]
 

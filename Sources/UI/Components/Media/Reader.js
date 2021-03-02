@@ -86,7 +86,7 @@ class Reader extends React.Component {
     }
 
     async loadText(text) {
-        if (text.length == 0) {
+        if (text.length === 0) {
             this.setState({ isLoading: false });
             return;
         }
@@ -96,7 +96,7 @@ class Reader extends React.Component {
         const articleContent = await Helpers.generateVisualSentenceElement(`<div class='page'><span>${text}</span></div>`, text, () => {
             return requestID != self.currentRequestID;
         });
-        this.setState({ isLoading: false, html: articleContent.innerHTML });
+        this.setState({ isLoading: false, html: articleContent ? articleContent.innerHTML : null });
     }
 
     frequencyOptions() {

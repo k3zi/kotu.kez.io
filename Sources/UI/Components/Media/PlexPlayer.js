@@ -16,216 +16,9 @@ import Table from 'react-bootstrap/Table';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
 import ConfigurePlexServer from './ConfigurePlexServer';
+import ServerList from './ServerList';
 
 import UserContext from './../Context/User';
-
-class SectionChildrenList extends React.Component {
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            children: [],
-            child: null
-        };
-    }
-
-    componentDidMount() {
-        this.update();
-    }
-
-    async update() {
-        const response = await fetch(`/api/media/plex/resource/${this.props.server.clientIdentifier}/section/${encodeURIComponent((this.props.section.path || this.props.section.key) + '/all')}`);
-        if (!response.ok) {
-            return;
-        }
-        const children = await response.json();
-        this.setState({ children });
-    }
-
-    playMedia(child) {
-        this.setState({ child });
-        if ((child.type === 'episode' || child.type === 'movie') && child.Media) {
-            const media = [
-                {
-                    url: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=hls`,
-                    type: 'application/vnd.apple.mpegurl',
-                    shortType: 'hls',
-                    base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
-                },
-                {
-                    url: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}?protocol=dash`,
-                    type: 'application/dash+xml',
-                    shortType: 'dash',
-                    base: `/api/media/plex/resource/${this.props.server.clientIdentifier}/stream/${child.ratingKey}`
-                }
-            ];
-            this.props.onPlayMedia(media);
-        }
-    }
-
-    breadcrumb() {
-        return {
-            hide: () => this.setState({ child: null }),
-            name: this.props.section.title
-        };
-    }
-
-    render() {
-        if (this.state.child) {
-            return (
-                <SectionChildrenList breadcrumbs={[...this.props.breadcrumbs, this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} section={this.state.child} server={this.props.server} />
-            );
-        } else {
-            if (this.props.section.type === 'episode' || this.props.section.type === 'movie') {
-                return (
-                    <div>
-                        <Breadcrumb>
-                            {this.props.breadcrumbs.map((b, i) => (
-                                <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
-                            ))}
-                            <Breadcrumb.Item active>{this.props.section.title}</Breadcrumb.Item>
-                        </Breadcrumb>
-                        {this.props.section.type === 'episode' && <small>Episode {this.props.section.index}</small>}
-                        <h4>{this.props.section.title}</h4>
-                    </div>
-                );
-            } else {
-                return (
-                    <div>
-                        <Breadcrumb>
-                            {this.props.breadcrumbs.map((b, i) => (
-                                <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
-                            ))}
-                            <Breadcrumb.Item active>{this.props.section.title}</Breadcrumb.Item>
-                        </Breadcrumb>
-                        <h4>{this.props.section.title}</h4>
-                        <ListGroup>
-                            {this.state.children.map((s, i) => (<ListGroup.Item className='d-flex justify-content-between align-items-center' key={i}  action onClick={() => this.playMedia(s)}>
-                                <div>
-                                    {s.title}
-                                    <br />
-                                    <small>{s.type === 'episode' && `Episode ${s.index}`}</small>
-                                </div>
-
-                                {(s.type === 'movie' || s.type === 'episode') && s.viewCount && s.viewCount > 0 && <i class='bi bi-check fs-3 text-success'></i>}
-                            </ListGroup.Item>))}
-                        </ListGroup>
-                    </div>
-                );
-            }
-        }
-    }
-
-}
-
-class SectionList extends React.Component {
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            sections: [],
-            section: null
-        };
-    }
-
-    componentDidMount() {
-        this.update();
-    }
-
-    async update() {
-        const response = await fetch(`/api/media/plex/resource/${this.props.server.clientIdentifier}/sections`);
-        if (!response.ok) {
-            return;
-        }
-        const sections = await response.json();
-        this.setState({ sections });
-    }
-
-    breadcrumb() {
-        return {
-            hide: () => this.setState({ section: null }),
-            name: this.props.server.name
-        };
-    }
-
-    render() {
-        if (this.state.section) {
-            return (
-                <SectionChildrenList breadcrumbs={[...this.props.breadcrumbs, this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} section={this.state.section} server={this.props.server} />
-            );
-        } else {
-            return (
-                <div>
-                    <Breadcrumb>
-                        {this.props.breadcrumbs.map((b, i) => (
-                            <Breadcrumb.Item key={i} onClick={() => b.hide()}>{b.name}</Breadcrumb.Item>
-                        ))}
-                        <Breadcrumb.Item active>{this.props.server.name}</Breadcrumb.Item>
-                    </Breadcrumb>
-                    <h4>{this.props.server.name}</h4>
-                    <ListGroup>
-                        {this.state.sections.map((s, i) => (<ListGroup.Item key={i}  action onClick={() => this.setState({ section: s})}>
-                            {s.title}
-                        </ListGroup.Item>))}
-                    </ListGroup>
-                </div>
-            );
-        }
-    }
-
-}
-
-class ServerList extends React.Component {
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            servers: [],
-            server: null
-        };
-    }
-
-    componentDidMount() {
-        this.update();
-    }
-
-    async update() {
-        const response = await fetch(`/api/media/plex/resources`);
-        if (!response.ok) {
-            return;
-        }
-        const resources = await response.json();
-        const servers = resources.filter(r => r.provides.includes('server'));
-        this.setState({ servers });
-    }
-
-    breadcrumb() {
-        return {
-            hide: () => this.setState({ server: null }),
-            name: 'Servers'
-        };
-    }
-
-    render() {
-        if (this.state.server) {
-            return (
-                <SectionList breadcrumbs={[this.breadcrumb()]} onPlayMedia={this.props.onPlayMedia} server={this.state.server} />
-            );
-        } else {
-            return (
-                <div>
-                    <h4>Servers</h4>
-                    <ListGroup>
-                        {this.state.servers.map((s, i) => (<ListGroup.Item key={i}  action onClick={() => this.setState({ server: s})}>
-                            {s.name}
-                        </ListGroup.Item>))}
-                    </ListGroup>
-                </div>
-            );
-        }
-    }
-
-}
 
 class PlexPlayer extends React.Component {
 
@@ -247,6 +40,10 @@ class PlexPlayer extends React.Component {
         this.setState({
             useDash: typeof(window.MediaSource || window.WebKitMediaSource) === 'function'
         });
+        const self = this;
+        setInterval(() => {
+            self.reportPlayback();
+        }, 5000);
     }
 
     toggleConfigureServer(show) {
@@ -260,6 +57,7 @@ class PlexPlayer extends React.Component {
     }
 
     keyPress(e) {
+        console.log(e);
         if (e.which === 32) {
             e.preventDefault();
             if (this.state.playerRef.paused) {
@@ -315,7 +113,7 @@ class PlexPlayer extends React.Component {
     }
 
     async fastestURL(urls) {
-        const promises = urls.map(u => fetch(u.split('/video')[0]).then(() => u));
+        const promises = urls.map(u => fetch(u.split('/:/')[0]).then(() => u));
         return await Promise.race(promises);
     }
 
@@ -328,7 +126,9 @@ class PlexPlayer extends React.Component {
             return {
                 src: url,
                 type: m.type,
-                base: m.base
+                base: m.base,
+                timelineURL: m.timelineURL,
+                duration: m.duration
             }
         });
         const result = await Promise.all(promises);
@@ -338,7 +138,13 @@ class PlexPlayer extends React.Component {
     async playMedia(medias) {
         const compatibleMedias = medias.filter(m => this.state.useDash ? (m.shortType === 'dash') : (m.shortType !== 'dash'));
         const parsedMedias = await this.parseMedia(compatibleMedias);
-        this.setState({ media: parsedMedias });
+        if (parsedMedias.length > 0) {
+            const timelineURLRequestURL = parsedMedias[0].timelineURL;
+            const response = await fetch(timelineURLRequestURL);
+            const urls = await response.json();
+            const timelineURL = await this.fastestURL(urls);
+            this.setState({ media: parsedMedias, timelineURL });
+        }
         if (this.state.useDash && parsedMedias.length > 0) {
             if (this.dashPlayer) {
                 this.dashPlayer.attachSource(parsedMedias[0].src);
@@ -353,12 +159,27 @@ class PlexPlayer extends React.Component {
         this.setState({ playerRef: e.target });
     }
 
+    async reportPlayback() {
+        const video = this.state.playerRef;
+        if (this.state.media.length === 0 || !this.state.timelineURL || !video) {
+            return;
+        }
+
+        let state = 'paused';
+        if (video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2) {
+            state = 'playing';
+        }
+
+        const url = this.state.timelineURL + `&state=${state}&time=${Math.round(video.currentTime * 1000)}&duration=${this.state.media[0].duration}`;
+        await fetch(url);
+    }
+
     render() {
         return (
             <UserContext.Consumer>{user => (
                 <Row>
                     <Col xs={12} md={7}>
-                        <div className={this.state.media.length > 0 ? '' : 'd-none'} onKeyPress={(e) => this.keyPress(e)}>
+                        <div className={this.state.media.length > 0 ? '' : 'd-none'}>
                             <video ref={this.playerRef} width="100%" controls autoPlay onCanPlay={(e) => this.canPlay(e)}>
                                 {this.state.media.map((m, i) => (
                                     <source src={m.src} type={m.type} />

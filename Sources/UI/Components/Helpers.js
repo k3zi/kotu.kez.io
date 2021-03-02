@@ -28,6 +28,16 @@ helpers.digest = async (message) => {
     return hashHex;
 };
 
+helpers.randomString = (length) => {
+    let text = '';
+    const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+    for (var i = 0; i < length; i++) {
+        text += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+
+  return text;
+};
+
 helpers.addLiveEventListeners = (selector, event, handler, useCapture, querySelector) => {
     document.querySelector((typeof querySelector === 'undefined') ? 'body' : querySelector).addEventListener(event, (evt) => {
         let target = evt.target;

@@ -72,6 +72,7 @@ public struct Metadata: Content {
     }
     let title: String
     let ratingKey: String
+    let duration: Int?
     let key: String
     let art: String?
     let year: Int?

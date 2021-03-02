@@ -77,7 +77,7 @@ class SettingsModal extends React.Component {
 
                     <h5>UI</h5>
                     <Form.Group className='mb-3' controlId="settingsPrefersColorContrast">
-                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersColorContrast} onChange={(e) => this.save(e, (s) => s.ui.prefersColorContrast = e.target.checked)} type="checkbox" label="Prefers Color Contrast" />
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersColorContrast} onChange={(e) => this.save(e, (s) => s.ui.prefersColorContrast = e.target.checked)} type="checkbox" label="Prefer Color Contrast" />
                         <Form.Text className="text-muted">
                             Any feedback on additional places that could be addressed would be well appreciated. Use the "Feedback" link at the bottom of the page.
                         </Form.Text>
