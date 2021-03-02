@@ -148,6 +148,11 @@ class App extends React.Component {
         const response = await fetch('/api/me');
         const user = await response.json();
         if (!user.error) {
+            if (user.settings.ui.prefersColorContrast) {
+                document.body.classList.add('prefers-color-contrast');
+            } else {
+                document.body.classList.remove('prefers-color-contrast');
+            }
             this.setState({ user });
         }
         this.setState({ isReady: true });

@@ -696,6 +696,14 @@ rt .underline {
     left: auto;
 }
 
+.prefers-color-contrast {
+
+    .list-group-item-danger {
+        background-color: #F49DA1;
+    }
+
+}
+
 @media (prefers-color-scheme: dark) {
 
     * {
@@ -769,6 +777,10 @@ rt .underline {
         .dropdown-header {
           color: $dropdown-dark-header-color;
         }
+    }
+
+    silenced {
+        border-color: white;
     }
 
 }

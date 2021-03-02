@@ -5,6 +5,7 @@ struct Settings: Content {
     enum CodingKeys: String, CodingKey {
         case anki
         case reader
+        case ui
     }
 
     struct Anki: Content {
@@ -43,8 +44,24 @@ struct Settings: Content {
         }
     }
 
+    struct UI: Content {
+        enum CodingKeys: String, CodingKey {
+            case prefersColorContrast
+        }
+
+        var prefersColorContrast: Bool = false
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            prefersColorContrast = (try? container.decodeIfPresent(Bool.self, forKey: .prefersColorContrast)) ?? false
+        }
+    }
+
     var anki = Anki()
     var reader = Reader()
+    var ui = UI()
 
     init() { }
 
@@ -52,6 +69,7 @@ struct Settings: Content {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         anki = (try? container.decodeIfPresent(Anki.self, forKey: .anki)) ?? Anki()
         reader = (try? container.decodeIfPresent(Reader.self, forKey: .reader)) ?? Reader()
+        ui = (try? container.decodeIfPresent(UI.self, forKey: .ui)) ?? UI()
     }
 
 }
