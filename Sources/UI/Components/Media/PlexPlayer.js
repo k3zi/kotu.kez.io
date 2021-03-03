@@ -77,7 +77,7 @@ class PlexPlayer extends React.Component {
         this.setState({ isRecording: false, isSubmitting: true, lastFile: null });
         const startTime = this.state.startTime;
         const endTime = this.state.playerRef.currentTime;
-        const response = await fetch(`${this.state.media[0].base}/capture`, {
+        const response = await fetch(`${this.state.media[0].base}/capture?sessionID=${this.state.media[0].sessionID}`, {
             method: 'POST',
             body: JSON.stringify({
                 startTime,
@@ -128,7 +128,8 @@ class PlexPlayer extends React.Component {
                 type: m.type,
                 base: m.base,
                 timelineURL: m.timelineURL,
-                duration: m.duration
+                duration: m.duration,
+                sessionID: m.sessionID
             }
         });
         const result = await Promise.all(promises);

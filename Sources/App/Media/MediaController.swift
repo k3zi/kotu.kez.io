@@ -413,6 +413,8 @@ class MediaController: RouteCollection {
             guard let token = user.plexAuth?.linked?.authToken else { throw Abort(.badRequest, reason: "User has no Plex account") }
             guard let clientIdentifier = req.parameters.get("clientIdentifier", as: String.self) else { throw Abort(.badRequest, reason: "Client identifier not provided") }
             guard let mediaID = req.parameters.get("mediaID", as: Int.self) else { throw Abort(.badRequest, reason: "Media ID not provided") }
+            
+            let sessionID = try req.query.get(String.self, at: "sessionID")
 
             try PlexCaptureRequest.validate(content: req)
             let object = try req.content.decode(PlexCaptureRequest.self)
@@ -429,6 +431,7 @@ class MediaController: RouteCollection {
                     }
                     var url = connection.uri.appendingPathComponent("/video/:/transcode/universal/start.m3u8").absoluteString
                     url += "?X-Plex-Token=\(resource.accessToken ?? "")"
+                    url += "&X-Plex-Session-Identifier=\(sessionID)"
                     url += "&advancedSubtitles=text&audioBoost=100&autoAdjustQuality=0&directPlay=1&directStream=1&directStreamAudio=1&mediaBufferSize=20000&partIndex=0&path=%2Flibrary%2Fmetadata%2F\(mediaID)&protocol=hls&subtitleSize=150&subtitles=auto&videoQuality=100&videoResolution=4096x2160&X-Plex-Platform=Chrome&offset=\(object.startTime)&X-Plex-Client-Identifier=\(clientIdentifier)"
                     let task = Process()
                     let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")

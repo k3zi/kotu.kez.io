@@ -253,7 +253,7 @@ class App extends React.Component {
                                         <NavDropdown.Item active={false}>Note Types</NavDropdown.Item>
                                     </LinkContainer>
                                     <LinkContainer to="/flashcard/notes">
-                                        <NavDropdown.Item active={false}>Browse Notes</NavDropdown.Item>
+                                        <NavDropdown.Item active={false}>Notes</NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />
                                     <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>

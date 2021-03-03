@@ -94,8 +94,7 @@ class Decks extends React.Component {
     render() {
         return (
             <div>
-                <h2>Anki <small className="text-muted">{this.state.decks.length} Deck(s)</small></h2>
-                <Button variant="primary" onClick={() => this.toggleCreateDeckModal(true)}>Create Deck</Button>
+                <h2>Anki <small className="text-muted">{this.state.decks.length} Deck(s)</small> <Button className='float-end' variant="primary" onClick={() => this.toggleCreateDeckModal(true)}>Create Deck</Button></h2>
                 <hr/>
                 <Table striped bordered hover>
                     <thead>
@@ -116,7 +115,7 @@ class Decks extends React.Component {
                                 <td className="align-middle text-center text-primary">{deck.nextCardDueData}</td>
                                 <td className="align-middle text-center">
                                     <LinkContainer to={`/flashcard/deck/${deck.id}`}>
-                                        <Button variant="primary"><i className="bi bi-arrow-right"></i></Button>
+                                        <Button variant="primary"><i className='bi bi-play-fill'></i></Button>
                                     </LinkContainer>
                                     <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditDeckModal(deck)}><i className="bi bi-pencil-square"></i></Button>
