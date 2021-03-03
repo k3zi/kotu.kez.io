@@ -67,10 +67,14 @@ public func configure(_ app: Application) throws {
 
     try app.autoMigrate().wait()
 
+    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
+    let directoryName = "SMK8"
+    let dictionaryName = "新明解国語辞典　第8版"
 // For saving dictionary headlines to JSON.
-//    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let contentsDirectory = directoryURL.appendingPathComponent("Resources/Dictionaries/NHK_ACCENT/contents")
-//    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
+    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+    let contentIndexData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
+    let contentIndex = try ContentIndex.parse(tokenizer: .init(data: contentIndexData))
 //    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
 //    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
 //    for (i, file) in fileContainer.files.enumerated() {
@@ -82,42 +86,73 @@ public func configure(_ app: Application) throws {
 //    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
 //    try! data.write(to: directoryURL.appendingPathComponent("listOfAllHeadlineUsages.json"))
 
-//    let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let directoryName = "Taishukan-GJE3"
+
 //
-//    let oldDictionary = try Dictionary.query(on: app.db)
-//        .filter(\.$name == "ジーニアス和英辞典")
-//        .first()
+//    try Dictionary.query(on: app.db)
+//        .filter(\.$name == dictionaryName)
+//        .delete()
 //        .wait()
-//    let dictionary = oldDictionary ?? Dictionary(name: "ジーニアス和英辞典", directoryName: directoryName)
+//    let dictionary = oldDictionary ?? Dictionary(name: dictionaryName, directoryName: directoryName)
 //    if dictionary.id == nil {
 //        try dictionary.create(on: app.db).wait()
 //    }
 //
+//    // For saving HTML files to folder
+//    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
+//    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+//    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
+//    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
+//    for (i, file) in fileContainer.files.enumerated() {
+//        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
+//        try file.text.data(using: .utf8)!.write(to: outputFileURL)
+//    }
+//
+//    // For saving content mapping
+//    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
+//    let contentIndex = try! ContentIndex.parse(tokenizer: .init(data: contentIndexData))
+//    try JSONSerialization.data(withJSONObject: contentIndex.indexMapping.map { ["key": $0.key, "value": $0.value]}).write(to: directoryURL.appendingPathComponent("content-mapping.json"))
+//
 //    try Headword.query(on: app.db)
 //        .filter("dictionary_id", .equal, try dictionary.requireID())
 //        .delete().wait()
+
+    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
+    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
+    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/headline.headlinestore"))
+    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
+
+    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/key/headword.keystore"))
+    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
+
+    let headwords = headWordKeyStore.pairs
+        .flatMap { headword in
+            headword.matches.map { match -> [Any] in
+                let headline = headlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
+                let shortHeadline = shortHeadlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
+                return [headword.value, headline?.text ?? "", shortHeadline?.text ?? "",
+                        contentIndex.indexMapping[Int(match.entryIndex)]!, Int(match.subentryIndex)]
+            }
+        }
+    let entries = fileContainer.files.map { $0.text }
+
+    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/style.css"))
+    let css = String(data: cssData, encoding: .utf8)!
+
+    let output: [String: Any] = [
+        "directoryName": directoryName,
+        "dictionaryName": dictionaryName,
+        "css": css,
+        "headwords": headwords,
+        "entries": entries
+    ]
 //
-////    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("Resources/Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
-////    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
-////
-//    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/headline.headlinestore"))
-//    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
-//
-//    let keyStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/key/headword.keystore"))
-//    let headWordKeyStore = try KeyStore.parse(tokenizer: DataTokenizer(data: keyStoreData))
-//
-//    let headwords = headWordKeyStore.pairs
-//        .flatMap { headword in
-//            headword.matches.map { match -> Headword in
-//                let headline = headlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
-//                return Headword(dictionary: dictionary, text: headword.value, headline: headline?.text ?? "", shortHeadline: headline?.text ?? "", entryIndex: Int(match.entryIndex), subentryIndex: Int(match.subentryIndex))
-//            }
-//        }
-//
-//   try headwords
-//        .chunked(into: 127)
-//        .forEach { try $0.create(on: app.db).wait() }
+//    try headwords
+//         .chunked(into: 127)
+//         .forEach { try $0.create(on: app.db).wait() }
+
+    let outputData = try JSONSerialization.data(withJSONObject: output)
+    let zippedOutputData = try outputData.gzipped(level: .bestCompression)
+    try zippedOutputData.write(to: directoryURL.appendingPathComponent("\(directoryName).mkd"))
 
     try DictionaryManager.configure(app: app).wait()
     PitchAccentManager.configure(app: app)
