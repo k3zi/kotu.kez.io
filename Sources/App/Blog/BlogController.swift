@@ -50,7 +50,6 @@ class BlogController: RouteCollection {
             let postID = try req.parameters.require("postID", as: UUID.self)
             return user.$blogPosts
                 .query(on: req.db)
-                .with(\.$owner)
                 .filter(\.$id == postID)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Blog post not found"))

@@ -89,6 +89,7 @@ class BlogPosts extends React.Component {
                                 {user && user.permissions.includes('blog') && <LinkContainer style={{cursor:'pointer'}} exact to={`/article/edit/${post.id}`}>
                                     <span className='text-primary ps-2'>Edit <i class="bi bi-pencil-square"></i></span>
                                 </LinkContainer>}
+                                {user && user.permissions.includes('blog') && <span style={{cursor:'pointer'}} onClick={() => this.showDeletePostModal(post)} className='text-danger ps-2'>Delete <i class="bi bi-trash"></i></span>}
                             </div>
 
                             <div className='read-more' dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(post.content ? post.content : '(No Content)')}}></div>

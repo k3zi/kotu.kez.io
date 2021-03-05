@@ -65,7 +65,7 @@ struct PitchAccentResolver: ExceptionResolver {
 
         // そうだね
         // そういうことか
-        if tokenizer.next.id == "20935", let nextNext = tokenizer.nextNext {
+        if ["20935", "11822", "68"].contains(tokenizer.next.id), let nextNext = tokenizer.nextNext {
             if isPostNoun(node: nextNext) {
                 tokenizer.nodes[0].features[24] = "1"
             } else {
@@ -305,7 +305,7 @@ struct Morpheme: Content {
             return morphemes
         }
 
-        if ["接尾辞"].contains(nextMorpheme.partOfSpeech) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
+        if ["接尾辞"].contains(nextMorpheme.partOfSpeech) || ["接続助詞"].contains(nextMorpheme.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
@@ -342,10 +342,12 @@ struct Morpheme: Content {
         return .init(
             id: node.id,
             pitchAccents: node.pitchAccents,
-            pitchAccentCompoundKinds: kinds.map { PitchAccentCompoundKind(string: String($0)) },
+            pitchAccentCompoundKinds: kinds.map { PitchAccentConnectionKind(string: String($0)) },
+            pitchAccentModificationKind: PitchAccentModificationKind(string: (node.features.count > 26 ? node.features[26] : "")),
             surface: node.surface,
             original: node.original,
             partOfSpeech: node.partOfSpeech,
+            partOfSpeechSubType: node.partOfSpeechSubType,
             pronunciation: node.surfacePronunciation == "*" ? node.surface : node.surfacePronunciation,
             ruby: node.ruby,
             isBasic: node.isBasic,
@@ -355,10 +357,12 @@ struct Morpheme: Content {
 
     let id: String
     let pitchAccents: [PitchAccent]
-    let pitchAccentCompoundKinds: [PitchAccentCompoundKind]
+    let pitchAccentCompoundKinds: [PitchAccentConnectionKind]
+    let pitchAccentModificationKind: PitchAccentModificationKind
     let surface: String
     let original: String
     let partOfSpeech: String
+    let partOfSpeechSubType: String
     let pronunciation: String
     let ruby: String
     let isBasic: Bool
@@ -368,7 +372,7 @@ struct Morpheme: Content {
 
 }
 
-indirect enum PitchAccentCompoundKind: Content {
+indirect enum PitchAccentConnectionKind: Content {
 
     case unknown
     case secondHalfAccentOverride
@@ -384,7 +388,7 @@ indirect enum PitchAccentCompoundKind: Content {
     case prefixHeibanHeadElseSecondHalf
     case prefixFlatHead
     case prefixDominant
-    case restricted(partOfSpeech: String, kind: PitchAccentCompoundKind)
+    case restricted(partOfSpeech: String, kind: PitchAccentConnectionKind)
 
     init(string: String) {
         switch string {
@@ -512,12 +516,69 @@ indirect enum PitchAccentCompoundKind: Content {
         }
     }
 
-    var simple: PitchAccentCompoundKind {
+    var simple: PitchAccentConnectionKind {
         switch self {
         case .restricted(_, let kind):
             return kind
         default:
             return self
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(stringValue)
+    }
+
+}
+
+indirect enum PitchAccentModificationKind: Content {
+
+    case unknown
+    case dominant(m: Int)
+    case recessive(m: Int)
+
+    init(string: String) {
+        switch string {
+        case "*":
+            self = .unknown
+        default:
+            let parts = string.split(separator: "%")
+            let atParts = string.split(separator: "@")
+            if parts.count == 2 {
+                print("unknown pitch kind: \(string)")
+                self = .unknown
+            } else if atParts.count == 2 {
+                switch atParts[0] {
+                case "M1":
+                    self = .dominant(m: Int(String(atParts[1].split(separator: ",")[0]))!)
+                case "M2":
+                    self = .recessive(m: Int(String(atParts[1].split(separator: ",")[0]))!)
+                default:
+                    print("unknown pitch kind: \(string)")
+                    self = .unknown
+                }
+            } else {
+                print("unknown pitch kind: \(string)")
+                self = .unknown
+            }
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        self = .init(string: string)
+    }
+
+    var stringValue: String {
+        switch self {
+        case .unknown:
+            return "*"
+        case .dominant(let m):
+            return "M1@\(m)"
+        case .recessive(let m):
+            return "M2@\(m)"
         }
     }
 

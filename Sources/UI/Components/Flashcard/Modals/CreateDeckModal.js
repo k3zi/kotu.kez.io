@@ -72,9 +72,9 @@ class CreateDeckModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {!this.state.success && <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        <Button className='col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Loading...' : 'Create'}
-                        </Button>}
+                        </Button>
                     </Form>
                 </Modal.Body>
             </Modal>

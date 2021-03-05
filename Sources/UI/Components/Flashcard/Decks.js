@@ -11,6 +11,7 @@ import Table from 'react-bootstrap/Table';
 import EditDeckModal from './Modals/EditDeckModal';
 import DeleteDeckModal from './Modals/DeleteDeckModal';
 import CreateDeckModal from './Modals/CreateDeckModal';
+import ImportDeckModal from './Modals/ImportDeckModal';
 
 class Decks extends React.Component {
 
@@ -19,6 +20,7 @@ class Decks extends React.Component {
         this.state = {
             showCreateDeckModal: false,
             showDeleteDeckModal: null,
+            showImportDeckModal: false,
             decks: []
         };
     }
@@ -77,6 +79,13 @@ class Decks extends React.Component {
         await this.load();
     }
 
+    async showImportDeckModal(show) {
+        this.setState({
+            showImportDeckModal: show
+        });
+        await this.load();
+    }
+
     async showDeleteDeckModal(deck) {
         this.setState({
             showDeleteDeckModal: deck
@@ -94,7 +103,7 @@ class Decks extends React.Component {
     render() {
         return (
             <div>
-                <h2>Anki <small className="text-muted">{this.state.decks.length} Deck(s)</small> <Button className='float-end' variant="primary" onClick={() => this.toggleCreateDeckModal(true)}>Create Deck</Button></h2>
+                <h2>Anki <small className="text-muted">{this.state.decks.length} Deck(s)</small> <Button className='float-end mx-2' variant="primary" onClick={() => this.toggleCreateDeckModal(true)}>Create Deck</Button> <Button className='float-end mx-2' variant="primary" onClick={() => this.showImportDeckModal(true)}>Import .apkg</Button></h2>
                 <hr/>
                 <Table striped bordered hover>
                     <thead>
@@ -128,6 +137,7 @@ class Decks extends React.Component {
                 </Table>
 
                 <CreateDeckModal show={this.state.showCreateDeckModal} onHide={() => this.toggleCreateDeckModal(false)} onSuccess={() => this.toggleCreateDeckModal(false)} />
+                <ImportDeckModal show={this.state.showImportDeckModal} onHide={() => this.showImportDeckModal(false)} onSuccess={() => this.showImportDeckModal(false)} />
                 <EditDeckModal deck={this.state.showEditDeckModal} onHide={() => this.showEditDeckModal(false)} onSuccess={() => this.showEditDeckModal(null)} />
                 <DeleteDeckModal deck={this.state.showDeleteDeckModal} didDelete={() => this.showDeleteDeckModal(null)} didCancel={() => this.showDeleteDeckModal(null)} onHide={() => this.showDeleteDeckModal(null)} />
             </div>

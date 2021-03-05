@@ -17,9 +17,11 @@ let package = Package(
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
+        .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
-        .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop"))
+        .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop")),
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0"))
     ],
     targets: [
         .target(
@@ -27,10 +29,12 @@ let package = Package(
             dependencies: [
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
+                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Redis", package: "redis"),
                 .product(name: "Gzip", package: "Gzip"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .target(name: "MeCab")
             ],
             swiftSettings: [

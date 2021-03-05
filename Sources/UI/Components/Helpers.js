@@ -222,6 +222,11 @@ helpers.htmlForFrequency = async (sentence) => {
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
+helpers.htmlForFurigana = async (sentence) => {
+    const html = `<span class='visual-type-none ruby-type-veryCommon'><span>${sentence}</span></span>`;
+    return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
+};
+
 helpers.htmlForPitch = async (sentence) => {
     const html = `<span class='visual-type-showPitchAccent'><span>${sentence}</span></span>`;
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
@@ -231,9 +236,17 @@ helpers.parseMarkdown = (rawText) => {
     let text = rawText.trim().replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s+$/gm, '\n\n<br />\n\n');
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
+    let subst;
     while ((match = regex.exec(text)) !== null) {
         const sentence = match[1];
         const html = helpers.generateManualPitchElement(sentence);
+        text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
+    }
+
+    regex = /\[mfurigana: (.*(\[(.*?)\])*)\]/mi;
+    while ((match = regex.exec(text)) !== null) {
+        const s = match[1];
+        const html = s.split(' ').map(x => x.replace(/(.+?)\[(.+?)\]/gmi, '<ruby>$1<rt>$2</rt></ruby>')).join('');
         text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
     }
 
@@ -246,7 +259,7 @@ helpers.parseMarkdown = (rawText) => {
     }
 
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    let subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     text = text.replace(regex, subst);
     // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
@@ -281,17 +294,37 @@ helpers.parseMarkdown = (rawText) => {
 helpers.htmlForCard = async (baseHTML, options) => {
     const { fieldValues, autoPlay, answers, answersType, showClozeDeletion, clozeDeletionIndex } = options;
     let result = baseHTML;
+
+    // Anki backards compatability
+    let regex = /{{furigana:\s*(.*?)}}/gmi;
+    let subst = `[mfurigana: {{$1}}]`;
+    result = result.replace(regex, subst);
+    const modifiedFieldValues = [...fieldValues];
+    modifiedFieldValues.push({ field: { name: 'Tags' }, value: '' });
+
     // Replace fields.
     for (let fieldValue of fieldValues) {
         const fieldName = fieldValue.field.name;
         const value = fieldValue.value;
         const replace = `{{${fieldName}}}`;
         result = result.replace(new RegExp(replace, 'g'), value.trim());
+
+        if (!value || value.length === 0) {
+            result = result.replace(new RegExp(`\{\{#${fieldName}\}\}(.*)\{\{\/${fieldName}\}\}`, 'gi'), '');
+        }
     }
 
+    regex = /{{#(.*?)}}/gmi;
+    subst = ``;
+    result = result.replace(regex, subst);
+
+    regex = /{{\/(.*?)}}/gmi;
+    subst = ``;
+    result = result.replace(regex, subst);
+
     // Handle media for front / back.
-    let regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    let subst = `<audio controls${autoPlay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
+    subst = `<audio controls${autoPlay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
     result = result.replace(regex, subst);
 
     regex = /\[frequency: (.*?)\]/mi;
@@ -306,6 +339,13 @@ helpers.htmlForCard = async (baseHTML, options) => {
     while ((match = regex.exec(result)) !== null) {
         const sentence = match[1];
         const element = await helpers.htmlForPitch(sentence);
+        result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
+    }
+
+    regex = /\[furigana: (.*?)\]/mi;
+    while ((match = regex.exec(result)) !== null) {
+        const sentence = match[1];
+        const element = await helpers.htmlForFurigana(sentence);
         result = result.substring(0, match.index) + element.innerHTML + result.substring(match.index + match[0].length);
     }
 

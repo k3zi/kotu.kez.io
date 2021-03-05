@@ -58,7 +58,7 @@ class DeletePostModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>Are you sure you wish to delete this post? This will delete all cards under this note.</p>
+                    <p>Are you sure you wish to delete this post: {this.props.post && this.props.post.title}?</p>
                 </Modal.Body>
                 <Modal.Footer>
                     {this.state.didError && <Alert variant="danger">

@@ -23,12 +23,16 @@ final class NoteType: Model, Content {
     @Children(for: \.$noteType)
     var notes: [Note]
 
+    @Field(key: "shared_css")
+    var sharedCSS: String
+
     init() { }
 
-    init(id: UUID? = nil, ownerID: UUID, name: String) {
+    init(id: UUID? = nil, ownerID: UUID, name: String, sharedCSS: String = "") {
         self.id = id
         self.$owner.id = ownerID
         self.name = name
+        self.sharedCSS = sharedCSS
     }
 
 }
@@ -48,6 +52,22 @@ extension NoteType {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "UpdateFlashcardNoteTypeSharedCSS" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("shared_css", .string, .required, .sql(.default("")))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("shared_css")
+                .update()
         }
     }
 

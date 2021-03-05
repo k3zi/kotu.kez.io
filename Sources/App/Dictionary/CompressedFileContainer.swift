@@ -9,7 +9,6 @@ public struct CompressedFileContainer {
             .filter { $0.pathExtension == "rsc" }
             .sorted(by: { $0.path < $1.path })
             .map {
-                print($0.path)
                 return try Collection.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)))
             }
         files = collections.flatMap { $0.files }
@@ -46,8 +45,6 @@ extension CompressedFileContainer {
 
                 tokenizer.consumeUntil(nextByteGroupOf: 4)
             }
-            print("finished \(files.count) files")
-            print("endOffset: \(tokenizer.currentOffset)")
             return .init(files: files)
         }
 

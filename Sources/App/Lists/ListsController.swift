@@ -229,6 +229,17 @@ struct PitchAccent: Content, Codable {
             default:
                 return PitchAccent(mora: -1, length: 0)
             }
+
+            switch morpheme.pitchAccentModificationKind {
+            case .dominant(m: let m):
+                accent = PitchAccent(mora: buildUpWord.count - m, length: buildUpWord.moraCount)
+            case .recessive(m: let m):
+                if accent.descriptive == .heiban {
+                    accent = PitchAccent(mora: buildUpWord.count - m, length: buildUpWord.moraCount)
+                }
+            default:
+                break
+            }
         }
 
         return accent

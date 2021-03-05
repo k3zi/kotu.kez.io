@@ -1,4 +1,6 @@
 import Fluent
+import FluentSQLiteDriver
+import ZIPFoundation
 import Vapor
 
 class FlashcardController: RouteCollection {
@@ -153,6 +155,39 @@ class FlashcardController: RouteCollection {
                 .paginate(for: req)
         }
 
+        func createNotes(req: Request, values: [(Note.Create, NoteType)], deck: Deck) throws -> EventLoopFuture<[Note]> {
+            let futures = try values.map { try createNote(req: req, object: $0.0, noteType: $0.1, deck: deck) }
+            return EventLoopFuture.whenAllSucceed(futures, on: req.eventLoop)
+        }
+
+        func createNote(req: Request, object: Note.Create, noteType: NoteType, deck: Deck) throws -> EventLoopFuture<Note> {
+            let note = Note(noteTypeID: try noteType.requireID())
+            return note.create(on: req.db)
+                .throwingFlatMap {
+                    let fieldValues = try object.fieldValues.map {
+                        NoteFieldValue(noteID: try note.requireID(), fieldID: $0.fieldID, value: $0.value)
+                    }
+                    return note.$fieldValues.create(fieldValues, on: req.db)
+                }
+                .throwingFlatMap {
+                    let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
+                    let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
+                    let cards = try noteType.cardTypes.flatMap { cardType  -> [Card] in
+                        if clozeIndexes.isEmpty {
+                            return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                        }
+
+                        return try clozeIndexes.map {
+                            Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
+                        }
+                    }
+                    return note.$cards.create(cards, on: req.db).throwingFlatMap {
+                        Note.query(on: req.db).filter(\.$id == (try! note.requireID())).with(\.$cards).first()
+                            .unwrap(orError: Abort(.internalServerError))
+                    }
+                }
+        }
+
         guardedNote.post() { req -> EventLoopFuture<Note> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
@@ -178,44 +213,20 @@ class FlashcardController: RouteCollection {
 
             return noteTypeCall.and(deckCall)
                 .throwingFlatMap { (noteType, deck) -> EventLoopFuture<Note> in
-                    let note = Note(noteTypeID: try noteType.requireID())
-                    return note.create(on: req.db)
-                        .throwingFlatMap {
-                            let fieldValues = try object.fieldValues.map {
-                                NoteFieldValue(noteID: try note.requireID(), fieldID: $0.fieldID, value: $0.value)
-                            }
-                            return note.$fieldValues.create(fieldValues, on: req.db)
-                        }
-                        .throwingFlatMap {
-                            let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
-                            let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
-                            let cards = try noteType.cardTypes.flatMap { cardType  -> [Card] in
-                                if clozeIndexes.isEmpty {
-                                    return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                    try createNote(req: req, object: object, noteType: noteType, deck: deck)
+                        .throwingFlatMap { note in
+                            let sm = deck.sm
+                            try note.cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
+                            deck.sm = sm
+                            return deck.save(on: req.db)
+                                .flatMap {
+                                    var settings = user.settings
+                                    settings?.anki.lastUsedDeckID = deck.id
+                                    settings?.anki.lastUsedNoteTypeID = noteType.id
+                                    user.settings = settings
+                                    return user.save(on: req.db)
                                 }
-
-                                return try clozeIndexes.map {
-                                    Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
-                                }
-                            }
-                            return note.$cards.create(cards, on: req.db)
-                                .throwingFlatMap {
-                                    let sm = deck.sm
-                                    try cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
-                                    deck.sm = sm
-                                    return deck.save(on: req.db)
-                                }
-                        }
-                        .flatMap {
-                            var settings = user.settings
-                            settings?.anki.lastUsedDeckID = deck.id
-                            settings?.anki.lastUsedNoteTypeID = noteType.id
-                            user.settings = settings
-                            return user.save(on: req.db)
-                        }
-                        .throwingFlatMap {
-                            Note.find(try note.requireID(), on: req.db)
-                                .unwrap(orError: Abort(.internalServerError))
+                                .map { note }
                         }
                 }
 
@@ -371,6 +382,121 @@ class FlashcardController: RouteCollection {
                     // Default values not getting initialized on first load so
                     // we have to fetch again
                     Deck.find(deck.id, on: req.db).unwrap(or: Abort(.internalServerError))
+                }
+        }
+
+        guardedDeckID.post("import") { (req: Request) -> EventLoopFuture<[Note]> in
+            struct Upload: Content {
+                let file: Vapor.File
+            }
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let id = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            let file = try req.content.decode(Upload.self).file
+            let data = Data(buffer: file.data)
+
+            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let uuid = UUID().uuidString
+            guard let archive = Archive(data: data, accessMode: .read, preferredEncoding: .utf8) else  {
+                throw Abort(.badRequest, reason: "Could not open zip archive.")
+            }
+            guard let entry = archive["collection.anki2"] else {
+                throw Abort(.badRequest, reason: "Could not find SQLite database.")
+            }
+            let destinationURL = directory.appendingPathComponent("\(uuid).sqlite")
+            do {
+                _ = try archive.extract(entry, to: destinationURL)
+            } catch {
+                throw Abort(.badRequest, reason: "Extracting entry from archive failed with error: \(error)")
+            }
+
+            req.application.databases.use(.sqlite(.file(destinationURL.path)), as: .init(string: uuid))
+            let db = req.db(.init(string: uuid))
+            let notes = Anki.Note.query(on: db).all()
+            let deckCall = user.$decks
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Unable to find deck"))
+            return Anki.Collection.query(on: db).first().unwrap(or: Abort(.badRequest, reason: "No collection in Anki database")).and(notes).and(deckCall)
+                .throwingFlatMap { values in
+                    let collection = values.0.0
+                    let notes = values.0.1
+                    let deck = values.1
+                    let usedModelIDs = Array(Set(notes.map { $0.modelID }))
+
+                    // Create Note Types
+                    let prevNoteTypes = collection.models.values.filter { usedModelIDs.contains($0.id) }
+                    let noteTypesWithoutCardTypes = prevNoteTypes.map {
+                        NoteType(ownerID: userID, name: $0.name, sharedCSS: $0.css)
+                    }
+
+                    return noteTypesWithoutCardTypes.create(on: req.db)
+                        .throwingFlatMap {
+                            // Create Note Card Types
+                            let cardTypes = try prevNoteTypes.flatMap { (model: Anki.Model) -> [CardType] in
+                                let noteType = noteTypesWithoutCardTypes.first(where: { $0.name == model.name })!
+                                let templates = model.tmpls.sorted(by: { $0.ord < $1.ord })
+                                return try templates.map { template in
+                                    CardType(noteTypeID: try noteType.requireID(), overrideDeckID: nil, name: template.name, frontHTML: template.qfmt, backHTML: template.afmt, css: "")
+                                }
+                            }
+
+                            return cardTypes.create(on: req.db).throwingFlatMap {
+                                let latestNoteTypes = try noteTypesWithoutCardTypes.map { try $0.requireID() }.map { NoteType.query(on: req.db).with(\.$cardTypes).filter(\.$id == $0).first().unwrap(orError: Abort(.badRequest, reason: "Unable to find just saved note type")) }
+                                return EventLoopFuture.whenAllSucceed(latestNoteTypes, on: req.eventLoop)
+                            }
+                        }
+                        .throwingFlatMap { (noteTypes: [NoteType]) in
+                            // Create Note Fields
+                            let fields = try prevNoteTypes.flatMap { (model: Anki.Model) -> [NoteField] in
+                                let noteType = noteTypes.first(where: { $0.name == model.name })!
+                                let fields = model.flds.sorted(by: { $0.ord < $1.ord })
+                                return try fields.map { field in
+                                    NoteField(noteTypeID: try noteType.requireID(), name: field.name)
+                                }
+                            }
+
+                            return fields.create(on: req.db)
+                                .throwingFlatMap {
+                                    // Create Notes
+                                    let values = try notes.map { (note: Anki.Note) -> (Note.Create, NoteType) in
+                                        guard let model = prevNoteTypes.first(where: { $0.id == note.modelID }) else {
+                                            throw Abort(.badRequest, reason: "Could not find model for note")
+                                        }
+                                        guard let noteType = noteTypes.first(where: { $0.name == model.name }) else {
+                                            throw Abort(.badRequest, reason: "Could not find note type for model")
+                                        }
+                                        let divider = String(UnicodeScalar(UInt8(31)))
+                                        let rawFieldValues = note.fields.components(separatedBy: divider)
+                                        let modelFields = model.flds.sorted(by: { $0.ord < $1.ord })
+                                        guard rawFieldValues.count == modelFields.count else {
+                                            throw Abort(.badRequest, reason: "Count of note fields does not match count of model fields")
+                                        }
+                                        let fieldValues = try modelFields.enumerated().map { (i, modelField) -> NoteFieldValue.Create in
+                                            guard let field = fields.first(where: { $0.$noteType.id == noteType.id && $0.name == modelField.name }) else {
+                                                throw Abort(.badRequest, reason: "Could not find field for note.")
+                                            }
+
+                                            return NoteFieldValue.Create(fieldID: try field.requireID(), value: String(rawFieldValues[i]))
+                                        }
+
+                                        let note = Note.Create(targetDeckID: id, noteTypeID: try noteType.requireID(), fieldValues: fieldValues)
+                                        return (note, noteType)
+                                    }
+                                    return try createNotes(req: req, values: values, deck: deck)
+                                        .throwingFlatMap { notes in
+                                            let sm = deck.sm
+                                            let cards = notes.flatMap { $0.cards }
+                                            try cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
+                                            deck.sm = sm
+                                            return deck.save(on: req.db)
+                                                .map { notes }
+                                        }
+                                }
+                        }
                 }
         }
 

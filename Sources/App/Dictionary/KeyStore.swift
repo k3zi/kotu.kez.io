@@ -90,7 +90,6 @@ public struct KeyStore {
         var pairs = [Pair]()
         for i in 0..<dataIndices.count {
             let index = tokenizer.consumeInt32() + offset
-            print(tokenizer.currentIndex)
             tokenizer.consume() // can be a 1 or 0 but probably a 0 (way of counting sub headwords?)
             var utf8Array = tokenizer.consume(times: 3)
             while utf8Array.last != .zero || utf8Array[utf8Array.count - 2] != .zero {
@@ -108,7 +107,6 @@ public struct KeyStore {
             let matchTokenizer = DataTokenizer(data: matchData)
             let matches = try [Match].parse(tokenizer: matchTokenizer)
             pairs.append(Pair(value: text, matches: matches))
-            print("\(i) of \(dataIndices.count) = \(text) @ \(matches.map { "\($0.entryIndex)-\($0.subentryIndex)" }.joined(separator: ", "))")
         }
 
         return .init(pairs: pairs)
