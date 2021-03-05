@@ -305,7 +305,7 @@ struct Morpheme: Content {
             return morphemes
         }
 
-        if ["接尾辞"].contains(nextMorpheme.partOfSpeech) || ["接続助詞"].contains(nextMorpheme.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
+        if ["接尾辞", "助動詞", "助詞"].contains(nextMorpheme.partOfSpeech) || ["接続助詞", "副助詞"].contains(nextMorpheme.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
             return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
@@ -332,7 +332,10 @@ struct Morpheme: Content {
         }
 
         let foundMorphemes = try tokenizer.consume(times: longestMatchingNodes.count - morphemes.count).map { Morpheme.parse(from: $0) }
-        return morphemes + foundMorphemes
+        if foundMorphemes.isEmpty {
+            return morphemes + foundMorphemes
+        }
+        return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + foundMorphemes)
     }
 
     static func parse(from node: Node) -> Morpheme {
@@ -537,6 +540,7 @@ indirect enum PitchAccentModificationKind: Content {
     case unknown
     case dominant(m: Int)
     case recessive(m: Int)
+    case heibanHeadSameElseAccent(m: Int)
 
     init(string: String) {
         switch string {
@@ -554,6 +558,8 @@ indirect enum PitchAccentModificationKind: Content {
                     self = .dominant(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 case "M2":
                     self = .recessive(m: Int(String(atParts[1].split(separator: ",")[0]))!)
+                case "M4":
+                    self = .heibanHeadSameElseAccent(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 default:
                     print("unknown pitch kind: \(string)")
                     self = .unknown
@@ -579,6 +585,8 @@ indirect enum PitchAccentModificationKind: Content {
             return "M1@\(m)"
         case .recessive(let m):
             return "M2@\(m)"
+        case .heibanHeadSameElseAccent(let m):
+            return "M4@\(m)"
         }
     }
 

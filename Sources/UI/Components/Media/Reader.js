@@ -37,7 +37,10 @@ class Reader extends React.Component {
     }
 
     componentWillMount() {
-        document.body.classList.add('fit-content');
+        // FIXME: For some reason this breaks in other browsers...
+        if (navigator.appVersion.indexOf('Chrome/') != -1) {
+            document.body.classList.add('fit-content');
+        }
     }
     componentWillUnmount() {
         document.body.classList.remove('fit-content');
