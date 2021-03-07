@@ -41,8 +41,7 @@ class MoveNoteModal extends React.Component {
         const decksResponse = await fetch('/api/flashcard/decks');
         if (decksResponse.ok) {
             const decks = await decksResponse.json();
-            const selectedDeck = decks.filter(d => this.props.note && this.props.note.targetDeck && d.id === this.props.note.targetDeck.id)[0]
-                || decks.filter(d => d.id === this.context.settings.anki.lastUsedDeckID)[0]
+            const selectedDeck = decks.filter(d => d.id === this.context.settings.anki.lastUsedDeckID)[0]
                 || decks[0];
             this.setState({
                 decks,
