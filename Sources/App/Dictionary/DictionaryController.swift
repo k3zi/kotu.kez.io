@@ -24,7 +24,6 @@ class DictionaryController: RouteCollection {
 
         dictionary.get("icon", ":dictionaryID") { (req: Request) -> EventLoopFuture<Response> in
             let id = try req.parameters.require("dictionaryID", as: UUID.self)
-            throw Abort(.notFound)
             return Dictionary
                 .query(on: req.db)
                 .filter(\.$id == id)
