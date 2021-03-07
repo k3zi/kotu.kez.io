@@ -62,6 +62,24 @@ class MediaController: RouteCollection {
         let guardedMedia = media
             .grouped(User.guardMiddleware())
 
+        media.get("external", "audio", ":id") { req -> EventLoopFuture<Response> in
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return ExternalFile
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.notFound))
+                .flatMapThrowing { file in
+                    let rangeString = req.headers.first(name: .range) ?? ""
+                    let response = Response(status: .ok)
+                    response.headers.contentType = HTTPMediaType.audio
+                    let filePath = req.application.directory.resourcesDirectory.appending("Files/\(file.path)")
+
+                    return req.fileio.streamFile(at: filePath)
+                }
+        }
+
         media.get("audio", ":id") { req -> EventLoopFuture<Response> in
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
@@ -87,6 +105,16 @@ class MediaController: RouteCollection {
                     }
                     return response
                 }
+        }
+
+        let anki = guardedMedia.grouped("anki")
+        anki.get("subtitles", "search") { req -> EventLoopFuture<Page<AnkiDeckSubtitle>> in
+            let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            return AnkiDeckSubtitle.query(on: req.db)
+                .filter(\.$text ~~ q)
+                .with(\.$video)
+                .paginate(for: req)
         }
 
         let youtube = guardedMedia.grouped("youtube")
@@ -189,15 +217,14 @@ class MediaController: RouteCollection {
             return response
         }
 
-        youtube.get("subtitles", "search") { req -> EventLoopFuture<[YouTubeSubtitle]> in
+        youtube.get("subtitles", "search") { req -> EventLoopFuture<Page<YouTubeSubtitle>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             return YouTubeSubtitle.query(on: req.db)
                 .filter(\.$text ~~ q)
                 .with(\.$youtubeVideo)
                 .sort(\.$startTime)
-                .limit(25)
-                .all()
+                .paginate(for: req)
         }
 
         youtube.get("subtitles", ":youtubeID") { req -> EventLoopFuture<[MediaSubtitle]> in

@@ -1,3 +1,4 @@
+import _ from 'underscore';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
@@ -209,9 +210,13 @@ class App extends React.Component {
         }
 
         const response2 = await fetch(`/api/media/youtube/subtitles/search?q=${encodeURIComponent(query)}`);
-        if (response2.ok) {
-            const subtitles = await response2.json();
-            this.setState({ subtitles, isLoading: false });
+        const response3 = await fetch(`/api/media/anki/subtitles/search?q=${encodeURIComponent(query)}`);
+        if (response2.ok && response3.ok) {
+            const youTubeSubtitles = (await response2.json()).items;
+            const ankiSubtites = (await response3.json()).items;
+            const subtitles = _.shuffle([...youTubeSubtitles, ...ankiSubtites]);
+
+            this.setState({ subtitles });
         }
     }
 
@@ -225,6 +230,10 @@ class App extends React.Component {
         }
 
         return <h1>Login / Register to access this page.</h1>;
+    }
+
+    playAudio(url) {
+        new Audio(url).play();
     }
 
     render() {
@@ -323,12 +332,18 @@ class App extends React.Component {
                                     })}
 
                                     {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
-                                        return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
-                                            <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                                <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
+                                        if (s.youtubeVideo) {
+                                            return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
+                                                <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                                    <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
+                                                    {s.text}
+                                                </Dropdown.Item>
+                                            </LinkContainer>;
+                                        } else {
+                                            return <Dropdown.Item key={i} onClick={() => this.playAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
                                                 {s.text}
-                                            </Dropdown.Item>
-                                        </LinkContainer>;
+                                            </Dropdown.Item>;
+                                        }
                                     })}
                                 </Dropdown.Menu>
                             </Dropdown>

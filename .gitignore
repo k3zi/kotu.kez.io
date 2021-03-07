@@ -9,4 +9,5 @@ db.sqlite
 config.json
 node_modules
 Public/generated
-Resources/Dictionaries
+Resources/Files
+Resources/Temp
