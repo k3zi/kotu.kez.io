@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/3/6
+- **[anki]:** add option move note to a different deck
+---
 #### 2021/3/2
 - **[ui]:** add option to settings to prefer a stronger color contrast (currently only adjusted in a few places; use the feedback form to help identify other places that can be fixed)
 ---

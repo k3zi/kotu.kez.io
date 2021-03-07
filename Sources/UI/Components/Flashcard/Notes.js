@@ -5,12 +5,14 @@ import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
+import Dropdown from 'react-bootstrap/Dropdown';
 import Pagination from 'react-bootstrap-4-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
 import DeleteNoteModal from './Modals/DeleteNoteModal';
 import EditNoteModal from './Modals/EditNoteModal';
+import MoveNoteModal from './Modals/MoveNoteModal';
 
 class Notes extends React.Component {
 
@@ -19,6 +21,7 @@ class Notes extends React.Component {
         this.state = {
             showDeleteNoteModal: null,
             showEditNoteModal: null,
+            showMoveNoteModal: null,
             notes: [],
             metadata: {
                 page: 1,
@@ -60,7 +63,14 @@ class Notes extends React.Component {
         }
     }
 
-
+    async showMoveNoteModal(note) {
+        this.setState({
+            showMoveNoteModal: note
+        });
+        if (!note) {
+            await this.load();
+        }
+    }
 
     loadPage(page) {
         const metadata = this.state.metadata;
@@ -79,6 +89,7 @@ class Notes extends React.Component {
                             <th className="text-center">Sort Field</th>
                             <th className="text-center">Cards</th>
                             <th className="text-center">Note Type</th>
+                            <th className="text-center">Deck(s)</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -88,10 +99,18 @@ class Notes extends React.Component {
                                 <td className="align-middle">{note.fieldValues[0].value}</td>
                                 <td className="align-middle text-center text-primary">{note.cards.length}</td>
                                 <td className="align-middle text-center text-primary">{note.noteType.name}</td>
+                                <td className="align-middle text-center text-primary">{[...new Set(note.cards.map(c => c.deck.name))].join(', ')}</td>
                                 <td className="align-middle text-center">
                                     <Button variant="primary" onClick={() => this.showEditNoteModal(note)}><i className="bi bi-arrow-right"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteNoteModal(note)}><i className="bi bi-trash"></i></Button>
+                                    <div className='w-100 d-block d-md-none'></div>
+                                    <Dropdown as='span'>
+                                        <Dropdown.Toggle as={Button} className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info"><i className="bi bi-gear"></i></Dropdown.Toggle>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item onClick={() => this.showMoveNoteModal(note)}>Change Deck</Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
                                 </td>
                             </tr>);
                         })}
@@ -102,6 +121,7 @@ class Notes extends React.Component {
 
                 <DeleteNoteModal note={this.state.showDeleteNoteModal} didDelete={() => this.showDeleteNoteModal(null)} didCancel={() => this.showDeleteNoteModal(null)} onHide={() => this.showDeleteNoteModal(null)} />
                 <EditNoteModal note={this.state.showEditNoteModal} onSuccess={() => this.showEditNoteModal(null)} onHide={() => this.showEditNoteModal(null)} />
+                <MoveNoteModal note={this.state.showMoveNoteModal} onSuccess={() => this.showMoveNoteModal(null)} onHide={() => this.showMoveNoteModal(null)} />
             </div>
         );
     }

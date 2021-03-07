@@ -148,7 +148,9 @@ class FlashcardController: RouteCollection {
                 .with(\.$fieldValues) {
                     $0.with(\.$field)
                 }
-                .with(\.$cards)
+                .with(\.$cards) {
+                    $0.with(\.$deck)
+                }
                 .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
                 .join(User.self, on: \NoteType.$owner.$id == \User.$id)
                 .filter(User.self, \.$id == userID)
@@ -232,6 +234,74 @@ class FlashcardController: RouteCollection {
 
         }
 
+        guardedNoteID.post("move", ":deckID") { req -> EventLoopFuture<Note> in
+            let user = try req.auth.require(User.self)
+            guard let id = req.parameters.get("noteID", as: UUID.self) else { throw Abort(.badRequest, reason: "Note ID not provided") }
+            guard let deckID = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "Deck ID not provided") }
+
+            let deckCall = user.$decks
+                .query(on: req.db)
+                .filter(\.$id == deckID)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Unable to find deck"))
+
+            return Note
+                .query(on: req.db)
+                .with(\.$cards) {
+                    $0.with(\.$deck)
+                }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(or: Abort(.notFound))
+                .and(deckCall)
+                .throwingFlatMap { note, targetDeck -> EventLoopFuture<Note> in
+                    note.$targetDeck.id = targetDeck.id
+                    let cardsGroupedByDeck: [[Card]] = Array(Swift.Dictionary(grouping: note.cards, by: { card in
+                        card.id
+                    }).values)
+                    let previousItems = note.cards.compactMap { c in
+                        c.deck.sm.queue.first { $0.card == c.id }
+                    }
+
+                    // First remove them from their other decks.
+                    let futures = cardsGroupedByDeck.compactMap { cards -> EventLoopFuture<Void>? in
+                        let oldDeck = cards[0].deck
+                        if oldDeck.id == targetDeck.id {
+                            return nil
+                        }
+
+                        let sm = oldDeck.sm
+                        let deletableCardIDs = cards.map { $0.id }
+                        sm.queue.removeAll(where: { deletableCardIDs.contains($0.card) })
+                        oldDeck.sm = sm
+                        return oldDeck.save(on: req.db)
+                    }
+                    return EventLoopFuture.whenAllSucceed(futures, on: req.eventLoop).throwingFlatMap { _ in
+                        let addCards = note.cards.filter { $0.deck.id != targetDeck.id }
+                        for card in addCards {
+                            card.$deck.id = try targetDeck.requireID()
+                        }
+                        return EventLoopFuture.whenAllSucceed(addCards.map { $0.save(on: req.db) }, on: req.eventLoop)
+                            .throwingFlatMap { _ in
+                                let sm = targetDeck.sm
+                                for card in addCards {
+                                    if let previousItem = previousItems.first(where: { $0.card == card.id }) {
+                                        sm.queue.append(previousItem)
+                                    } else {
+                                        sm.addItem(card: try card.requireID())
+                                    }
+                                }
+                                targetDeck.sm = sm
+                                return targetDeck.save(on: req.db)
+                            }
+                    }
+                    .map {
+                        note
+                    }
+                }
+
+        }
+
         guardedNoteID.put() { req -> EventLoopFuture<Note> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
@@ -302,6 +372,7 @@ class FlashcardController: RouteCollection {
                             // Delete removed cloze deletion cards
                             return deletableCards.delete(on: req.db).flatMap {
                                 // Add newly created cards
+                                // TODO: This only deletes things on one deck. In reality things may be contained on separate decks.
                                 return note.$cards.create(cards, on: req.db)
                                     .throwingFlatMap {
                                         let sm = deck.sm
