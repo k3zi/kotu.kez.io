@@ -118,11 +118,11 @@ class Decks extends React.Component {
                     <tbody>
                         {this.state.decks.map((deck, i) => {
                             return (<tr key={i}>
-                                <td className="align-middle">{deck.name}</td>
-                                <td className="align-middle text-center text-success">{deck.newCardsCount}</td>
-                                <td className="align-middle text-center text-primary">{deck.reviewCardsCount}</td>
-                                <td className="align-middle text-center text-primary">{deck.nextCardDueData}</td>
-                                <td className="align-middle text-center">
+                                <td className="align-middle expand">{deck.name}</td>
+                                <td className="align-middle text-center text-success shrink">{deck.newCardsCount}</td>
+                                <td className="align-middle text-center text-primary shrink">{deck.reviewCardsCount}</td>
+                                <td className="align-middle text-center text-primary shrink">{deck.nextCardDueData}</td>
+                                <td className="align-middle text-center expand">
                                     <LinkContainer to={`/flashcard/deck/${deck.id}`}>
                                         <Button variant="primary"><i className='bi bi-play-fill'></i></Button>
                                     </LinkContainer>

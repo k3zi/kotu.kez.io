@@ -7,7 +7,7 @@ class DictionaryController: RouteCollection {
         let dictionary = routes.grouped("dictionary")
             .grouped(User.guardMiddleware())
 
-        dictionary.get("search") { (req: Request) -> EventLoopFuture<[Headword]> in
+        dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             let modifiedQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
@@ -18,8 +18,7 @@ class DictionaryController: RouteCollection {
                 .filter(\.$text =~ modifiedQuery)
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
-                .limit(25)
-                .all()
+                .paginate(for: req)
         }
 
         dictionary.get("icon", ":dictionaryID") { (req: Request) -> EventLoopFuture<Response> in

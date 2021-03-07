@@ -42,6 +42,11 @@ class ContextMenu extends React.Component {
         this.props.onHide();
     }
 
+    addManualFurigana() {
+        this.insertTextAtCursor(`[mfurigana: ${this.props.selection}]`);
+        this.props.onHide();
+    }
+
     async copy() {
         await clipboard.writeText(this.props.selection);
         this.props.onHide();
@@ -83,6 +88,7 @@ class ContextMenu extends React.Component {
                     <Dropdown.Item onClick={() => this.addClozeDeletion()} disabled={!this.props.selection}>+ Cloze Deletion</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addAutoPitch()} disabled={!this.props.selection}>+ Auto Pitch</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addManualPitch()} disabled={!this.props.selection}>+ Manual Pitch</Dropdown.Item>
+                    <Dropdown.Item onClick={() => this.addManualFurigana()} disabled={!this.props.selection}>+ Manual Furigana</Dropdown.Item>
                     <Dropdown.Divider />
                     {/*<Dropdown.Item onClick={() => this.convertToKana()} disabled={!this.props.selection}>→ Kana</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.convertToPitch()} disabled={!this.props.selection}>→ Pitch</Dropdown.Item>

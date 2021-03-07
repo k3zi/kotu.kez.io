@@ -86,7 +86,7 @@ class Notes extends React.Component {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th className="text-center">Sort Field</th>
+                            <th className="text-center col-6">Sort Field</th>
                             <th className="text-center">Cards</th>
                             <th className="text-center">Note Type</th>
                             <th className="text-center">Actions</th>

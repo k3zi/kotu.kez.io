@@ -27,6 +27,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import Changelog from './Changelog';
 import Help from './Help';
 import Home from './Home';
+import Search from './Search';
 
 import FeedbackModal from './FeedbackModal';
 import LoginModal from './LoginModal';
@@ -205,7 +206,7 @@ class App extends React.Component {
         if (query.length === 0) return;
         const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
-            const results = await response.json();
+            const results = (await response.json()).items;
             this.setState({ results });
         }
 
@@ -214,7 +215,7 @@ class App extends React.Component {
         if (response2.ok && response3.ok) {
             const youTubeSubtitles = (await response2.json()).items;
             const ankiSubtites = (await response3.json()).items;
-            const subtitles = _.shuffle([...youTubeSubtitles, ...ankiSubtites]);
+            const subtitles = _.sortBy([...youTubeSubtitles, ...ankiSubtites], 'id');
 
             this.setState({ subtitles });
         }
@@ -316,7 +317,15 @@ class App extends React.Component {
                         {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-4 d-inline order-3 order-xl-1">
                             <Dropdown>
                                 <InputGroup className="mr-sm-2">
-                                    <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} onFocus={() => this.setState({ isFocused: true })} />
+                                    <div className='position-relative flex-fill'>
+                                        <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
+                                        {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-4px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
+                                    </div>
+                                    <LinkContainer to={`/search/${encodeURIComponent(this.state.query)}`}>
+                                        <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
+                                            <i class="bi bi-search"></i>
+                                        </Button>
+                                    </LinkContainer>
                                     <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
                                         {['Words', 'Examples'].map((option, i) => {
                                             return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
@@ -379,6 +388,9 @@ class App extends React.Component {
                             </Route>
                             <Route path="/changelog">
                                 <Changelog />
+                            </Route>
+                            <Route path="/search/:query">
+                                <Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />
                             </Route>
 
                             <Route exact path="/transcription">
