@@ -194,13 +194,21 @@ public func configure(_ app: Application) throws {
         let mediaURL = folderDirectory.appendingPathComponent("media")
 
         try? FileManager.default.createDirectory(at: folderDirectory, withIntermediateDirectories: true)
-        let archive = Archive(url: fileURL, accessMode: .read, preferredEncoding: .utf8)!
-        _ = try archive.extract(archive["collection.anki2"]!, to: databaseURL)
-        _ = try archive.extract(archive["media"]!, to: mediaURL)
+        guard let archive = Archive(url: fileURL, accessMode: .read, preferredEncoding: .utf8), let collectionAnki2 = archive["collection.anki2"], let media = archive["media"] else {
+            return
+        }
+        _ = try archive.extract(collectionAnki2, to: databaseURL)
+        _ = try archive.extract(media, to: mediaURL)
         let mediaMappingData = try Data(contentsOf: mediaURL)
-        let rawMediaMapping = try JSONSerialization.jsonObject(with: mediaMappingData, options: []) as! [String: String]
+        guard let rawMediaMapping = try JSONSerialization.jsonObject(with: mediaMappingData, options: []) as? [String: String] else {
+            return
+        }
         var mediaMapping = [String: Int]()
-        for pair in rawMediaMapping { mediaMapping[pair.value] = Int(pair.key)! }
+        for pair in rawMediaMapping {
+            if let key = Int(pair.key) {
+                mediaMapping[pair.value] = key
+            }
+        }
         mediaMapping = mediaMapping.filter { $0.key.hasSuffix("mp3") || $0.key.hasSuffix("m4a") }
         let mediaIDs = mediaMapping.values.sorted()
         for id in mediaIDs {
@@ -227,7 +235,10 @@ public func configure(_ app: Application) throws {
         try video.create(on: app.db).wait()
 
         let futures = try subtitles.map { soundFile, text -> EventLoopFuture<Void> in
-            let filePath = folderDirectory.appendingPathComponent(String(mediaMapping[soundFile]!))
+            guard let mediaID = mediaMapping[soundFile] else {
+                return app.db.eventLoop.future()
+            }
+            let filePath = folderDirectory.appendingPathComponent(String(mediaID))
             let fileSize: UInt64
             let attr = try FileManager.default.attributesOfItem(atPath: filePath.path)
             let ext = soundFile.components(separatedBy: ".").last!
