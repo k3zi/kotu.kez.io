@@ -89,7 +89,6 @@ class Notes extends React.Component {
                             <th className="text-center">Sort Field</th>
                             <th className="text-center">Cards</th>
                             <th className="text-center">Note Type</th>
-                            <th className="text-center">Deck(s)</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -99,7 +98,6 @@ class Notes extends React.Component {
                                 <td className="align-middle">{note.fieldValues[0].value}</td>
                                 <td className="align-middle text-center text-primary">{note.cards.length}</td>
                                 <td className="align-middle text-center text-primary">{note.noteType.name}</td>
-                                <td className="align-middle text-center text-primary">{[...new Set(note.cards.map(c => c.deck.name))].join(', ')}</td>
                                 <td className="align-middle text-center">
                                     <Button variant="primary" onClick={() => this.showEditNoteModal(note)}><i className="bi bi-arrow-right"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>

@@ -148,9 +148,7 @@ class FlashcardController: RouteCollection {
                 .with(\.$fieldValues) {
                     $0.with(\.$field)
                 }
-                .with(\.$cards) {
-                    $0.with(\.$deck)
-                }
+                .with(\.$cards)
                 .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
                 .join(User.self, on: \NoteType.$owner.$id == \User.$id)
                 .filter(User.self, \.$id == userID)
