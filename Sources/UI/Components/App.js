@@ -321,7 +321,7 @@ class App extends React.Component {
                                         <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
                                         {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-4px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
                                     </div>
-                                    <LinkContainer to={`/search/${encodeURIComponent(this.state.query)}`}>
+                                    <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
                                         <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
                                             <i class="bi bi-search"></i>
                                         </Button>
@@ -389,7 +389,7 @@ class App extends React.Component {
                             <Route path="/changelog">
                                 <Changelog />
                             </Route>
-                            <Route path="/search/:query">
+                            <Route path="/search/:query?/:optionValue?/:page?/:per?">
                                 <Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />
                             </Route>
 

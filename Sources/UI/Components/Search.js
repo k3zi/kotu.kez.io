@@ -50,32 +50,38 @@ class Search extends React.Component {
     }
 
     componentDidMount() {
-        if (this.props.match.params.query && this.props.match.params.query.length > 0) {
-            this.search(this.props.match.params.query, 1);
-        }
+        this.load();
     }
 
     componentDidUpdate(prevProps) {
-        if (this.props.match.params.query != prevProps.match.params.query && this.props.match.params.query && this.props.match.params.query.length > 0) {
-            this.search(this.props.match.params.query, 1);
+        if (
+            this.props.match.params.query != prevProps.match.params.query
+            || this.props.match.params.optionValue != prevProps.match.params.optionValue
+            || this.props.match.params.page != prevProps.match.params.page
+            || this.props.match.params.per != prevProps.match.params.per) {
+            this.load();
         }
     }
 
-    loadPage(page) {
-        this.search(this.state.query, page);
-    }
+    async load() {
+        const query = this.props.match.params.query;
+        const optionValue = this.props.match.params.optionValue;
+        const option = this.state.options.filter(o => o.value === optionValue)[0] || this.state.options[0];
+        const page = this.props.match.params.page || 1;
+        const per = this.props.match.params.per || this.state.metadata.per;
 
-    loadOption(option) {
-        this.search(this.state.query, 1, option);
-    }
+        this.state.metadata.page = page;
+        this.state.metadata.per = per;
 
-    async search(query, page, newOption) {
-        const option = newOption || this.state.option || this.state.options[0];
-        const metadata = this.state.metadata;
-        metadata.page = page;
-        this.setState({ query, results: [], isLoading: true, option });
-        if (query.length === 0) return;
-        const response = await fetch(`${option.endpoint}?page=${page}&per=${this.state.metadata.per}&q=${encodeURIComponent(query)}`);
+        this.setState({
+            option,
+            results: [],
+            isLoading: true
+        });
+        if (!query || query.length === 0) {
+            return;
+        }
+        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${encodeURIComponent(query)}`);
         if (response.ok) {
             const result = await response.json();
 
@@ -87,11 +93,30 @@ class Search extends React.Component {
         }
     }
 
+    loadPage(page) {
+        this.search(this.props.match.params.query, page);
+    }
+
+    loadOption(option) {
+        this.search(this.props.match.params.query, 1, option);
+    }
+
+    async search(query, page, newOption) {
+        const option = newOption || this.state.option || this.state.options[0];
+        const metadata = this.state.metadata;
+        metadata.page = page;
+        if (query.length === 0) {
+            this.props.history.push(`/search`);
+        } else {
+            this.props.history.push(`/search/${query}/${option.value}/${page}/${this.state.metadata.per}`);
+        }
+    }
+
     render() {
         return (
             <div>
                 <h2>Search</h2>
-                <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.search(e.target.value, 1)} placeholder="Search" value={this.state.query} />
+                <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.search(e.target.value, 1)} placeholder="Search" value={this.props.match.params.query} />
                 <ButtonGroup className='my-3 d-flex' toggle>
                     {this.state.options.map((option, i) => (
                         <ToggleButton
@@ -107,7 +132,7 @@ class Search extends React.Component {
                         </ToggleButton>
                     ))}
                 </ButtonGroup>
-                <hr/>
+                <hr />
                 {this.state.option && this.state.option.value === 'words' && <ListGroup>
                     {this.state.results.map((r, i) => {
                       return <ListGroup.Item action active={false} className='d-flex align-items-center text-break text-wrap' onClick={() => this.props.onSelectWord(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
@@ -130,8 +155,10 @@ class Search extends React.Component {
 
                 {this.state.option && this.state.option.value === 'other' && <ListGroup>
                     {this.state.results.map((s, i) => {
-                        return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                        return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
                             {s.text}
+                            <br />
+                            <small>{s.video.title}</small>
                         </ListGroup.Item>;
                     })}
                 </ListGroup>}
