@@ -64,6 +64,8 @@ class Search extends React.Component {
     }
 
     async load() {
+        console.log(this.props.match);
+        console.log(this.props.match.params);
         const query = this.props.match.params.query;
         const optionValue = this.props.match.params.optionValue;
         const option = this.state.options.filter(o => o.value === optionValue)[0] || this.state.options[0];
@@ -81,7 +83,7 @@ class Search extends React.Component {
         if (!query || query.length === 0) {
             return;
         }
-        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${encodeURIComponent(query)}`);
+        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}`);
         if (response.ok) {
             const result = await response.json();
 
@@ -108,7 +110,7 @@ class Search extends React.Component {
         if (query.length === 0) {
             this.props.history.push(`/search`);
         } else {
-            this.props.history.push(`/search/${query}/${option.value}/${page}/${this.state.metadata.per}`);
+            this.props.history.push(`/search/${encodeURIComponent(query)}/${option.value}/${page}/${this.state.metadata.per}`);
         }
     }
 
@@ -116,7 +118,7 @@ class Search extends React.Component {
         return (
             <div>
                 <h2>Search</h2>
-                <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.search(e.target.value, 1)} placeholder="Search" value={this.props.match.params.query} />
+                <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.search(decodeURIComponent(e.target.value || ''), 1)} placeholder="Search" value={(this.props.match.params.query && this.props.match.params.query.length > 0) ? decodeURIComponent(this.props.match.params.query) : ''} />
                 <ButtonGroup className='my-3 d-flex' toggle>
                     {this.state.options.map((option, i) => (
                         <ToggleButton
@@ -137,7 +139,7 @@ class Search extends React.Component {
                     {this.state.results.map((r, i) => {
                       return <ListGroup.Item action active={false} className='d-flex align-items-center text-break text-wrap' onClick={() => this.props.onSelectWord(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
                           <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
-                          {r.headline}
+                          <span dangerouslySetInnerHTML={{ __html: r.headline.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
                       </ListGroup.Item>;
                   })}
                 </ListGroup>}
@@ -147,7 +149,7 @@ class Search extends React.Component {
                         return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
                             <ListGroup.Item action className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
                                 <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
-                                {s.text}
+                                <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
                             </ListGroup.Item>
                         </LinkContainer>;
                     })}
@@ -156,7 +158,7 @@ class Search extends React.Component {
                 {this.state.option && this.state.option.value === 'other' && <ListGroup>
                     {this.state.results.map((s, i) => {
                         return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                            {s.text}
+                            <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
                             <br />
                             <small>{s.video.title}</small>
                         </ListGroup.Item>;

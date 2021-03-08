@@ -7,7 +7,7 @@ class DictionaryController: RouteCollection {
         let dictionary = routes.grouped("dictionary")
             .grouped(User.guardMiddleware())
 
-        dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+        dictionary.get("exact") { (req: Request) -> EventLoopFuture<Page<Headword>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             let modifiedQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
@@ -15,7 +15,28 @@ class DictionaryController: RouteCollection {
                 .query(on: req.db)
                 .with(\.$dictionary)
                 .join(parent: \.$dictionary)
-                .filter(\.$text =~ modifiedQuery)
+                .group(.or) {
+                    $0.filter(all: modifiedQuery.components(separatedBy: "|").filter { !$0.isEmpty }) { text in
+                        \.$text == text
+                    }
+                }
+                .sort(\.$text)
+                .sort(Dictionary.self, \.$name)
+                .paginate(for: req)
+        }
+
+        dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+            let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            var modifiedQuery = (q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q).replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+            if !modifiedQuery.contains("%") && !modifiedQuery.contains("_") {
+                modifiedQuery = "\(modifiedQuery)%"
+            }
+            return Headword
+                .query(on: req.db)
+                .with(\.$dictionary)
+                .join(parent: \.$dictionary)
+                .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)

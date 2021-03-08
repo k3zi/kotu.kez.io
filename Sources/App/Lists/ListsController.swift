@@ -20,6 +20,20 @@ extension String {
 
 }
 
+extension QueryBuilder {
+
+    @discardableResult
+    public func filter<A>(all: [A], _ filter: (A) -> FluentKit.ModelValueFilter<Model>) -> Self {
+        if all.isEmpty {
+            return self
+        }
+
+        var modAll = all
+        let next = modAll.removeFirst()
+        return self.filter(filter(next)).filter(all: modAll, filter)
+    }
+    
+}
 
 extension Node {
 
@@ -428,6 +442,7 @@ class ListsController: RouteCollection {
         sentence.post("parse") { (req: Request) -> EventLoopFuture<[Sentence]> in
             let user = try req.auth.require(User.self)
             guard let sentenceString = req.body.string, sentenceString.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
+            let includeHeadwords = (try? req.query.get(Bool.self, at: "includeHeadwords")) ?? false
             let mecab = try Mecab()
             let nodes = try mecab.tokenize(string: sentenceString)
             let listWordsFuture = user.$listWords
@@ -446,13 +461,14 @@ class ListsController: RouteCollection {
 
                     let offsetFutures: [EventLoopFuture<(Offset, [Headword])>] = offsets.map { offset in
                         let component = offset.accentPhraseComponent
-                        if component.isBasic {
+                        if component.isBasic || !includeHeadwords {
                             return req.eventLoop.future((offset, []))
                         }
                         return Headword.query(on: req.db)
                             .group(.or) {
-                                $0.filter(\.$text == component.original.katakana)
-                                  .filter(\.$text == component.surface.katakana)
+                                $0.filter(all: [component.original.katakana, component.surface.katakana]) { text in
+                                    \.$text == text
+                                }
                             }
                             .sort(\.$text)
                             .limit(3)

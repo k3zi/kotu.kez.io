@@ -71,9 +71,6 @@ class MediaController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { file in
-                    let rangeString = req.headers.first(name: .range) ?? ""
-                    let response = Response(status: .ok)
-                    response.headers.contentType = HTTPMediaType.audio
                     let filePath = req.application.directory.resourcesDirectory.appending("Files/\(file.path)")
 
                     return req.fileio.streamFile(at: filePath)
@@ -111,8 +108,10 @@ class MediaController: RouteCollection {
         anki.get("subtitles", "search") { req -> EventLoopFuture<Page<AnkiDeckSubtitle>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+            modifiedQuery = "%\(modifiedQuery)%"
             return AnkiDeckSubtitle.query(on: req.db)
-                .filter(\.$text ~~ q)
+                .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$video)
                 .paginate(for: req)
         }
@@ -220,8 +219,10 @@ class MediaController: RouteCollection {
         youtube.get("subtitles", "search") { req -> EventLoopFuture<Page<YouTubeSubtitle>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+            modifiedQuery = "%\(modifiedQuery)%"
             return YouTubeSubtitle.query(on: req.db)
-                .filter(\.$text ~~ q)
+                .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$youtubeVideo)
                 .sort(\.$startTime)
                 .paginate(for: req)

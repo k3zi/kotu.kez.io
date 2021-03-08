@@ -184,7 +184,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
                 newText += `<phrase><visual>${phrase.pronunciation}</visual><component>${phrase.surface}</component></phrase>`;
             } else {
                 newText += `<phrase><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map(c => {
-                        return `<component data-headwords='${JSON.stringify(c.headwords)}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
+                        return `<component data-original='${c.original}' data-surface='${c.surface}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
                 }).join('')}</phrase>`;
             }
 

@@ -137,8 +137,9 @@ class App extends React.Component {
         });
 
         Helpers.addLiveEventListeners('component', 'click', (e, target) => {
-            const headwords = JSON.parse(target.dataset.headwords);
-            this.setState({ headwords });
+            const original = target.dataset.original;
+            const surface = target.dataset.surface;
+            this.searchExact(`${original}|${surface}`);
         });
 
         Helpers.addLiveEventListeners('.spoiler', 'click', (e, target) => {
@@ -218,6 +219,15 @@ class App extends React.Component {
             const subtitles = _.sortBy([...youTubeSubtitles, ...ankiSubtites], 'id');
 
             this.setState({ subtitles });
+        }
+    }
+
+    async searchExact(query) {
+        if (query.length === 0) return;
+        const response = await fetch(`/api/dictionary/exact?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+            const headwords = (await response.json()).items;
+            this.setState({ headwords });
         }
     }
 
