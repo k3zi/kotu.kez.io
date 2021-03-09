@@ -230,6 +230,7 @@ class MediaController: RouteCollection {
 
         youtube.get("subtitles", ":youtubeID") { req -> EventLoopFuture<[MediaSubtitle]> in
             let youtubeID = try req.parameters.require("youtubeID")
+            let onlyManual = (try? req.query.get(Bool.self, at: "onlyManual")) ?? false
             return YouTubeVideo.query(on: req.db)
                 .filter(\.$youtubeID == youtubeID)
                 .with(\.$subtitles)
@@ -279,6 +280,9 @@ class MediaController: RouteCollection {
                     let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
                     let infoURL = directory.appendingPathComponent(uuid).appendingPathExtension("info.json")
                     if !FileManager.default.fileExists(atPath: fileURL.path) {
+                        if onlyManual {
+                            return req.eventLoop.future([])
+                        }
                         try downloadSubtitles(uuid: uuid, directory: directory, auto: true)
                         isAuto = true
                     }
