@@ -26,9 +26,12 @@ final class Headword: Model, Content {
     @Parent(key: "dictionary_id")
     var dictionary: Dictionary
 
+    @OptionalParent(key: "entry_id")
+    var entry: Entry?
+
     init() { }
 
-    init(id: UUID? = nil, dictionary: Dictionary, text: String, headline: String, shortHeadline: String, entryIndex: Int, subentryIndex: Int) {
+    init(id: UUID? = nil, dictionary: Dictionary, text: String, headline: String, shortHeadline: String, entryIndex: Int, subentryIndex: Int, entry: Entry? = nil) {
         self.id = id
         self.$dictionary.id = try! dictionary.requireID()
         self.text = text
@@ -36,6 +39,9 @@ final class Headword: Model, Content {
         self.shortHeadline = shortHeadline
         self.entryIndex = entryIndex
         self.subentryIndex = subentryIndex
+        if let entry = entry {
+            self.$entry.id = try! entry.requireID()
+        }
     }
 
 }
@@ -73,6 +79,22 @@ extension Headword {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema)
                 .deleteField("dictionary_id")
+                .update()
+        }
+    }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "DictionaryHeadwordEntry" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("entry_id", .uuid, .references("dictionary_entries", "id"))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("entry_id")
                 .update()
         }
     }

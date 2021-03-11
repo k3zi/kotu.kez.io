@@ -500,6 +500,85 @@ class MediaController: RouteCollection {
                     }
                 }
         }
+
+        let reader = guardedMedia.grouped("reader")
+        let sessions = reader.grouped("sessions")
+        let session = reader.grouped("session")
+        let sessionID = session.grouped(":id")
+
+        sessions.get() { (req: Request) -> EventLoopFuture<Page<ReaderSession>> in
+            let user = try req.auth.require(User.self)
+            return user.$readerSessions
+                .query(on: req.db)
+                .sort(\.$updatedAt, .descending)
+                .paginate(for: req)
+        }
+
+        session.post() { (req: Request) -> EventLoopFuture<ReaderSession> in
+            let user = try req.auth.require(User.self)
+            try ReaderSession.Create.validate(content: req)
+            let object = try req.content.decode(ReaderSession.Create.self)
+            let session = ReaderSession(owner: user, annotatedContent: object.annotatedContent, textContent: object.textContent, content: object.content, rubyType: object.rubyType, visualType: object.visualType, url: object.url, title: object.title)
+            return session
+                .create(on: req.db)
+                .map {
+                    session
+                }
+        }
+
+        sessionID.get() { (req: Request) -> EventLoopFuture<ReaderSession> in
+            let user = try req.auth.require(User.self)
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return user.$readerSessions
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(or: Abort(.notFound))
+        }
+
+        sessionID.put() { (req: Request) -> EventLoopFuture<ReaderSession> in
+            let user = try req.auth.require(User.self)
+            try ReaderSession.Update.validate(content: req)
+            let object = try req.content.decode(ReaderSession.Update.self)
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return user.$readerSessions
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(or: Abort(.notFound))
+                .flatMap { session in
+                    session.annotatedContent = object.annotatedContent
+                    session.textContent = object.textContent
+                    session.content = object.content
+                    session.rubyType = object.rubyType
+                    session.visualType = object.visualType
+                    session.scrollPhraseIndex = object.scrollPhraseIndex
+                    return session.update(on: req.db)
+                        .map { session }
+                }
+        }
+
+        session.get("url", ":url") { (req: Request) -> EventLoopFuture<ReaderSession> in
+            let user = try req.auth.require(User.self)
+            guard let rawURL = req.parameters.get("url", as: String.self) else { throw Abort(.badRequest, reason: "URL not provided") }
+            guard let url = URL(string: rawURL) else {
+                throw Abort(.badRequest, reason: "URL is malformed")
+            }
+            return user.$readerSessions
+                .query(on: req.db)
+                .filter(\.$url ~~ (url.path.count > 0 ? url.path : (url.host ?? url.absoluteString)))
+                .all()
+                .map { (sessions: [ReaderSession]) in
+                    sessions.first { session in
+                        guard let rawSURL = session.url, let sURL = URL(string: rawSURL) else {
+                            return false
+                        }
+
+                        return url.host == sURL.host && url.path == sURL.path
+                    }
+                }
+                .unwrap(or: Abort(.notFound))
+        }
     }
 
 }

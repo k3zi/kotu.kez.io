@@ -71,9 +71,12 @@ public func configure(_ app: Application) throws {
     app.migrations.add(NoteType.Migration1())
     app.migrations.add(ExternalFile.Migration(), AnkiDeckVideo.Migration(), AnkiDeckSubtitle.Migration())
     app.migrations.add(ExternalFile.Migration1())
+    app.migrations.add(ReaderSession.Migration(), ReaderSession.Migration1(), ReaderSession.Migration2(), ReaderSession.Migration3(), ReaderSession.Migration4())
+    app.migrations.add(DictionaryOwner.Migration(), Dictionary.Migration1(), Entry.Migration(), Headword.Migration2(), DictionaryInsertJob.Migration(), Dictionary.Migration2(), Entry.Migration1())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
+    DictionaryInsertJobManager.shared.run(app: app)
     PitchAccentManager.configure(app: app)
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)

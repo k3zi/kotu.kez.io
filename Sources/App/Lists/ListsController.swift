@@ -11,6 +11,12 @@ extension String {
         filter { !Self.smallRowKanaExcludingSokuon.contains($0.unicodeScalars.first!) }.count
     }
 
+    func isSpecialMora(at index: Int) -> Bool {
+        let filtered = String(filter { !Self.smallRowKanaExcludingSokuon.contains($0.unicodeScalars.first!) })
+        guard filtered.count > index else { return false }
+        return ["っ", "ッ", "ー", "ん", "ン"].contains(String(filtered[filtered.index(filtered.startIndex, offsetBy: index)]))
+    }
+
     func match(_ regex: String) -> [[String]] {
         let nsString = self as NSString
         return (try? NSRegularExpression(pattern: regex, options: []))?.matches(in: self, options: [], range: NSMakeRange(0, count)).map { match in
@@ -54,6 +60,13 @@ extension Node {
     }
 
     var pronunciation: String {
+        // 6, 20, 21, 22, 23: ユウジュウ
+        // 9, 11: ユージュー
+        let nine = (features.count > 9 ? features[9] : "").split(separator: "-").first.flatMap { String($0) } ?? rawPronunciation
+        return nine == "*" ? rawPronunciation : nine
+    }
+
+    var rawPronunciation: String {
         (features.count > 6 ? features[6] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
     }
 
@@ -65,7 +78,7 @@ extension Node {
         //  使う → 使ウ
         // 入り込む → 入リ込ム
         let katakanaSurface = surface.katakana
-        guard katakanaSurface != surfacePronunciation else {
+        guard katakanaSurface != surfacePronunciation && !alwaysHideFurigana else {
             return surface
         }
 

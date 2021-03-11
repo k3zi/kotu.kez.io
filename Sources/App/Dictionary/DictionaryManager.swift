@@ -90,6 +90,7 @@ struct DictionaryManager {
         return Dictionary
             .query(on: app.db)
             .all()
+            .map { $0.filter { !$0.directoryName.isEmpty }}
             .map { dictionaries in
                 var containers = [String: CompressedFileContainer]()
                 var cssStrings = [String: String]()

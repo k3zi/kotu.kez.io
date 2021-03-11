@@ -88,6 +88,26 @@ struct PronunciationResolver: ExceptionResolver {
                 tokenizer.nodes[0].features[23] = "イウ"
             }
         }
+
+        // 私 → わたし
+        if tokenizer.next.id == "41274" {
+            tokenizer.nodes[0].features[6] = "ワタシ"
+            tokenizer.nodes[0].features[9] = "ワタシ"
+            tokenizer.nodes[0].features[11] = "ワタシ"
+            tokenizer.nodes[0].features[21] = "ワタシ"
+            tokenizer.nodes[0].features[22] = "ワタシ"
+            tokenizer.nodes[0].features[23] = "ワタシ"
+        }
+
+        // は → ワ
+        if tokenizer.next.id == "29321" {
+            tokenizer.nodes[0].features[6] = "ワ"
+            tokenizer.nodes[0].features[20] = "ワ"
+            tokenizer.nodes[0].features[21] = "ワ"
+            tokenizer.nodes[0].features[22] = "ワ"
+            tokenizer.nodes[0].features[23] = "ワ"
+            tokenizer.nodes[0].alwaysHideFurigana = true
+        }
     }
 
 }
@@ -222,7 +242,12 @@ struct AccentPhrase: Content {
             let word = AccentPhraseComponent.parse(from: startComplex)
             var components: [AccentPhraseComponent] = endBasic.map { AccentPhraseComponent.parse(from: [$0]) }
             components.insert(word, at: 0)
-            return AccentPhrase(components: components, pitchAccent: PitchAccent.pitchAccent(for: morphemes), surface: components.map { $0.surface }.joined(), pronunciation: components.map { $0.pronunciation }.joined(), isBasic: false)
+            var pitchAccent = PitchAccent.pitchAccent(for: morphemes)
+            let pronunciation = components.map { $0.pronunciation }.joined()
+            if pitchAccent.mora > 1 && pronunciation.isSpecialMora(at: pitchAccent.mora - 1) {
+                pitchAccent = PitchAccent(mora: pitchAccent.mora - 1, length: pronunciation.moraCount)
+            }
+            return AccentPhrase(components: components, pitchAccent: pitchAccent, surface: components.map { $0.surface }.joined(), pronunciation: pronunciation, isBasic: false)
         }
 
         let word = AccentPhraseComponent.parse(from: morphemes)
@@ -243,18 +268,24 @@ struct AccentPhraseComponent: Content {
         let surface = morphemes.map { $0.surface }.joined()
         let original = morphemes.map { $0.original }.joined()
         let pronunciation = morphemes.map { $0.pronunciation }.joined()
+        let surfacePronunciation = morphemes.map { $0.surfacePronunciation }.joined()
         let ruby = morphemes.map { $0.ruby }.joined()
 
         let frequencyItem = [
             DictionaryManager.shared.frequencyList[surface],
-            DictionaryManager.shared.frequencyList[pronunciation],
-            DictionaryManager.shared.frequencyList[pronunciation.hiragana],
+            DictionaryManager.shared.frequencyList[surfacePronunciation],
+            DictionaryManager.shared.frequencyList[surfacePronunciation.hiragana],
             DictionaryManager.shared.frequencyList[original]
         ].compactMap { $0 }.min()
 
+        var pitchAccent = PitchAccent.pitchAccent(for: morphemes)
+        if pitchAccent.mora > 1 && pronunciation.isSpecialMora(at: pitchAccent.mora - 1) {
+            pitchAccent = PitchAccent(mora: pitchAccent.mora - 1, length: pronunciation.moraCount)
+        }
+
         return AccentPhraseComponent(
             morphemes: morphemes,
-            pitchAccents: [PitchAccent.pitchAccent(for: morphemes)],
+            pitchAccents: [pitchAccent],
             surface: surface,
             original: original,
             pronunciation: pronunciation,
@@ -301,7 +332,7 @@ struct Morpheme: Content {
 
         let lastMorpheme = morphemes.last!
 
-        if lastMorpheme.pronunciation.isEmpty {
+        if lastMorpheme.surfacePronunciation.isEmpty {
             return morphemes
         }
 
@@ -351,7 +382,8 @@ struct Morpheme: Content {
             original: node.original,
             partOfSpeech: node.partOfSpeech,
             partOfSpeechSubType: node.partOfSpeechSubType,
-            pronunciation: node.surfacePronunciation == "*" ? node.surface : node.surfacePronunciation,
+            pronunciation: node.pronunciation == "*" ? node.surface : node.pronunciation,
+            surfacePronunciation: node.surfacePronunciation == "*" ? node.surface : node.surfacePronunciation,
             ruby: node.ruby,
             isBasic: node.isBasic,
             features: node.features
@@ -367,6 +399,7 @@ struct Morpheme: Content {
     let partOfSpeech: String
     let partOfSpeechSubType: String
     let pronunciation: String
+    let surfacePronunciation: String
     let ruby: String
     let isBasic: Bool
     let features: [String]

@@ -442,7 +442,7 @@ class App extends React.Component {
                             <Route path="/media/plex">
                                 {this.loginProtect(<MediaPlexPlayer />)}
                             </Route>
-                            <Route path="/media/reader">
+                            <Route path="/media/reader/:id?">
                                 {this.loginProtect(<MediaReader />)}
                             </Route>
 

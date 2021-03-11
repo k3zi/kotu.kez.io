@@ -67,10 +67,17 @@ final class User: Model, Content {
     @Children(for: \.$owner)
     var files: [File]
 
+    @Children(for: \.$owner)
+    var readerSessions: [ReaderSession]
+
     // MARK: Lists
 
     @Children(for: \.$owner)
     var listWords: [ListWord]
+
+    // MARK: Dictionaries
+    @Siblings(through: DictionaryOwner.self, from: \.$owner, to: \.$dictionary)
+    public var dictionaries: [Dictionary]
 
     init() { }
 

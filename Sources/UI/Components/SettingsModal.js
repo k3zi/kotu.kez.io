@@ -14,7 +14,12 @@ class SettingsModal extends React.Component {
         super(props);
         this.state = {
             token: '',
-            showToken: false
+            showToken: false,
+            dictionary: {
+                isSubmitting: false,
+                message: null,
+                didError: false
+            }
         };
     }
 
@@ -55,6 +60,25 @@ class SettingsModal extends React.Component {
         }
     }
 
+    async uploadDictionary(e) {
+        e.preventDefault();
+        this.setState({ dictionary: { isSubmitting: true, didError: false, message: null }});
+
+        const response = await fetch(`/api/dictionary/upload`, {
+            method: 'POST',
+            body: new FormData(e.target)
+        });
+        const result = await response.json();
+
+        this.setState({
+            dictionary: {
+                isSubmitting: false,
+                didError: result.error,
+                message: result.error ? result.reason : (result.insertJob ? 'Processing dictionary. This may take some time but you don\'t have to stay on this page.' : 'Dictionary added.')
+            }
+        });
+    }
+
     render() {
         return (
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
@@ -69,6 +93,25 @@ class SettingsModal extends React.Component {
                     <Form.Group className='mb-3' controlId="settingsShowFieldPreview">
                         <Form.Check defaultChecked={this.props.user.settings.anki.showFieldPreview} onChange={(e) => this.save(e, (s) => s.anki.showFieldPreview = e.target.checked)} type="checkbox" label="Show Field Preview" />
                     </Form.Group>
+
+                    <h5>Dictionaries</h5>
+                    <Form onSubmit={(e) => this.uploadDictionary(e)}>
+                        <Form.Control type="file" name="dictionaryFile" label="Dictionary file (.mkd)" custom />
+                        <Form.Text className="text-muted mb-2">
+                            Currently コツ only accepts .mkd files. Learn more about this format on the Help page.
+                        </Form.Text>
+
+                        {this.state.dictionary.didError && <Alert variant="danger" className='mb-3'>
+                            {this.state.dictionary.message}
+                        </Alert>}
+                        {!this.state.dictionary.didError && this.state.dictionary.message && <Alert variant="info" className='mb-3'>
+                            {this.state.dictionary.message}
+                        </Alert>}
+
+                        <Button className='col-12 mb-3' variant="primary" type='submit' disabled={this.state.dictionary.isSubmitting}>
+                            {this.state.dictionary.isSubmitting ? 'Processing...' : 'Upload'}
+                        </Button>
+                    </Form>
 
                     <h5>Reader</h5>
                     <Form.Group className='mb-3' controlId="settingsShowCardForm">

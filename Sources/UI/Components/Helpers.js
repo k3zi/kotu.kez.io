@@ -181,10 +181,10 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
         let index = text.indexOf(phrase.surface.charAt(0), startIndex);
         while (index != -1) {
             if (phrase.isBasic) {
-                newText += `<phrase><visual>${phrase.pronunciation}</visual><component>${phrase.surface}</component></phrase>`;
+                newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
             } else {
-                newText += `<phrase><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map(c => {
-                        return `<component data-original='${c.original}' data-surface='${c.surface}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
+                newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
+                        return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
                 }).join('')}</phrase>`;
             }
 

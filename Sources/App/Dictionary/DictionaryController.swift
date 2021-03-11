@@ -7,6 +7,39 @@ class DictionaryController: RouteCollection {
         let dictionary = routes.grouped("dictionary")
             .grouped(User.guardMiddleware())
 
+        dictionary.post("upload") { (req: Request) -> EventLoopFuture<Dictionary> in
+            struct Upload: Content {
+                let dictionaryFile: Vapor.File
+            }
+            let user = try req.auth.require(User.self)
+            let file = try req.content.decode(Upload.self).dictionaryFile
+            let data = Data(buffer: file.data)
+            let hashed = SHA256.hash(data: data)
+            let sha = hashed.compactMap { String(format: "%02x", $0) }.joined()
+            return Dictionary.query(on: req.db)
+                .filter(\.$sha == sha)
+                .first()
+                .throwingFlatMap { (existingDictionary: Dictionary?) in
+                    if let dictionary = existingDictionary {
+                        return user.$dictionaries.attach(dictionary, on: req.db).map { dictionary }
+                    } else {
+                        let dictionary = Dictionary(name: file.filename, sha: sha)
+                        let uuid = UUID().uuidString
+                        let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp").appendingPathComponent(uuid)
+                        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                        try data.write(to: directory.appendingPathComponent(file.filename))
+                        return dictionary.create(on: req.db)
+                            .flatMap { user.$dictionaries.attach(dictionary, on: req.db)
+                            }
+                            .flatMap {
+                                DictionaryInsertJob(dictionary: dictionary, tempDirectory: uuid, filename: file.filename, type: "unknown", currentEntryIndex: 0, currentHeadwordIndex: 0)
+                                    .create(on: req.db)
+                            }
+                            .throwingFlatMap { Dictionary.query(on: req.db).with(\.$insertJob).filter(\.$id == (try dictionary.requireID())).first().unwrap(or: Abort(.internalServerError)) }
+                    }
+                }
+        }
+
         dictionary.get("exact") { (req: Request) -> EventLoopFuture<Page<Headword>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
@@ -26,6 +59,8 @@ class DictionaryController: RouteCollection {
         }
 
         dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             var modifiedQuery = (q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q).replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
@@ -36,7 +71,9 @@ class DictionaryController: RouteCollection {
                 .query(on: req.db)
                 .with(\.$dictionary)
                 .join(parent: \.$dictionary)
+                .join(from: Dictionary.self, siblings: \.$owners)
                 .filter(\.$text, .custom("LIKE"), modifiedQuery)
+                .filter(User.self, \.$id == userID)
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
@@ -50,7 +87,9 @@ class DictionaryController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { dictionary in
-                    let data = DictionaryManager.shared.icons[dictionary.directoryName]!
+                    guard let data = DictionaryManager.shared.icons[dictionary.directoryName] else {
+                        throw Abort(.notFound)
+                    }
                     let response = Response(status: .ok)
                     response.headers.contentType = HTTPMediaType.png
                     let filename = "\(id.uuidString).png"
@@ -65,19 +104,28 @@ class DictionaryController: RouteCollection {
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
+                .with(\.$entry)
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { headword in
                     let dictionary = headword.dictionary.directoryName
-                    let container = DictionaryManager.shared.containers[dictionary]!
-                    let css = DictionaryManager.shared.cssStrings[dictionary]!
-                    let cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!
-                    let contentIndex = DictionaryManager.shared.contentIndexes[dictionary]!
+                    var text = ""
+                    var css = headword.dictionary.css
+                    var cssWordMappings = [String: String]()
+                    if !dictionary.isEmpty {
+                        css = DictionaryManager.shared.cssStrings[dictionary]!
+                        cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!
 
-                    let realEntryIndex = contentIndex.indexMapping[headword.entryIndex]!
-                    let file = container.files[realEntryIndex]
-                    var text = file.text
+                        let container = DictionaryManager.shared.containers[dictionary]!
+                        let contentIndex = DictionaryManager.shared.contentIndexes[dictionary]!
+
+                        let realEntryIndex = contentIndex.indexMapping[headword.entryIndex]!
+                        let file = container.files[realEntryIndex]
+                        text = file.text
+                    } else {
+                        text = headword.entry?.content ?? ""
+                    }
                     for (original, replacement) in cssWordMappings {
                         text = text
                             .replacingOccurrences(of: "<\(original) ", with: "<\(replacement) ")

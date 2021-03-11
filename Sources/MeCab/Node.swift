@@ -79,6 +79,7 @@ public struct Node: TokenNode, CustomStringConvertible {
     public let isBosEos: Bool
     public let surface: String
     public var features: [String]
+    public var alwaysHideFurigana = false
     public let type: Type
 
     public init(surface: String, features: [String], type: Type) {
