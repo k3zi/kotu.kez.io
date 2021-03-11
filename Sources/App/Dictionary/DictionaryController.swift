@@ -41,6 +41,8 @@ class DictionaryController: RouteCollection {
         }
 
         dictionary.get("exact") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             let modifiedQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
@@ -48,6 +50,8 @@ class DictionaryController: RouteCollection {
                 .query(on: req.db)
                 .with(\.$dictionary)
                 .join(parent: \.$dictionary)
+                .join(from: Dictionary.self, siblings: \.$owners)
+                .filter(User.self, \.$id == userID)
                 .group(.or) {
                     $0.filter(all: modifiedQuery.components(separatedBy: "|").filter { !$0.isEmpty }) { text in
                         \.$text == text
