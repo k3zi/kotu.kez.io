@@ -38,6 +38,9 @@ final class Dictionary: Model, Content {
     @Children(for: \.$dictionary)
     var entries: [Entry]
 
+    @Children(for: \.$dictionary)
+    var headwords: [Headword]
+
     init() { }
 
     init(id: UUID? = nil, name: String, sha: String) {

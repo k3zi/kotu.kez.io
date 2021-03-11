@@ -14,7 +14,7 @@ class DictionaryInsertJobManager {
         return _shared
     }
 
-    static let queue = DispatchQueue(label: "io.kez.kotu.dictionary.insert")
+    static let queue = DispatchQueue(label: "io.kez.kotu.dictionary")
 
     var isRunning = false
 
@@ -30,23 +30,63 @@ class DictionaryInsertJobManager {
     private func internalRun(app: Application) throws  {
         isRunning = true
         while true {
-            let job = try DictionaryInsertJob
+            let insertJob = try DictionaryInsertJob
                 .query(on: app.db)
                 .with(\.$dictionary) {
                     $0.with(\.$entries)
                 }
                 .filter(\.$isComplete == false).first().wait()
-            if let job = job {
+            if let insertJob = insertJob {
                 do {
-                    try process(job: job, app: app)
+                    try process(job: insertJob, app: app)
                 } catch {
-                    job.isComplete = true
-                    job.errorMessage = error.localizedDescription
-                    try? job.save(on: app.db).wait()
+                    insertJob.isComplete = true
+                    insertJob.errorMessage = error.localizedDescription
+                    try? insertJob.save(on: app.db).wait()
+                }
+            }
+
+            let removeJob = try DictionaryRemoveJob
+                .query(on: app.db)
+                .with(\.$dictionary)
+                .first().wait()
+            if let removeJob = removeJob {
+                do {
+                    try processRemove(job: removeJob, app: app)
+                } catch {
+                    print(error)
                 }
             }
             sleep(10)
         }
+    }
+
+    private func processRemove(job: DictionaryRemoveJob, app: Application) throws {
+        guard let dictionary = job.dictionary else {
+            try job.delete(on: app.db).wait()
+            return
+        }
+        let usersCount = try dictionary.$owners.query(on: app.db).count().wait()
+        guard usersCount == .zero else {
+            try job.delete(on: app.db).wait()
+            return
+        }
+
+        try Headword.query(on: app.db)
+            .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .delete()
+            .wait()
+
+        try Entry.query(on: app.db)
+            .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .delete()
+            .wait()
+
+        job.$dictionary.id = nil
+        try job.save(on: app.db).wait()
+
+        try dictionary.delete(on: app.db).wait()
+        try job.delete(on: app.db).wait()
     }
 
     private func process(job: DictionaryInsertJob, app: Application) throws {
@@ -81,11 +121,11 @@ class DictionaryInsertJobManager {
         }
 
         let headwords = mkd.headwords
-        let remainingHeadwords = Array(headwords.suffix(from: job.currentEntryIndex))
+        let remainingHeadwords = Array(headwords.suffix(from: job.currentHeadwordIndex))
         let chunkedHeadwords = remainingHeadwords.chunked(into: 127)
         for chunk in chunkedHeadwords {
             let count = chunk.count
-            let headwords = chunk.compactMap { headword -> Headword? in
+            let headwords = chunk.map { headword -> Headword in
                 let entry = savedEntries[headword.entryIndex]
                 return Headword(dictionary: dictionary, text: headword.value, headline: headword.headline, shortHeadline: headword.shortHeadline, entryIndex: headword.entryIndex, subentryIndex: headword.subentryIndex, entry: entry)
             }

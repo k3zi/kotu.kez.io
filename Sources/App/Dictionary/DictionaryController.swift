@@ -6,6 +6,7 @@ class DictionaryController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let dictionary = routes.grouped("dictionary")
             .grouped(User.guardMiddleware())
+        let dictionaryID = dictionary.grouped(":id")
 
         dictionary.get("all") { (req: Request) -> EventLoopFuture<[Dictionary]> in
             let user = try req.auth.require(User.self)
@@ -45,6 +46,31 @@ class DictionaryController: RouteCollection {
                             }
                             .throwingFlatMap { Dictionary.query(on: req.db).with(\.$insertJob).filter(\.$id == (try dictionary.requireID())).first().unwrap(or: Abort(.internalServerError)) }
                     }
+                }
+        }
+
+        dictionaryID.delete() { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let id = try req.parameters.require("id", as: UUID.self)
+            return user.$dictionaries
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(or: Abort(.notFound))
+                .flatMap { (dictionary: Dictionary) in
+                    dictionary.$owners.detach(user, on: req.db)
+                        .flatMap {
+                            dictionary.$owners.query(on: req.db).count()
+                        }
+                        .flatMap { ownersCount in
+                            if ownersCount != .zero {
+                                return req.eventLoop.future(Response(status: .ok))
+                            }
+
+                            let job = DictionaryRemoveJob(dictionary: dictionary)
+                            return job.create(on: req.db)
+                                .map { Response(status: .ok) }
+                        }
                 }
         }
 

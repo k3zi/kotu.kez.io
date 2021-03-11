@@ -102,6 +102,13 @@ class SettingsModal extends React.Component {
         await this.loadDictionaries();
     }
 
+    async removeDictionary(dictionary) {
+        await fetch(`/api/dictionary/${dictionary.id}`, {
+            method: 'DELETE'
+        });
+        await this.loadDictionaries();
+    }
+
     render() {
         return (
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
@@ -122,6 +129,7 @@ class SettingsModal extends React.Component {
                         {this.state.dictionaries.map((dictionary, i) => {
                             return <ListGroup.Item key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'info'}>
                                 {dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}
+                                <span class='float-end text-danger' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
                                 {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
                             </ListGroup.Item>;
                         })}
