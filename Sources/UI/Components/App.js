@@ -87,6 +87,7 @@ class App extends React.Component {
             results: [],
             subtitles: [],
             headwords: [],
+            hasDictionaries: true,
             searchNavSelectedOption: 'Words'
         };
     }
@@ -156,6 +157,12 @@ class App extends React.Component {
             } else {
                 document.body.classList.remove('prefers-color-contrast');
             }
+
+            if (user.settings.ui.prefersDarkMode) {
+                document.body.classList.add('prefers-dark-mode');
+            } else {
+                document.body.classList.remove('prefers-dark-mode');
+            }
             this.setState({ user });
         }
         this.setState({ isReady: true });
@@ -208,6 +215,13 @@ class App extends React.Component {
         const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
         if (response.ok) {
             const results = (await response.json()).items;
+            if (results.length === 0) {
+                const response1 = await fetch(`/api/dictionary/all`);
+                if (response1.ok) {
+                    const dictionaries = await response1.json();
+                    this.setState({ hasDictionaries: dictionaries.length > 0 });
+                }
+            }
             this.setState({ results });
         }
 
@@ -338,6 +352,9 @@ class App extends React.Component {
                                     </DropdownButton>
                                 </InputGroup>
                                 <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
+                                    {this.state.searchNavSelectedOption == 'Words' && this.state.results.length == 0 && !this.state.hasDictionaries && <Dropdown.Item　disabled>
+                                        No dictionaries. Add a dictionary in Settings.
+                                    </Dropdown.Item>}
                                     {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
                                         return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
                                             <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />

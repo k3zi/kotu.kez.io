@@ -6,7 +6,9 @@ import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
+import ListGroup from 'react-bootstrap/ListGroup';
 import Modal from 'react-bootstrap/Modal';
+import ProgressBar from 'react-bootstrap/ProgressBar';
 
 class SettingsModal extends React.Component {
 
@@ -19,12 +21,24 @@ class SettingsModal extends React.Component {
                 isSubmitting: false,
                 message: null,
                 didError: false
-            }
+            },
+            dictionaries: []
         };
     }
 
     componentDidMount() {
         this.loadToken();
+        this.loadDictionaries();
+        setInterval(() => {
+            if (this.props.show)
+                this.loadDictionaries();
+        }, 2000);
+    }
+
+    componentDidUpdate(prevProps) {
+        if (prevProps.show != this.props.show) {
+            this.loadDictionaries();
+        }
     }
 
     async loadToken() {
@@ -32,6 +46,14 @@ class SettingsModal extends React.Component {
         const token = await response.text();
         if (response.ok) {
             this.setState({ token });
+        }
+    }
+
+    async loadDictionaries() {
+        const response = await fetch(`/api/dictionary/all`);
+        if (response.ok) {
+            const dictionaries = await response.json();
+            this.setState({ dictionaries });
         }
     }
 
@@ -77,6 +99,7 @@ class SettingsModal extends React.Component {
                 message: result.error ? result.reason : (result.insertJob ? 'Processing dictionary. This may take some time but you don\'t have to stay on this page.' : 'Dictionary added.')
             }
         });
+        await this.loadDictionaries();
     }
 
     render() {
@@ -95,22 +118,33 @@ class SettingsModal extends React.Component {
                     </Form.Group>
 
                     <h5>Dictionaries</h5>
+                    <ListGroup className="mb-3">
+                        {this.state.dictionaries.map((dictionary, i) => {
+                            return <ListGroup.Item key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'info'}>
+                                {dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}
+                                {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
+                            </ListGroup.Item>;
+                        })}
+                    </ListGroup>
+                    <h6>Add Dictionary</h6>
                     <Form onSubmit={(e) => this.uploadDictionary(e)}>
-                        <Form.Control type="file" name="dictionaryFile" label="Dictionary file (.mkd)" custom />
-                        <Form.Text className="text-muted mb-2">
-                            Currently コツ only accepts .mkd files. Learn more about this format on the Help page.
-                        </Form.Text>
-
-                        {this.state.dictionary.didError && <Alert variant="danger" className='mb-3'>
-                            {this.state.dictionary.message}
-                        </Alert>}
-                        {!this.state.dictionary.didError && this.state.dictionary.message && <Alert variant="info" className='mb-3'>
-                            {this.state.dictionary.message}
-                        </Alert>}
-
-                        <Button className='col-12 mb-3' variant="primary" type='submit' disabled={this.state.dictionary.isSubmitting}>
-                            {this.state.dictionary.isSubmitting ? 'Processing...' : 'Upload'}
-                        </Button>
+                        <Form.Group className='mb-3' controlId="settingsAddDictionary">
+                            <InputGroup className="mb-1">
+                                <Form.Control type="file" name="dictionaryFile" custom />
+                                <Button variant="primary" type='submit' disabled={this.state.dictionary.isSubmitting}>
+                                    {this.state.dictionary.isSubmitting ? 'Processing...' : 'Upload'}
+                                </Button>
+                            </InputGroup>
+                            <Form.Text className="text-muted">
+                                Currently コツ only accepts .mkd files. Learn more about this format on the Help page.
+                            </Form.Text>
+                            {this.state.dictionary.didError && <Alert variant="danger" className='mt-3' onClose={() => { this.state.dictionary.didError = false; this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary }) }} dismissible>
+                                {this.state.dictionary.message}
+                            </Alert>}
+                            {!this.state.dictionary.didError && this.state.dictionary.message && <Alert variant="info" className='mt-3' onClose={() => { this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary}) }} dismissible>
+                                {this.state.dictionary.message}
+                            </Alert>}
+                        </Form.Group>
                     </Form>
 
                     <h5>Reader</h5>
@@ -124,6 +158,9 @@ class SettingsModal extends React.Component {
                         <Form.Text className="text-muted">
                             Any feedback on additional places that could be addressed would be well appreciated. Use the "Feedback" link at the bottom of the page.
                         </Form.Text>
+                    </Form.Group>
+                    <Form.Group className='mb-3' controlId="settingsPrefersDarkMode">
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersDarkMode} onChange={(e) => this.save(e, (s) => s.ui.prefersDarkMode = e.target.checked)} type="checkbox" label="Prefer Dark Mode" />
                     </Form.Group>
 
                     {this.props.user.permissions.includes('api') && <>

@@ -73,6 +73,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(ExternalFile.Migration1())
     app.migrations.add(ReaderSession.Migration(), ReaderSession.Migration1(), ReaderSession.Migration2(), ReaderSession.Migration3(), ReaderSession.Migration4())
     app.migrations.add(DictionaryOwner.Migration(), Dictionary.Migration1(), Entry.Migration(), Headword.Migration2(), DictionaryInsertJob.Migration(), Dictionary.Migration2(), Entry.Migration1())
+    app.migrations.add(Dictionary.Migration3())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
@@ -80,17 +81,17 @@ public func configure(_ app: Application) throws {
     PitchAccentManager.configure(app: app)
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let directoryName = "SANSEIDO-DAIJIRIN2"
-//    let dictionaryName = "大辞林 4.0"
+//    let directoryName = "Taishukan-G5"
+//    let dictionaryName = "ジーニアス英和辞典"
 //
-////    let bzippedOutputData = try Data(contentsOf: directoryURL.appendingPathComponent("Taishukan-GJE3.mkd"))
-////    let bunzippedOutputData = try bzippedOutputData.gunzipped()
-////    var boutput: [String: Any] = try JSONSerialization.jsonObject(with: bunzippedOutputData) as! [String : Any]
-////    boutput["type"] = "ja-en"
-////
-////    let aoutputData = try JSONSerialization.data(withJSONObject: boutput)
-////    let azippedOutputData = try aoutputData.gzipped(level: .bestCompression)
-////    try azippedOutputData.write(to: directoryURL.appendingPathComponent("aTaishukan-GJE3.mkd"))
+//    let bzippedOutputData = try Data(contentsOf: directoryURL.appendingPathComponent("Taishukan-G5.mkd"))
+//    let bunzippedOutputData = try bzippedOutputData.gunzipped()
+//    var boutput: [String: Any] = try JSONSerialization.jsonObject(with: bunzippedOutputData) as! [String : Any]
+//    boutput["type"] = "en-ja"
+//
+//    let aoutputData = try JSONSerialization.data(withJSONObject: boutput)
+//    let azippedOutputData = try aoutputData.gzipped(level: .bestCompression)
+//    try azippedOutputData.write(to: directoryURL.appendingPathComponent("aTaishukan-G5.mkd"))
 //
 //
 //// For saving dictionary headlines to JSON.
@@ -139,8 +140,8 @@ public func configure(_ app: Application) throws {
 ////        .filter("dictionary_id", .equal, try dictionary.requireID())
 ////        .delete().wait()
 //
-//    let shortHeadlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
-//    let shortHeadlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: shortHeadlineStoreData))
+//    let shortHeadlineStoreData = try? Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/short-headline.headlinestore"))
+//    let shortHeadlineStore = shortHeadlineStoreData.flatMap { try? HeadlineStore.parse(tokenizer: DataTokenizer(data: $0)) }
 //    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/headline/headline.headlinestore"))
 //    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
 //
@@ -152,7 +153,7 @@ public func configure(_ app: Application) throws {
 //        .flatMap { (i, headword) in
 //            headword.matches.map { match -> [Any] in
 //                let headline = headlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
-//                let shortHeadline = shortHeadlineStore.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
+//                let shortHeadline = shortHeadlineStore?.headlines.first { $0.index == match.entryIndex && $0.subindex == match.subentryIndex }
 //                return [headword.value, headline?.text ?? "", shortHeadline?.text ?? "", contentIndex.indexMapping[Int(match.entryIndex)]!, Int(match.subentryIndex)]
 //            }
 //        }
@@ -160,14 +161,19 @@ public func configure(_ app: Application) throws {
 //
 //    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/style.css"))
 //    let css = String(data: cssData, encoding: .utf8)!
+//    let darkCSSData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/dark_style.css"))
+//    let darkCSS = String(data: darkCSSData, encoding: .utf8)!
 //
 //    let output: [String: Any] = [
 //        "directoryName": directoryName,
 //        "dictionaryName": dictionaryName,
 //        "css": css,
+//        "darkCSS": darkCSS,
+//        "icon":
+//            (try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/icon.png"))).base64EncodedString(),
 //        "headwords": headwords,
 //        "entries": entries,
-//        "type": "ja"
+//        "type": "en-ja"
 //    ]
 ////
 ////    try headwords

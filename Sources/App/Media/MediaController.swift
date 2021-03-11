@@ -295,7 +295,7 @@ class MediaController: RouteCollection {
                     try FileManager.default.removeItem(at: infoURL)
                     try FileManager.default.removeItem(at: fileURL)
                     let subtitles: [MediaSubtitle] = subtitleRoot.subtitles.map {
-                        var text = isAuto ? $0.text.components(separatedBy: "\n").suffix(from: 1).joined() : $0.text
+                        var text = (isAuto && $0.text.contains("<c>")) ? $0.text.components(separatedBy: "\n").suffix(from: 1).joined() : $0.text
                         text = text.replacingOccurrences(of: "<c>", with: "", options: .regularExpression)
                         text = text.replacingOccurrences(of: "</c>", with: "", options: .regularExpression)
                         text = text.replacingOccurrences(of: "<\\d+:\\d+:\\d+.\\d+>", with: "", options: .regularExpression)

@@ -7,6 +7,14 @@ class DictionaryController: RouteCollection {
         let dictionary = routes.grouped("dictionary")
             .grouped(User.guardMiddleware())
 
+        dictionary.get("all") { (req: Request) -> EventLoopFuture<[Dictionary]> in
+            let user = try req.auth.require(User.self)
+            return user.$dictionaries
+                .query(on: req.db)
+                .with(\.$insertJob)
+                .all()
+        }
+
         dictionary.post("upload") { (req: Request) -> EventLoopFuture<Dictionary> in
             struct Upload: Content {
                 let dictionaryFile: Vapor.File
@@ -91,7 +99,7 @@ class DictionaryController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { dictionary in
-                    guard let data = DictionaryManager.shared.icons[dictionary.directoryName] else {
+                    guard let data = dictionary.icon ?? DictionaryManager.shared.icons[dictionary.directoryName] else {
                         throw Abort(.notFound)
                     }
                     let response = Response(status: .ok)
@@ -128,6 +136,7 @@ class DictionaryController: RouteCollection {
                         let file = container.files[realEntryIndex]
                         text = file.text
                     } else {
+                        cssWordMappings = css.replaceNonASCIICharacters()
                         text = headword.entry?.content ?? ""
                     }
                     for (original, replacement) in cssWordMappings {

@@ -713,14 +713,11 @@ rt .underline {
 
 }
 
-@media (prefers-color-scheme: dark) {
+@mixin darkMode {
+    background-color: #000;
 
     * {
         scrollbar-color: light;
-    }
-
-    body {
-        background-color: #000;
     }
 
     .container {
@@ -736,11 +733,11 @@ rt .underline {
         color: #fff;
     }
 
-    .table-striped>tbody>tr:nth-of-type(odd) {
+    .table-striped > tbody > tr:nth-of-type(odd) {
         color: #fff;
     }
 
-    .table-hover>tbody>tr:hover {
+    .table-hover > tbody > tr:hover {
         color: #fff;
     }
 
@@ -792,6 +789,16 @@ rt .underline {
         border-color: white;
     }
 
+}
+
+.prefers-dark-mode {
+    @include darkMode;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        @include darkMode;
+    }
 }
 
 .read-more {

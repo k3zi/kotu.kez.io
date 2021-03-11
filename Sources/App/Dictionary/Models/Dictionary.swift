@@ -26,6 +26,9 @@ final class Dictionary: Model, Content {
     @Field(key: "dark_css")
     var darkCSS: String
 
+    @OptionalField(key: "icon")
+    var icon: Data?
+
     @Siblings(through: DictionaryOwner.self, from: \.$dictionary, to: \.$owner)
     var owners: [User]
 
@@ -97,6 +100,22 @@ extension Dictionary {
             database.schema(schema)
                 .deleteField("css")
                 .deleteField("type")
+                .update()
+        }
+    }
+
+    struct Migration3: Fluent.Migration {
+        var name: String { "CreateDictionaryIcon" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("icon", .data)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("icon")
                 .update()
         }
     }

@@ -65,8 +65,7 @@ class DictionaryInsertJobManager {
         let mkd = try JSONDecoder().decode(MKD.self, from: uncompressedData)
 
         let dictionary = job.dictionary
-        dictionary.css = mkd.css
-        dictionary.name = mkd.dictionaryName
+        try dictionary.save(on: app.db).wait()
         let entries = Array(mkd.entries.enumerated())
         let remainingEntries = Array(entries.suffix(from: job.currentEntryIndex))
         let chunkedEntries = remainingEntries.chunked(into: 127)
@@ -76,6 +75,7 @@ class DictionaryInsertJobManager {
             let entryChunks = chunk.map { (i, text) in Entry(dictionary: dictionary, content: text, index: i) }
             try entryChunks.create(on: app.db).wait()
             job.currentEntryIndex += count
+            job.progress = (Float(job.currentEntryIndex) / Float(entries.count)) / 2
             try job.save(on: app.db).wait()
             savedEntries.append(contentsOf: entryChunks)
         }
@@ -91,11 +91,16 @@ class DictionaryInsertJobManager {
             }
             try headwords.create(on: app.db).wait()
             job.currentHeadwordIndex += count
+            job.progress = 0.5 + ((Float(job.currentHeadwordIndex) / Float(mkd.headwords.count)) / 2)
             try job.save(on: app.db).wait()
         }
 
-        job.isComplete = true
-        try job.save(on: app.db).wait()
+        dictionary.css = mkd.css
+        dictionary.darkCSS = mkd.darkCSS ?? ""
+        dictionary.name = mkd.dictionaryName
+        dictionary.icon = mkd.icon.flatMap { Data(base64Encoded: $0) }
+        try dictionary.save(on: app.db).wait()
+        try job.delete(on: app.db).wait()
         try FileManager.default.removeItem(at: fileURL)
         try FileManager.default.removeItem(at: directory)
     }
@@ -125,7 +130,10 @@ struct MKD: Decodable {
 
     let dictionaryName: String
     let css: String
+    let darkCSS: String?
+    let icon: String?
     let headwords: [Headword]
     let entries: [String]
     let type: String
+
 }

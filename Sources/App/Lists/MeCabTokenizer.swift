@@ -46,6 +46,12 @@ struct PitchAccentResolver: ExceptionResolver {
     }
 
     func resolve(tokenizer: MeCabTokenizer) {
+
+        // 何
+        if tokenizer.next.id == "27920" {
+            tokenizer.nodes[0].features[24] = "1"
+        }
+
         // MARK: Compound Correction
         // 語 → 平板：日本語・英語・スペイン語
         if tokenizer.next.id == "13334" {

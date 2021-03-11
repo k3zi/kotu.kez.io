@@ -68,8 +68,27 @@ The cards can be formatted with HTML / CSS or with markdown. Plugins marked with
 
 ---
 
-### Lists
+### Dictionaries
 
+Dictionaries can be imported via the Settings menu.
+
+#### .mkd Format
+
+An mkd file is a gzipped JSON containing the following keys:
+\`\`\`
+- dictionaryName: string
+- css: string
+- darkCSS: string (optional)
+- icon: string (optional, a base 64 encoded string of PNG data)
+- type: string (one of: ja, ja-en, en-ja, en, etc...)
+- headword: **array of arrays** that include:
+    0. headword: string
+    1. headline: string
+    2. shortHeadline: string
+    3. entryIndex: int
+    4. subentryIndex: int
+- entries: array of strings (the index of these should match the headword[3] aka the entryIndex)
+\`\`\`
 ---
 
 ### Media
