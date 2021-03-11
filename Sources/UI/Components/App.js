@@ -283,11 +283,6 @@ class App extends React.Component {
                                     <LinkContainer to="/lists/words">
                                         <NavDropdown.Item active={false}>Words</NavDropdown.Item>
                                     </LinkContainer>
-                                    <LinkContainer to="/lists/sentences">
-                                        <NavDropdown.Item active={false}>Sentences</NavDropdown.Item>
-                                    </LinkContainer>
-                                    <NavDropdown.Divider />
-                                    <NavDropdown.Item active={false} onClick={() => this.toggleAddSentenceModal(true)}>Add Sentence</NavDropdown.Item>
                                 </NavDropdown>
 
                                 <NavDropdown title='Media'>
