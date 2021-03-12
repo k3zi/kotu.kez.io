@@ -284,7 +284,7 @@ struct PitchAccent: Content, Codable {
                     accent = PitchAccent(mora: buildUpWord.count - m, length: buildUpWord.moraCount)
                 }
             case .heibanHeadSameElseAccent(m: let m):
-                if accent.descriptive != .heiban || accent.descriptive != .atamadaka {
+                if accent.descriptive != .heiban && accent.descriptive != .atamadaka {
                     accent = PitchAccent(mora: accent.mora - m, length: buildUpWord.moraCount)
                 }
             default:
