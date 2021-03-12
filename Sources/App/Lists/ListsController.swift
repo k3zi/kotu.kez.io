@@ -456,12 +456,19 @@ class ListsController: RouteCollection {
             let user = try req.auth.require(User.self)
             guard let sentenceString = req.body.string, sentenceString.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
             let includeHeadwords = (try? req.query.get(Bool.self, at: "includeHeadwords")) ?? false
+            let includeListWords = (try? req.query.get(Bool.self, at: "includeListWords")) ?? false
             let mecab = try Mecab()
             let nodes = try mecab.tokenize(string: sentenceString)
-            let listWordsFuture = user.$listWords
-                .query(on: req.db)
-                .all()
+            let listWordsFuture = includeListWords
+                ? user.$listWords.query(on: req.db).all()
+                : req.eventLoop.future([])
             var sentences = try Sentence.parseMultiple(db: req.db, tokenizer: .init(nodes: nodes))
+
+            // Headwords are required for the list words so it doesn't make sense
+            // going past this point.
+            if !includeHeadwords {
+                return req.eventLoop.future(sentences)
+            }
             return listWordsFuture
                 .flatMap { listWords -> EventLoopFuture<[Sentence]> in
                     let offsets = sentences.enumerated().flatMap { (sentenceOffset, sentence) in
@@ -495,7 +502,9 @@ class ListsController: RouteCollection {
                         .map {
                             for (offset, headwords) in $0 {
                                 sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].headwords = headwords
-                                sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].listWords = listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } }
+                                if includeHeadwords && includeListWords {
+                                    sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].listWords = listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } }
+                                }
                             }
                             return sentences
                         }
