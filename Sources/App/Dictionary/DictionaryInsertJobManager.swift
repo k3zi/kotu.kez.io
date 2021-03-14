@@ -139,6 +139,7 @@ class DictionaryInsertJobManager {
         dictionary.darkCSS = mkd.darkCSS ?? ""
         dictionary.name = mkd.dictionaryName
         dictionary.icon = mkd.icon.flatMap { Data(base64Encoded: $0) }
+        dictionary.type = mkd.type
         try dictionary.save(on: app.db).wait()
         try job.delete(on: app.db).wait()
         try FileManager.default.removeItem(at: fileURL)

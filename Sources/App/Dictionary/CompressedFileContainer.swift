@@ -2,14 +2,14 @@ import Foundation
 
 public struct CompressedFileContainer {
 
-    public init(withDirectory directoryURL: URL) throws {
+    public init(withDirectory directoryURL: URL, encoding: String.Encoding = .utf8) throws {
         let fileManager = FileManager.default
         let fileURLs = try fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil)
         let collections: [Self.Collection] = try fileURLs
             .filter { $0.pathExtension == "rsc" }
             .sorted(by: { $0.path < $1.path })
             .map {
-                return try Collection.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)))
+                return try Collection.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)), encoding: encoding)
             }
         files = collections.flatMap { $0.files }
     }
@@ -26,7 +26,7 @@ extension CompressedFileContainer {
             public let text: String
         }
 
-        public static func parse(tokenizer: DataTokenizer) throws -> Self {
+        public static func parse(tokenizer: DataTokenizer, encoding: String.Encoding = .utf8) throws -> Self {
             var files = [File]()
             while !tokenizer.reachedEnd {
                 let size = tokenizer.consumeInt32()
@@ -38,7 +38,7 @@ extension CompressedFileContainer {
                 while !partTokenizer.reachedEnd {
                     let size = partTokenizer.consumeInt32()
                     let data = partTokenizer.dataConsuming(times: Int(size))
-                    let string = String(data: data, encoding: .utf8)!
+                    let string = String(data: data, encoding: encoding)!
                     files.append(File(text: string))
                     partTokenizer.consumeUntil(nextByteGroupOf: 4)
                 }

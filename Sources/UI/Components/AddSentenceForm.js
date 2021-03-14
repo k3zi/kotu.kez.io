@@ -31,7 +31,7 @@ class AddSentenceForm extends React.Component {
 
     async load(sentence) {
         this.currentSentence = sentence;
-        const response = await fetch(`/api/lists/sentence/parse`, {
+        const response = await fetch(`/api/dictionary/parse?includeHeadwords=true`, {
             method: 'POST',
             body: sentence
         });

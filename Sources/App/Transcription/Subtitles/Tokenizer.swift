@@ -12,6 +12,10 @@ class Tokenizer {
         self.input = input
     }
 
+    func hasPrefix(_ prefix: String) -> Bool {
+        input.hasPrefix(prefix)
+    }
+
     @discardableResult
     func consume() -> Character {
         input.removeFirst()
@@ -26,6 +30,13 @@ class Tokenizer {
     func ifConsume(expect character: Character, _ branch: () throws -> ()) rethrows {
         if next == character {
             consume()
+            try branch()
+        }
+    }
+
+    func ifConsume(expect string: String, _ branch: () throws -> ()) throws {
+        if input.hasPrefix(string) {
+            try consume(expect: string)
             try branch()
         }
     }
@@ -65,6 +76,11 @@ class Tokenizer {
     @discardableResult
     func consume(upUntil stopCharacter: Character) -> String {
         consume(upUntil: { n, _ in n == stopCharacter })
+    }
+
+    @discardableResult
+    func consume(upUntil stopWord: String) -> String {
+        consume(upUntil: { _, _ in input.hasPrefix(stopWord) })
     }
 
     @discardableResult

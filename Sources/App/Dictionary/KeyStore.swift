@@ -70,6 +70,61 @@ public struct KeyStore {
         public let subentryIndex: UInt
     }
 
+    public static func parse(dictionaryFolder: URL) throws -> KeyStore? {
+        let keyFolder = dictionaryFolder.appendingPathComponent("key")
+        if FileManager.default.fileExists(atPath: keyFolder.path) {
+            let keystoreFile = keyFolder.appendingPathComponent("headword.keystore")
+            if FileManager.default.fileExists(atPath: keystoreFile.path) {
+                let data = try Data(contentsOf: keystoreFile)
+                return try Self.parse(tokenizer: DataTokenizer(data: data))
+            }
+
+            let rscFileURLs = try FileManager.default.contentsOfDirectory(at: keyFolder, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "rsc" }
+                .sorted(by: { $0.path < $1.path })
+
+            if rscFileURLs.count > 0 {
+                return try Self.parseRSCs(files: rscFileURLs)
+            }
+
+            return nil
+        } else {
+            return nil
+        }
+    }
+
+    public static func parseRSCs(files: [URL]) throws -> KeyStore {
+        var pairs = [Pair]()
+        for file in files {
+            let data = try Data(contentsOf: file)
+            let tokenizer = DataTokenizer(data: data)
+            while !tokenizer.reachedEnd {
+                tokenizer.consumeInt32()
+                let lengthOfText = tokenizer.consumeInt16()
+                let numberOfMatches = tokenizer.consumeInt16()
+                var matches = [KeyStore.Match]()
+
+                if numberOfMatches == .zero {
+                    fatalError()
+                }
+
+                for _ in (0..<numberOfMatches) {
+                    let entryIndex = tokenizer.consumeInt32()
+                    let subentryIndex = tokenizer.consumeInt32()
+
+                    matches.append(KeyStore.Match(entryIndex: UInt(entryIndex), subentryIndex: UInt(subentryIndex)))
+                }
+
+                let textArray = tokenizer.consume(times: Int(lengthOfText) * 2)
+                tokenizer.consumeUntil(nextByteGroupOf: 4)
+                let text = String(bytes: textArray, encoding: .utf16LittleEndian)!
+                pairs.append(Pair(value: text, matches: matches))
+            }
+        }
+
+        return .init(pairs: pairs)
+    }
+
     public static func parse(tokenizer: DataTokenizer) throws -> KeyStore {
         let unknown1 = tokenizer.consumeInt32()
         try tokenizer.consumeInt32(expect: 0)

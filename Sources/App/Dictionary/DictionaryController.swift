@@ -1,4 +1,5 @@
 import Fluent
+import MeCab
 import Vapor
 
 class DictionaryController: RouteCollection {
@@ -83,6 +84,7 @@ class DictionaryController: RouteCollection {
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
+                .field(Dictionary.self, \.$name)
                 .join(parent: \.$dictionary)
                 .join(from: Dictionary.self, siblings: \.$owners)
                 .filter(User.self, \.$id == userID)
@@ -179,6 +181,86 @@ class DictionaryController: RouteCollection {
                     return "<style>\(css)</style>\(text)"
                 }
         }
+
+        dictionary.post("parse") { (req: Request) -> EventLoopFuture<[Sentence]> in
+            struct Offset {
+                let accentPhraseComponent: AccentPhraseComponent
+                let accentPhraseComponentOffset: Int
+                let accentPhraseOffset: Int
+                let sentenceOffset: Int
+            }
+            let user = try req.auth.require(User.self)
+            guard let sentenceString = req.body.string, sentenceString.count > 0 else { throw Abort(.badRequest, reason: "Empty sentence passed.") }
+            let includeHeadwords = (try? req.query.get(Bool.self, at: "includeHeadwords")) ?? false
+            let includeListWords = (try? req.query.get(Bool.self, at: "includeListWords")) ?? false
+            let mecab = try Mecab()
+            let nodes = try mecab.tokenize(string: sentenceString)
+            let listWordsFuture = includeListWords
+                ? user.$listWords.query(on: req.db).all()
+                : req.eventLoop.future([])
+            var sentences = try Sentence.parseMultiple(db: req.db, tokenizer: .init(nodes: nodes))
+
+            // Headwords are required for the list words so it doesn't make sense
+            // going past this point.
+            if !includeHeadwords {
+                return req.eventLoop.future(sentences)
+            }
+            return listWordsFuture
+                .flatMap { listWords -> EventLoopFuture<[Sentence]> in
+                    let offsets = sentences.enumerated().flatMap { (sentenceOffset, sentence) in
+                        sentence.accentPhrases.enumerated().flatMap { (accentPhraseOffset, accentPhrase) in
+                            accentPhrase.components.enumerated().map { (componentOffset, component) in
+                                Offset(accentPhraseComponent: component, accentPhraseComponentOffset: componentOffset, accentPhraseOffset: accentPhraseOffset, sentenceOffset: sentenceOffset)
+                            }
+                        }
+                    }
+
+                    let offsetFutures: [EventLoopFuture<(Offset, [Headword])>] = offsets.map { offset in
+                        let component = offset.accentPhraseComponent
+                        if component.isBasic || !includeHeadwords {
+                            return req.eventLoop.future((offset, []))
+                        }
+                        return Headword.query(on: req.db)
+                            .group(.or) {
+                                $0.filter(all: [component.original.katakana, component.surface.katakana]) { text in
+                                    \.$text == text
+                                }
+                            }
+                            .sort(\.$text)
+                            .limit(3)
+                            .all()
+                            .map {
+                                return (offset, $0)
+                            }
+                    }
+
+                    return EventLoopFuture.whenAllSucceed(offsetFutures, on: req.eventLoop)
+                        .map {
+                            for (offset, headwords) in $0 {
+                                sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].headwords = headwords
+                                if includeHeadwords && includeListWords {
+                                    sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].listWords = listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } }
+                                }
+                            }
+                            return sentences
+                        }
+                }
+        }
+    }
+
+}
+
+extension QueryBuilder {
+
+    @discardableResult
+    public func filter<A>(all: [A], _ filter: (A) -> FluentKit.ModelValueFilter<Model>) -> Self {
+        if all.isEmpty {
+            return self
+        }
+
+        var modAll = all
+        let next = modAll.removeFirst()
+        return self.filter(filter(next)).filter(all: modAll, filter)
     }
 
 }

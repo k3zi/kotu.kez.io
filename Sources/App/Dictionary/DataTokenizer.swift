@@ -69,6 +69,13 @@ public class DataTokenizer {
     }
 
     @discardableResult
+    func consumeInt16() -> UInt16 {
+        return consume(times: 2).withUnsafeBufferPointer {
+                 ($0.baseAddress!.withMemoryRebound(to: UInt16.self, capacity: 1) { $0 })
+        }.pointee
+    }
+
+    @discardableResult
     func consumeInt32() -> UInt32 {
         return consume(times: 4).withUnsafeBufferPointer {
                  ($0.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: 1) { $0 })

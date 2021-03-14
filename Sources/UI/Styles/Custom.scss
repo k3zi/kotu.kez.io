@@ -745,6 +745,31 @@ rt .underline {
         color: #000;
     }
 
+    .list-group-item {
+        background-color: $dropdown-dark-bg;
+        color: $dropdown-dark-color;
+        border-color: $dropdown-dark-divider-bg;
+    }
+
+    .list-group-item-action {
+        color: $dropdown-dark-link-color;
+        outline: none !important;
+
+        &:hover, &:focus {
+            color: $dropdown-dark-link-hover-color;
+            background-color: tint-color($dropdown-dark-bg, 10%);
+        }
+
+        &.active, &:active {
+            color: $dropdown-dark-link-active-color;
+            @include gradient-bg($dropdown-dark-link-active-bg);
+        }
+
+        &.disabled, &:disabled {
+            color: $dropdown-dark-link-disabled-color;
+        }
+    }
+
     .dropdown-menu {
         color: $dropdown-dark-color;
         background-color: $dropdown-dark-bg;
@@ -754,22 +779,19 @@ rt .underline {
         .dropdown-item {
           color: $dropdown-dark-link-color;
 
-          &:hover,
-          &:focus {
-            color: $dropdown-dark-link-hover-color;
-            @include gradient-bg($dropdown-dark-link-hover-bg);
-          }
+            &:hover, &:focus {
+              color: $dropdown-dark-link-hover-color;
+              @include gradient-bg($dropdown-dark-link-hover-bg);
+            }
 
-          &.active,
-          &:active {
-            color: $dropdown-dark-link-active-color;
-            @include gradient-bg($dropdown-dark-link-active-bg);
-          }
+            &.active, &:active {
+              color: $dropdown-dark-link-active-color;
+              @include gradient-bg($dropdown-dark-link-active-bg);
+            }
 
-          &.disabled,
-          &:disabled {
-            color: $dropdown-dark-link-disabled-color;
-          }
+            &.disabled, &:disabled {
+              color: $dropdown-dark-link-disabled-color;
+            }
         }
 
         .dropdown-divider {

@@ -16,6 +16,13 @@ const smallHiragana = 'ぁぃぅぇぉゃゅょゎ';
 const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
 const helpers = {};
 
+// helpers.fetch = async (url, options) => {
+//     const options = options || {};
+//     options.headers = options.headers || {};
+//     options.headers['X-Kotu-Api-Version']
+//     return fetch(url, {})
+// }
+
 helpers.removeYouon = (text) => {
     return text.split('').filter(c => !smallHiragana.includes(c) && !smallrowKatakana.includes(c)).join('');
 }
@@ -148,7 +155,7 @@ helpers.generateManualPitchElement = (rawText) => {
 }
 
 helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
-    const sentenceResponse = await fetch(`/api/lists/sentence/parse`, {
+    const sentenceResponse = await fetch(`/api/dictionary/parse`, {
         method: 'POST',
         body: await gzip(textContent),
         headers: {
