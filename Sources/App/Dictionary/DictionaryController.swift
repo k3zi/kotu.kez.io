@@ -158,7 +158,7 @@ class DictionaryController: RouteCollection {
                 .flatMapThrowing { headword in
                     let dictionary = headword.dictionary.directoryName
                     var text = ""
-                    var css = (forceDarkCSS && headword.dictionary.darkCSS.count > 0) ? headword.dictionary.darkCSS : headword.dictionary.css
+                    var css = headword.dictionary.css
                     var cssWordMappings = [String: String]()
                     if !dictionary.isEmpty {
                         css = DictionaryManager.shared.cssStrings[dictionary]!
@@ -194,6 +194,7 @@ class DictionaryController: RouteCollection {
                     <style>
                         \(css)
                         \(forceHorizontalText ? horizontalTextCSS : "")
+                        \(forceDarkCSS ? headword.dictionary.darkCSS : "")
                     </style>
                     <script>
                         document.addEventListener('copy', function (e) {
