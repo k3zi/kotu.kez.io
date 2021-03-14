@@ -88,6 +88,10 @@ class FlashcardController: RouteCollection {
                     sm.answer(grade: grade, item: &nextItem)
                     deck.sm = sm
                     return deck.save(on: req.db)
+                        .throwingFlatMap {
+                            try ReviewLog(card: card, grade: grade)
+                                .save(on: req.db)
+                        }
                 }
                 .map { "Updated grade." }
         }
@@ -328,7 +332,7 @@ class FlashcardController: RouteCollection {
                         throw Abort(.internalServerError)
                     }
                     let noteType = note.noteType
-                    let previousClozeIndexes = note.cards.flatMap { $0.clozeDeletionIndex }
+                    let previousClozeIndexes = note.cards.compactMap { $0.clozeDeletionIndex }
                     for fieldValue in note.fieldValues {
                         let newValue = object.fieldValues.first(where: { $0.id == fieldValue.id })?.value
                         fieldValue.value = newValue ?? ""

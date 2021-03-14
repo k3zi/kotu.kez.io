@@ -95,8 +95,8 @@ class DictionaryController: RouteCollection {
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
-                .map {
-                    Page(items: Swift.Dictionary(grouping: $0.items, by: { $0.$entry.id }).values.map { $0.first! }, metadata: $0.metadata)
+                .map { page in
+                    Page(items: Swift.Dictionary(grouping: page.items, by: { $0.$entry.id }).flatMap { (key: UUID?, value: [Headword]) -> [Headword] in key == nil ? value : [value.first!] }, metadata: page.metadata)
                 }
         }
 
@@ -119,8 +119,8 @@ class DictionaryController: RouteCollection {
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
-                .map {
-                    Page(items: Swift.Dictionary(grouping: $0.items, by: { $0.$entry.id }).values.map { $0.first! }, metadata: $0.metadata)
+                .map { page in
+                    Page(items: Swift.Dictionary(grouping: page.items, by: { $0.$entry.id }).flatMap { (key: UUID?, value: [Headword]) -> [Headword] in key == nil ? value : [value.first!] }, metadata: page.metadata)
                 }
         }
 
