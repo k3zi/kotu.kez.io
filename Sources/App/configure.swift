@@ -75,7 +75,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(DictionaryOwner.Migration(), Dictionary.Migration1(), Entry.Migration(), Headword.Migration2(), DictionaryInsertJob.Migration(), Dictionary.Migration2(), Entry.Migration1())
     app.migrations.add(Dictionary.Migration3())
     app.migrations.add(DictionaryRemoveJob.Migration())
-    app.migrations.add(ReviewLog.Migration())
+    app.migrations.add(ReviewLog.Migration(), ReviewLog.Migration1())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
