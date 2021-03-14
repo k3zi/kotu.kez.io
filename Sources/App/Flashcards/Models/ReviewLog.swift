@@ -17,6 +17,9 @@ final class ReviewLog: Model, Content {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Timestamp(key: "group_date", on: .create)
+    var groupDate: Date?
+
     init() { }
 
     init(id: UUID? = nil, card: Card, grade: Double) throws{
@@ -43,6 +46,22 @@ extension ReviewLog {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "CreateFlashcardReviewLogGroupDate" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("group_date", .date)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("group_date")
+                .update()
         }
     }
 

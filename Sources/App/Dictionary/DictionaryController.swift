@@ -147,6 +147,7 @@ class DictionaryController: RouteCollection {
         dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
             let id = try req.parameters.require("id", as: UUID.self)
             let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
+            let forceDarkCSS = (try? req.query.get(Bool.self, at: "forceDarkCSS")) ?? false
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
@@ -157,7 +158,7 @@ class DictionaryController: RouteCollection {
                 .flatMapThrowing { headword in
                     let dictionary = headword.dictionary.directoryName
                     var text = ""
-                    var css = headword.dictionary.css
+                    var css = (forceDarkCSS && headword.dictionary.darkCSS.count > 0) ? headword.dictionary.darkCSS : headword.dictionary.css
                     var cssWordMappings = [String: String]()
                     if !dictionary.isEmpty {
                         css = DictionaryManager.shared.cssStrings[dictionary]!

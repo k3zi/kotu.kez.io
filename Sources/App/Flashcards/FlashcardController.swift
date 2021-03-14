@@ -20,6 +20,31 @@ class FlashcardController: RouteCollection {
                 .map { $0.map { $0.sm.queue.filter { $0.dueDate <= now }.count }.reduce(0, +) }
         }
 
+        struct GroupedLogs: Content {
+            let count: Int
+            let groupDate: Date
+        }
+        guardedFlashcards.get("groupedLogs") { req -> EventLoopFuture<[GroupedLogs]> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLFunction("count", args: SQLLiteral.all))
+                .column("group_date")
+                .from(ReviewLog.schema)
+                .join(Card.schema, on: "\(Card.schema).id=\(ReviewLog.schema).card_id")
+                .join(Deck.schema, on: "\(Deck.schema).id=\(Card.schema).deck_id AND \(Deck.schema).owner_id='\(userID.uuidString)'")
+                .groupBy("group_date")
+                .all()
+                .flatMapThrowing {
+                    try $0.map {
+                        try $0.decode(model: GroupedLogs.self, keyDecodingStrategy: .convertFromSnakeCase)
+                    }
+                }
+        }
+
         // MARK: Card
         let guardedCard = guardedFlashcards.grouped("card")
         let guardedCardID = guardedCard.grouped(":cardID")

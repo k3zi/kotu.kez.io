@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -13,6 +13,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import Tab from 'react-bootstrap/Tab';
 import YouTube from 'react-youtube';
 
+import ColorSchemeContext from './Context/ColorScheme';
 import UserContext from './Context/User';
 
 class SearchResultModal extends React.Component {
@@ -43,7 +44,7 @@ class SearchResultModal extends React.Component {
         }
 
         this.setState({ isLoading: true });
-        const response = await fetch(`/api/dictionary/entry/${headword.id}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}`);
+        const response = await fetch(`/api/dictionary/entry/${headword.id}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
         const result = await response.text();
         this.setState({ selectedResultHTML: result, isLoading: false, headword: headword });
 
@@ -109,4 +110,9 @@ class SearchResultModal extends React.Component {
 }
 
 SearchResultModal.contextType = UserContext;
-export default SearchResultModal;
+export default props => ( <ColorSchemeContext.Consumer>
+    {(colorScheme) => {
+       return <SearchResultModal {...props} colorScheme={colorScheme} />
+    }}
+  </ColorSchemeContext.Consumer>
+)
