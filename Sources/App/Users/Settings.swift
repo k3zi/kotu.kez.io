@@ -48,10 +48,12 @@ struct Settings: Content {
         enum CodingKeys: String, CodingKey {
             case prefersColorContrast
             case prefersDarkMode
+            case prefersHorizontalText
         }
 
         var prefersColorContrast: Bool = false
         var prefersDarkMode: Bool = false
+        var prefersHorizontalText: Bool = false
 
         init() { }
 
@@ -59,6 +61,7 @@ struct Settings: Content {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             prefersColorContrast = (try? container.decodeIfPresent(Bool.self, forKey: .prefersColorContrast)) ?? false
             prefersDarkMode = (try? container.decodeIfPresent(Bool.self, forKey: .prefersDarkMode)) ?? false
+            prefersHorizontalText = (try? container.decodeIfPresent(Bool.self, forKey: .prefersHorizontalText)) ?? false
         }
     }
 

@@ -50,7 +50,7 @@ extension Node {
         // [ハイ, コ]
         var captures = surfacePronunciation.match(regexString).first?.suffix(from: 1) ?? []
         guard !captures.isEmpty else {
-            return "<ruby>\(surface)<rt>\(surfacePronunciation)</rt></ruby>"
+            return "<ruby><rb>\(surface)</rb><rt>\(surfacePronunciation)</rt></ruby>"
         }
 
         var result = surface

@@ -170,6 +170,9 @@ class SettingsModal extends React.Component {
                     <Form.Group className='mb-3' controlId="settingsPrefersDarkMode">
                         <Form.Check defaultChecked={this.props.user.settings.ui.prefersDarkMode} onChange={(e) => this.save(e, (s) => s.ui.prefersDarkMode = e.target.checked)} type="checkbox" label="Prefer Dark Mode" />
                     </Form.Group>
+                    <Form.Group className='mb-3' controlId="settingsPrefersHorizontalText">
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersHorizontalText} onChange={(e) => this.save(e, (s) => s.ui.prefersHorizontalText = e.target.checked)} type="checkbox" label="Prefer Horizontal Text" />
+                    </Form.Group>
 
                     {this.props.user.permissions.includes('api') && <>
                         <h5>API</h5>

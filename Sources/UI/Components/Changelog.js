@@ -6,6 +6,10 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/3/14
+- **[dictionaries]:** remove duplicate entries in search results
+- **[ui]:** add setting for preferring horizontal text
+---
 #### 2021/3/11
 - **[dictionaries]:** improve dictionary upload dialogue
 - **[media.youtube]:** fix bug with auto-generated subtitles

@@ -13,6 +13,8 @@ import Spinner from 'react-bootstrap/Spinner';
 import Tab from 'react-bootstrap/Tab';
 import YouTube from 'react-youtube';
 
+import UserContext from './Context/User';
+
 class SearchResultModal extends React.Component {
 
     constructor(props) {
@@ -41,7 +43,7 @@ class SearchResultModal extends React.Component {
         }
 
         this.setState({ isLoading: true });
-        const response = await fetch(`/api/dictionary/entry/${headword.id}`);
+        const response = await fetch(`/api/dictionary/entry/${headword.id}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}`);
         const result = await response.text();
         this.setState({ selectedResultHTML: result, isLoading: false, headword: headword });
 
@@ -106,4 +108,5 @@ class SearchResultModal extends React.Component {
     }
 }
 
+SearchResultModal.contextType = UserContext;
 export default SearchResultModal;

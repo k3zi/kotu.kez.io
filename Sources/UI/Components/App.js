@@ -115,6 +115,18 @@ class App extends React.Component {
             }
         }
 
+        document.addEventListener('copy', function (e) {
+            e.preventDefault();
+            const rts = [...document.getElementsByTagName('rt')];
+            rts.forEach(rt => {
+                rt.style.display = 'none';
+            });
+            e.clipboardData.setData('text', window.getSelection().toString());
+            rts.forEach(rt => {
+                rt.style.removeProperty('display');
+            });
+        });
+
         Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
             e.preventDefault();
             if (e.clipboardData && e.clipboardData.getData) {
@@ -412,7 +424,7 @@ class App extends React.Component {
                                 <Changelog />
                             </Route>
                             <Route path="/search/:query?/:optionValue?/:page?/:per?">
-                                <Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />
+                                {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
                             </Route>
 
                             <Route exact path="/transcription">

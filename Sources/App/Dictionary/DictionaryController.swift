@@ -95,6 +95,9 @@ class DictionaryController: RouteCollection {
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
+                .map {
+                    Page(items: Swift.Dictionary(grouping: $0.items, by: { $0.$entry.id }).values.map { $0.first! }, metadata: $0.metadata)
+                }
         }
 
         dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
@@ -116,6 +119,9 @@ class DictionaryController: RouteCollection {
                 .sort(\.$text)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
+                .map {
+                    Page(items: Swift.Dictionary(grouping: $0.items, by: { $0.$entry.id }).values.map { $0.first! }, metadata: $0.metadata)
+                }
         }
 
         dictionary.get("icon", ":dictionaryID") { (req: Request) -> EventLoopFuture<Response> in
@@ -140,6 +146,7 @@ class DictionaryController: RouteCollection {
 
         dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
             let id = try req.parameters.require("id", as: UUID.self)
+            let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
@@ -177,7 +184,31 @@ class DictionaryController: RouteCollection {
                             .replacingOccurrences(of: "<entry-index xmlns=\"\" id=\"index\"/>", with: "")
                     }
                     text.replaceNonASCIIHTMLNodes()
-                    return "<style>\(css)</style>\(text)"
+                    let horizontalTextCSS = """
+                    body {
+                        writing-mode: horizontal-tb !important;
+                    }
+                    """
+                    return """
+                    <style>
+                        \(css)
+                        \(forceHorizontalText ? horizontalTextCSS : "")
+                    </style>
+                    <script>
+                        document.addEventListener('copy', function (e) {
+                            e.preventDefault();
+                            const rts = [...document.getElementsByTagName('rt')];
+                            rts.forEach(rt => {
+                                rt.style.display = 'none';
+                            });
+                            e.clipboardData.setData('text', window.getSelection().toString());
+                            rts.forEach(rt => {
+                                rt.style.removeProperty('display');
+                            });
+                        });
+                    </script>
+                    \(text)
+                    """
                 }
         }
 
