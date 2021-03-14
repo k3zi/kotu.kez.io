@@ -84,7 +84,6 @@ class DictionaryController: RouteCollection {
             return Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
-                .field(Dictionary.self, \.$name)
                 .join(parent: \.$dictionary)
                 .join(from: Dictionary.self, siblings: \.$owners)
                 .filter(User.self, \.$id == userID)
