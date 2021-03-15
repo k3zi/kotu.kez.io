@@ -745,13 +745,13 @@ rt .underline {
         color: #000;
     }
 
-    .list-group-item {
-        background-color: $dropdown-dark-bg;
-        color: $dropdown-dark-color;
-        border-color: $dropdown-dark-divider-bg;
-    }
+    // .list-group-item {
+    //     color: $dropdown-dark-color;
+    // }
 
     .list-group-item-action {
+        background-color: $dropdown-dark-bg;
+        border-color: $dropdown-dark-divider-bg;
         color: $dropdown-dark-link-color;
         outline: none !important;
 

@@ -1,6 +1,7 @@
 import Fluent
 import FluentPostgresDriver
 import FluentSQLiteDriver
+import Gatekeeper
 import Leaf
 import Redis
 import Vapor
@@ -76,6 +77,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Dictionary.Migration3())
     app.migrations.add(DictionaryRemoveJob.Migration())
     app.migrations.add(ReviewLog.Migration(), ReviewLog.Migration1())
+    app.migrations.add(DictionaryOwner.Migration1())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
@@ -294,6 +296,10 @@ public func configure(_ app: Application) throws {
     }
 
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init(_:)) ?? 1271
+
+    app.caches.use(.memory)
+    app.gatekeeper.config = .init(maxRequests: 10, per: .second)
+    app.gatekeeper.keyMakers.use(.hostname)
 
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))

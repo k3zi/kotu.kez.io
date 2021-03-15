@@ -54,6 +54,7 @@ import MediaPlexPlayer from './Media/PlexPlayer';
 import MediaReader from './Media/Reader';
 
 import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
+import TestsPitchAccentNames from './Tests/PitchAccent/Names';
 
 import AdminUsers from './Admin/Users';
 import AdminFeedback from './Admin/Feedback';
@@ -339,8 +340,12 @@ class App extends React.Component {
                                     </NavDropdown>
 
                                     <NavDropdown title='Tests'>
+                                        <NavDropdown.Header>Pitch Accent</NavDropdown.Header>
                                         <LinkContainer to="/tests/pitchAccent/minimalPairs">
-                                            <NavDropdown.Item active={false}>Pitch Accent (Minimal Pairs)</NavDropdown.Item>
+                                            <NavDropdown.Item active={false}>Minimal Pairs (Perception)</NavDropdown.Item>
+                                        </LinkContainer>
+                                        <LinkContainer to="/tests/pitchAccent/names">
+                                            <NavDropdown.Item active={false}>Names (Recall)</NavDropdown.Item>
                                         </LinkContainer>
                                     </NavDropdown>
 
@@ -508,6 +513,9 @@ class App extends React.Component {
 
                                 <Route path="/tests/pitchAccent/minimalPairs">
                                     {this.loginProtect(<TestsPitchAccentMinimalPairs />)}
+                                </Route>
+                                <Route path="/tests/pitchAccent/names">
+                                    {this.loginProtect(<TestsPitchAccentNames />)}
                                 </Route>
                             </Switch>}
                         </Container>

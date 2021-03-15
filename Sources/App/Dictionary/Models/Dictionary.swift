@@ -137,6 +137,9 @@ final class DictionaryOwner: Model {
     @Parent(key: "owner_id")
     var owner: User
 
+    @Field(key: "order")
+    var order: Int
+
     init() { }
 
     init(id: UUID? = nil, dictionary: Dictionary, owner: User) throws {
@@ -162,6 +165,22 @@ extension DictionaryOwner {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "CreateDictionaryOwnerOrder" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("order", .int, .required, .sql(.default(0)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("order")
+                .update()
         }
     }
 

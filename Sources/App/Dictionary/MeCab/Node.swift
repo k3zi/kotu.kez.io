@@ -26,6 +26,27 @@ extension Node {
         return nine == "*" ? rawPronunciation : nine
     }
 
+    var sapiPronunciation: String {
+        let mainStress = "'"
+        var result = ""
+        var mora = 1
+        var i = 0
+        let pronunciation = Array(self.pronunciation)
+        while i < pronunciation.count {
+            result.append(pronunciation[i])
+            i += 1
+            while i < pronunciation.count && String.smallRowKanaExcludingSokuon.contains(pronunciation[i].unicodeScalars.first!) {
+                result.append(pronunciation[i])
+                i += 1
+            }
+            if mora == pitchAccents[0].mora {
+                result += mainStress
+            }
+            mora += 1
+        }
+        return result
+    }
+
     var rawPronunciation: String {
         (features.count > 6 ? features[6] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
     }

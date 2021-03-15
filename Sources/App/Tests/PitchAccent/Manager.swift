@@ -1,4 +1,34 @@
 import Vapor
+import Yams
+
+struct RandomNames: Decodable {
+
+    struct Name: Decodable, Encodable {
+        let kanji: String
+        let hiragana: String
+        let katakana: String
+
+        init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            kanji = try container.decode(String.self)
+            hiragana = try container.decode(String.self)
+            katakana = try container.decode(String.self)
+        }
+    }
+
+    struct FirstName: Decodable {
+        let male: [Name]
+        let female: [Name]
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case firstNames = "first_name"
+        case lastNames = "last_name"
+    }
+
+    let firstNames: FirstName
+    let lastNames: [Name]
+}
 
 struct PitchAccentManager {
 
@@ -24,10 +54,15 @@ struct PitchAccentManager {
             MinimalPair(kana: $0[0][0].kana, pairs: $0.map { .init(pitchAccent: $0[0].accents[0].accent[0].pitchAccent, entries: $0, soundFile: $0[0].accents[0].soundFile!) })
         }
 
-        _shared = .init(entries: entries, minimalPairs: minimalPairs)
+        let nameData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/misc/random/names.yml"))
+        let decoder = YAMLDecoder()
+        let decoded = try! decoder.decode(RandomNames.self, from: String(data: nameData, encoding: .utf8)!)
+
+        _shared = .init(entries: entries, minimalPairs: minimalPairs, randomNames: decoded)
     }
 
     let entries: [PitchAccentEntry]
     let minimalPairs: [MinimalPair]
+    let randomNames: RandomNames
 
 }

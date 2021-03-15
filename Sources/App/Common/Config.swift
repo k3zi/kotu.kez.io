@@ -17,4 +17,7 @@ struct Config: Decodable {
     let databasePassword: String
     let databaseName: String
 
+    let awsAccessKeyId: String
+    let awsSecretKey: String
+
 }

@@ -2,15 +2,6 @@ import { withRouter } from 'react-router';
 import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 
-import AceEditor from 'react-ace';
-import 'ace-builds/webpack-resolver';
-import 'ace-builds/src-noconflict/mode-css';
-import 'ace-builds/src-noconflict/mode-html';
-import 'ace-builds/src-noconflict/theme-github';
-import 'ace-builds/src-noconflict/ext-language_tools';
-
-ace.config.set('basePath', '/generated');
-
 import _ from 'underscore';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -36,7 +27,6 @@ class MinimalPairs extends React.Component {
             minimalPair: null,
             pairIndex: null,
             selectedIndex: null,
-            showGradeButtons: false,
             started: false,
             history: []
         };
@@ -119,6 +109,7 @@ class MinimalPairs extends React.Component {
                 {!this.state.started && <Row>
                     <Col xs={0} lg={3}></Col>
                     <Col xs={12} lg={6}>
+                        <h3 className='text-center'>Minimal Pairs Pitch Accent Perception Test</h3>
                         <div className="d-grid">
                             <Button block variant="primary" onClick={() => this.start()}>Start</Button>
                         </div>
@@ -152,19 +143,6 @@ class MinimalPairs extends React.Component {
                                     </Col>;
                                 })}
                             </Row>
-                            {!this.state.showGradeButtons && <div className="d-grid">
-                            </div>}
-                            {this.state.showGradeButtons && <div className="text-center">
-                                <span className='px-2'>Again</span>
-                                <ButtonGroup className="mb-2　d-block">
-                                    <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(2)}>2</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(3)}>3</Button>
-                                    <Button variant='warning' onClick={() => this.selectGrade(4)}>4</Button>
-                                    <Button variant='success' onClick={() => this.selectGrade(5)}>5</Button>
-                                </ButtonGroup>
-                                <span className='px-2'>Easy</span>
-                            </div>}
                         </Col>
                         <Col xs={12} lg={3} className='order-1 order-lg-2 mt-3 mt-lg-0'>
                             <h4 className='text-center'>Statistics</h4>

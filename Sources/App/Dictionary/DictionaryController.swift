@@ -2,6 +2,23 @@ import Fluent
 import MeCab
 import Vapor
 
+extension Data {
+
+    func sha256() -> String {
+        let hashed = SHA256.hash(data: self)
+        return hashed.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+}
+
+extension String {
+
+    func sha256() -> String {
+        self.data(using: .utf8)!.sha256()
+    }
+
+}
+
 class DictionaryController: RouteCollection {
 
     func boot(routes: RoutesBuilder) throws {
@@ -117,6 +134,7 @@ class DictionaryController: RouteCollection {
                 .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .filter(User.self, \.$id == userID)
                 .sort(\.$text)
+                .sort(DictionaryOwner.self, \.$order)
                 .sort(Dictionary.self, \.$name)
                 .paginate(for: req)
                 .map { page in
