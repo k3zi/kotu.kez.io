@@ -34,6 +34,7 @@ public class DataTokenizer {
     func consume(times: Int) -> [UInt8] {
         var result = [UInt8]()
         for _ in 0..<times {
+            if reachedEnd { return result }
             result.append(consume())
         }
         return result

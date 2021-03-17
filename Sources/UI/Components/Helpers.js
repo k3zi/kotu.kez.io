@@ -117,6 +117,30 @@ helpers.outputAccent = (word, accent) => {
     return output;
 };
 
+helpers.outputAccentPlainText = (word, accent) => {
+    const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
+    let output = '';
+    let mora = 0;
+    let i = 0;
+    while (i < word.length) {
+        output += word.charAt(i);
+
+        i++;
+        mora++;
+
+        while (i < word.length && smallrowKatakana.includes(word.charAt(i))) {
+            output += word.charAt(i);
+            i++;
+        }
+
+        if (mora === accent) {
+            output += "＼"
+        }
+    }
+
+    return output;
+};
+
 helpers.generateManualPitchElement = (rawText) => {
     const regex = /([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)([／｀　 ＼\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff00-\uff9f]+)([^・\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f]*)/gm;
     let match;

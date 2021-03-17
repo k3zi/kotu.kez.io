@@ -30,6 +30,11 @@ struct RandomNames: Decodable {
     let lastNames: [Name]
 }
 
+struct Counter: Content {
+    let id: String
+    let name: String
+}
+
 struct PitchAccentManager {
 
     fileprivate static var _shared: PitchAccentManager?
@@ -53,16 +58,21 @@ struct PitchAccentManager {
         let minimalPairs = groupsByKanaGroupedByAccent.filter { $0.count > 1 }.map {
             MinimalPair(kana: $0[0][0].kana, pairs: $0.map { .init(pitchAccent: $0[0].accents[0].accent[0].pitchAccent, entries: $0, soundFile: $0[0].accents[0].soundFile!) })
         }
+        
+        let counters = entries.filter { $0.type == .counter }
+        let allCounters = counters.map { Counter(id: $0.id, name: $0.kanji.count > 0 ? "\($0.kanji[0])（\($0.kana)）" : $0.kana) }
 
         let nameData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/misc/random/names.yml"))
         let decoder = YAMLDecoder()
         let decoded = try! decoder.decode(RandomNames.self, from: String(data: nameData, encoding: .utf8)!)
 
-        _shared = .init(entries: entries, minimalPairs: minimalPairs, randomNames: decoded)
+        _shared = .init(entries: entries, minimalPairs: minimalPairs, allCounters: allCounters, counters: counters, randomNames: decoded)
     }
 
     let entries: [PitchAccentEntry]
     let minimalPairs: [MinimalPair]
+    let allCounters: [Counter]
+    let counters: [PitchAccentEntry]
     let randomNames: RandomNames
 
 }

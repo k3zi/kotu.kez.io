@@ -29,10 +29,25 @@ extension CompressedFileContainer {
         public static func parse(tokenizer: DataTokenizer, encoding: String.Encoding = .utf8) throws -> Self {
             var files = [File]()
             while !tokenizer.reachedEnd {
+                tokenizer.consumeUntil(nextByteGroupOf: 4)
+                if tokenizer.reachedEnd {
+                    break
+                }
                 let size = tokenizer.consumeInt32()
                 let dataArray = tokenizer.dataConsuming(times: Int(size))
                 let data = Data(dataArray)
-                let decompressedData = try data.gunzipped()
+                
+                let decompressedData: Data
+                do {
+                    decompressedData = try data.gunzipped()
+                } catch {
+                    if let string = String(data: data, encoding: encoding) {
+                        files.append(File(text: string))
+                        continue
+                    } else {
+                        throw error
+                    }
+                }
 
                 let partTokenizer = DataTokenizer(data: decompressedData)
                 while !partTokenizer.reachedEnd {

@@ -25,6 +25,11 @@ struct PitchAccentEntry: Content {
 
     }
 
+    struct Subentry: Content {
+        let number: String?
+        let accents: [AccentGroup]
+    }
+
     let id: String
     let kana: String
     let kanji: [String]
@@ -32,6 +37,7 @@ struct PitchAccentEntry: Content {
     let usage: String?
     let category: String?
     let accents: [AccentGroup]
+    let subentries: [Subentry]
     let type: Kind
     let moraCount: Int
 

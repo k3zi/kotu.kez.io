@@ -67,8 +67,6 @@ class Names extends React.Component {
             return;
         }
 
-        console.log(name);
-
         const text = `${name.lastName.kanji}${name.firstName.kanji}`;
         const element = await Helpers.generateVisualSentenceElement(`<span class='visual-type-none ruby-type-${this.context.settings.tests.pitchAccent.showFurigana ? 'veryCommon' : 'none'} page fs-2'><span>${text}</span></span>`, text);
         this.setState({
@@ -99,7 +97,7 @@ class Names extends React.Component {
         name.incorrectCount = (name.incorrectCount || 0) + (correct ? 0 : 1);
         name.correctCount = (name.correctCount || 0) + (correct ? 1 : 0);
         history.unshift(name);
-        this.setState({ history, correctCount: history.filter(i => i.correctCount > i.incorrectCount).length, incorrectCount: history.filter(i => i.correctCount <= i.incorrectCount).length })
+        this.setState({ history, correctCount: history.filter(i => i.correctCount > i.incorrectCount).length, incorrectCount: history.filter(i => i.correctCount <= i.incorrectCount).length });
         this.load();
     }
 

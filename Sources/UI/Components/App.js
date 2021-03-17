@@ -55,6 +55,7 @@ import MediaReader from './Media/Reader';
 
 import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
 import TestsPitchAccentNames from './Tests/PitchAccent/Names';
+import TestsPitchAccentCounters from './Tests/PitchAccent/Counters';
 
 import AdminUsers from './Admin/Users';
 import AdminFeedback from './Admin/Feedback';
@@ -349,6 +350,9 @@ class App extends React.Component {
                                         <LinkContainer to="/tests/pitchAccent/names">
                                             <NavDropdown.Item active={false}>Names (Recall)</NavDropdown.Item>
                                         </LinkContainer>
+                                        <LinkContainer to="/tests/pitchAccent/counters">
+                                            <NavDropdown.Item active={false}>Counters (Recall)</NavDropdown.Item>
+                                        </LinkContainer>
                                     </NavDropdown>
 
                                     <LinkContainer exact to="/articles">
@@ -518,6 +522,9 @@ class App extends React.Component {
                                 </Route>
                                 <Route path="/tests/pitchAccent/names">
                                     {this.loginProtect(<TestsPitchAccentNames />)}
+                                </Route>
+                                <Route path="/tests/pitchAccent/counters">
+                                    {this.loginProtect(<TestsPitchAccentCounters />)}
                                 </Route>
                             </Switch>}
                         </Container>

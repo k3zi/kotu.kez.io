@@ -131,7 +131,7 @@ class MinimalPairs extends React.Component {
                         <Col xs={12} lg={6} className='text-center order-0 order-lg-1'>
                             <h3 className='text-center'>{this.state.minimalPair.kana}</h3>
                             <audio controls autoPlay>
-                                <source src={`/api/tests/pitchAccent/minimalPairs/audio/${this.state.minimalPair.pairs[this.state.pairIndex].soundFile}`} type='audio/mpeg' />
+                                <source src={`/api/media/nhk/audio/${this.state.minimalPair.pairs[this.state.pairIndex].soundFile}`} type='audio/mpeg' />
                             </audio>
                             <hr />
                             <Row>
