@@ -160,6 +160,12 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
 
+                    <h5>Tests</h5>
+                    <h6>Pitch Accent</h6>
+                    <Form.Group className='mb-3' controlId="settingsTestsPitchAccentShowFurigana">
+                        <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.showFurigana} onChange={(e) => this.save(e, (s) => s.tests.pitchAccent.showFurigana = e.target.checked)} type="checkbox" label="Show Furigana Over Kanji" />
+                    </Form.Group>
+
                     <h5>UI</h5>
                     <Form.Group className='mb-3' controlId="settingsPrefersColorContrast">
                         <Form.Check defaultChecked={this.props.user.settings.ui.prefersColorContrast} onChange={(e) => this.save(e, (s) => s.ui.prefersColorContrast = e.target.checked)} type="checkbox" label="Prefer Color Contrast" />

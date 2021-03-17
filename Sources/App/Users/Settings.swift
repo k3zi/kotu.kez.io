@@ -5,6 +5,7 @@ struct Settings: Content {
     enum CodingKeys: String, CodingKey {
         case anki
         case reader
+        case tests
         case ui
     }
 
@@ -65,8 +66,39 @@ struct Settings: Content {
         }
     }
 
+    struct Tests: Content {
+        enum CodingKeys: String, CodingKey {
+            case pitchAccent
+        }
+
+        struct PitchAccent: Content {
+            enum CodingKeys: String, CodingKey {
+                case showFurigana
+            }
+
+            var showFurigana: Bool = true
+
+            init() { }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                showFurigana = (try? container.decodeIfPresent(Bool.self, forKey: .showFurigana)) ?? true
+            }
+        }
+
+        var pitchAccent = PitchAccent()
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            pitchAccent = (try? container.decodeIfPresent(PitchAccent.self, forKey: .pitchAccent)) ?? PitchAccent()
+        }
+    }
+
     var anki = Anki()
     var reader = Reader()
+    var tests = Tests()
     var ui = UI()
 
     init() { }
@@ -75,6 +107,7 @@ struct Settings: Content {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         anki = (try? container.decodeIfPresent(Anki.self, forKey: .anki)) ?? Anki()
         reader = (try? container.decodeIfPresent(Reader.self, forKey: .reader)) ?? Reader()
+        tests = (try? container.decodeIfPresent(Tests.self, forKey: .tests)) ?? Tests()
         ui = (try? container.decodeIfPresent(UI.self, forKey: .ui)) ?? UI()
     }
 

@@ -118,10 +118,12 @@ class App extends React.Component {
         }
 
         this.updateColorScheme();
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            const colorScheme = ((this.state.user && this.state.user.settings.ui.prefersDarkMode) || e.matches) ? 'dark' : 'light';
-            this.setState({ colorScheme });
-        });
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                const colorScheme = ((this.state.user && this.state.user.settings.ui.prefersDarkMode) || e.matches) ? 'dark' : 'light';
+                this.setState({ colorScheme });
+            });
+        }
 
         document.addEventListener('copy', function (e) {
             e.preventDefault();

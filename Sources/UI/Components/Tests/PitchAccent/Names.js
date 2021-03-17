@@ -21,6 +21,8 @@ import Table from 'react-bootstrap/Table';
 
 import Helpers from './../../Helpers';
 
+import UserContext from './../../Context/User';
+
 class Names extends React.Component {
 
     constructor(props) {
@@ -45,13 +47,36 @@ class Names extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/tests/pitchAccent/names/random`);
-        if (response.ok) {
-            const name = await response.json();
-            const text = `${name.lastName.kanji}${name.firstName.kanji}`;
-            const element = await Helpers.generateVisualSentenceElement(`<span class='visual-type-none ruby-type-veryCommon page fs-2'><span>${text}</span></span>`, text);
-            this.setState({ name, answerHTML: null, nameHTML: element.innerHTML });
+        const failed = this.state.history.filter(i => i.incorrectCount >= i.correctCount && i != this.state.name);
+        let name;
+        if (failed.length >= 5 || (failed.length > 0 && Math.random() < 0.2)) {
+            name = failed[Math.floor(Math.random() * failed.length)];
+            this.state.history = this.state.history.filter(i => i != name);
         }
+
+        if (!name) {
+            const response = await fetch(`/api/tests/pitchAccent/names/random`);
+            if (response.ok) {
+                name = await response.json();
+                name.incorrectCount = 0;
+                name.correctCount = 0;
+            }
+        }
+
+        if (!name) {
+            return;
+        }
+
+        console.log(name);
+
+        const text = `${name.lastName.kanji}${name.firstName.kanji}`;
+        const element = await Helpers.generateVisualSentenceElement(`<span class='visual-type-none ruby-type-${this.context.settings.tests.pitchAccent.showFurigana ? 'veryCommon' : 'none'} page fs-2'><span>${text}</span></span>`, text);
+        this.setState({
+            name,
+            answerHTML: null,
+            nameHTML: element.innerHTML,
+            history: this.state.history.filter(i => i != name)
+        });
     }
 
     async showAnswer() {
@@ -71,14 +96,12 @@ class Names extends React.Component {
     mark(correct) {
         const history = this.state.history;
         const name = this.state.name;
-        history.unshift({
-            correct,
-            name
-        });
-        this.setState({ history, correctCount: history.filter(i => i.correct).length, incorrectCount: history.filter(i => !i.correct).length })
+        name.incorrectCount = (name.incorrectCount || 0) + (correct ? 0 : 1);
+        name.correctCount = (name.correctCount || 0) + (correct ? 1 : 0);
+        history.unshift(name);
+        this.setState({ history, correctCount: history.filter(i => i.correctCount > i.incorrectCount).length, incorrectCount: history.filter(i => i.correctCount <= i.incorrectCount).length })
         this.load();
     }
-
 
     accentOutput(word, accent) {
         const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
@@ -125,7 +148,7 @@ class Names extends React.Component {
                             <h4 className='text-center'>History</h4>
                             <ListGroup className="overflow-auto hide-scrollbar max-vh-75">
                                 {this.state.history.map((item, i) => {
-                                    return <ListGroup.Item key={i} variant={item.correct ? 'success' : 'danger'}>{this.accentOutput(item.name.lastNamePronunciation, item.name.lastNamePitchAccent.mora)}・{this.accentOutput(item.name.firstNamePronunciation, item.name.firstNamePitchAccent.mora)}</ListGroup.Item>;
+                                    return <ListGroup.Item key={i} variant={item.correctCount > item.incorrectCount ? 'success' : (item.correctCount == item.incorrectCount ? 'warning' : 'danger')}>{this.accentOutput(item.lastNamePronunciation, item.lastNamePitchAccent.mora)}・{this.accentOutput(item.firstNamePronunciation, item.firstNamePitchAccent.mora)}</ListGroup.Item>;
                                 })}
                             </ListGroup>
                         </Col>
@@ -156,4 +179,5 @@ class Names extends React.Component {
     }
 }
 
+Names.contextType = UserContext;
 export default Names;

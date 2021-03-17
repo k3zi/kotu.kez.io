@@ -88,13 +88,14 @@ class YouTubePlayer extends React.Component {
         }
         const time = this.state.playerRef.getCurrentTime();
         const subtitle = this.state.subtitles.find(s => s.startTime < time && time < s.endTime);
-        if (this.state.subtitle != subtitle) {
-            this.setState({ subtitle });
-            if (subtitle) {
-                const element = await Helpers.generateVisualSentenceElement(`<div class='page dark'><span>${subtitle.text}</span></div>`, subtitle.text);
-                if (this.state.subtitle == subtitle) {
-                    this.setState({ subtitleHTML: element.innerHTML });
-                }
+        if (this.state.subtitle === subtitle) {
+            return;
+        }
+        this.setState({ subtitle });
+        if (subtitle) {
+            const element = await Helpers.generateVisualSentenceElement(`<div class='page dark'><span>${subtitle.text}</span></div>`, subtitle.text);
+            if (this.state.subtitle == subtitle) {
+                this.setState({ subtitleHTML: element.innerHTML });
             }
         }
     }
