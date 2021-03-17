@@ -88,7 +88,8 @@ class Counters extends React.Component {
 
         if (response.ok) {
             const number = await response.json();
-            const element = await Helpers.parseMarkdown(`[mfurigana: ${number.number} ${number.counter}${number.counter !== number.kana ? `[${number.kana}]` : ''}]`);
+            number.counter = number.counter === '整数' ? '' : number.counter;
+            const element = await Helpers.parseMarkdown(`[mfurigana: ${number.number} ${number.counter}${number.counter && number.counter.length > 0 !== number.kana ? `[${number.kana}]` : ''}]`);
             this.setState({
                 number,
                 numberHTML: this.context.settings.tests.pitchAccent.showFurigana ? element : `${number.number}${number.counter}`,
