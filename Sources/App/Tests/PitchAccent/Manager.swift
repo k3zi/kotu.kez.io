@@ -60,7 +60,7 @@ struct PitchAccentManager {
         }
         
         let counters = entries.filter { $0.type == .counter }
-        let allCounters = counters.map { Counter(id: $0.id, name: $0.kanji.count > 0 ? "\($0.kanji[0])（\($0.kana)）" : $0.kana) }
+        let allCounters = counters.map { Counter(id: $0.id, name: "\($0.kanji.count > 0 ? "\($0.kanji[0]) (\($0.kana))" : $0.kana)\($0.usage.flatMap { " (\($0))" } ?? "")") }
 
         let nameData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/misc/random/names.yml"))
         let decoder = YAMLDecoder()

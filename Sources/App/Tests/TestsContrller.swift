@@ -22,7 +22,8 @@ class TestsController: RouteCollection {
             let number: String
             let counter: String
             let kana: String
-            let accent: PitchAccentEntry.AccentGroup
+            let usage: String?
+            let accents: [PitchAccentEntry.AccentGroup]
         }
 
         counters.post("random") { (req: Request) -> RandomCounterNumber in
@@ -36,7 +37,7 @@ class TestsController: RouteCollection {
             guard let entry = counter.subentries.filter({ !$0.accents.isEmpty }).randomElement() else {
                 throw Abort(.internalServerError)
             }
-            return RandomCounterNumber(number: entry.number ?? "", counter: counter.kanji.count > 0 ? counter.kanji[0] : counter.kana, kana: counter.kana, accent: entry.accents[0])
+            return RandomCounterNumber(number: entry.number ?? "", counter: counter.kanji.count > 0 ? counter.kanji[0] : counter.kana, kana: counter.kana, usage: counter.usage, accents: entry.accents)
         }
 
         names.get("random") { (req: Request) -> RandomName in

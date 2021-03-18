@@ -70,7 +70,7 @@ class RegisterModal extends React.Component {
                     <Form onSubmit={(e) => this.submit(e)}>
                         <Form.Group controlId="registerModalUsername" className='mb-3'>
                             <Form.Label>Username</Form.Label>
-                            <Form.Control type="text" name="username" placeholder="Enter a username" />
+                            <Form.Control type="text" name="username" autocorrect="off" autocapitalize="none" placeholder="Enter a username" />
                         </Form.Group>
 
                         <Form.Group controlId="registerModalPassword" className='mb-3'>

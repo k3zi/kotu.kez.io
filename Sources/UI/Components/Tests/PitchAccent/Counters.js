@@ -34,7 +34,8 @@ class Counters extends React.Component {
             selectedCounters: [],
             number: null,
             numberHTML: null,
-            answerHTML: null,
+            answer: null,
+            otherAnswers: [],
             started: false,
             history: [],
             correctCount: 0,
@@ -89,19 +90,24 @@ class Counters extends React.Component {
         if (response.ok) {
             const number = await response.json();
             number.counter = number.counter === '整数' ? '' : number.counter;
-            const element = await Helpers.parseMarkdown(`[mfurigana: ${number.number} ${number.counter}${number.counter && number.counter.length > 0 !== number.kana ? `[${number.kana}]` : ''}]`);
+            const element = await Helpers.parseMarkdown(`[mfurigana: ${number.number} ${number.counter}${number.counter && number.counter.length > 0 && number.counter !== number.kana ? `[${number.kana}]` : ''}]`);
             this.setState({
                 number,
                 numberHTML: this.context.settings.tests.pitchAccent.showFurigana ? element : `${number.number}${number.counter}`,
-                answerHTML: null
+                answer: null,
+                otherAnswers: []
             });
         }
     }
 
     async showAnswer() {
-        const answer = this.state.number.accent.accent.map(a => Helpers.outputAccentPlainText(a.pronunciation, a.pitchAccent)).join('・');
-        const element = await Helpers.parseMarkdown(`[mpitch: ${answer}]`);
-        this.setState({ answerHTML: element });
+        const answers = this.state.number.accents.map(accent => {
+            const html = Helpers.parseMarkdown(`[mpitch: ${accent.accent.map(a => Helpers.outputAccentPlainText(a.pronunciation, a.pitchAccent)).join('・')}]`);
+            const soundFile = accent.soundFile;
+            return { html, soundFile };
+        });
+        const answer = answers.shift();
+        this.setState({ answer, otherAnswers: answers });
     }
 
     markCorrect() {
@@ -154,23 +160,32 @@ class Counters extends React.Component {
                             <h4 className='text-center'>History</h4>
                             <ListGroup className="overflow-auto hide-scrollbar max-vh-75">
                                 {this.state.history.map((item, i) => {
-                                    return <ListGroup.Item key={i} variant={item.correct ? 'success' : 'danger'}>{item.accent.accent.map(a => Helpers.outputAccentPlainText(a.pronunciation, a.pitchAccent)).join('・')}</ListGroup.Item>;
+                                    return <ListGroup.Item key={i} variant={item.correct ? 'success' : 'danger'}>{item.accents[0].accent.map(a => Helpers.outputAccentPlainText(a.pronunciation, a.pitchAccent)).join('・')}</ListGroup.Item>;
                                 })}
                             </ListGroup>
                         </Col>
                         <Col xs={12} lg={6} className='text-center order-0 order-lg-1'>
                             {this.state.numberHTML && <h2 className='text-center' dangerouslySetInnerHTML={{__html: this.state.numberHTML}}></h2>}
-                            {this.state.answerHTML && <div>
+                            {this.state.number && this.state.number.usage && <h6 className='text-center text-muted'>{this.state.number.usage}</h6>}
+                            {this.state.answer && <div>
                                 <hr />
-                                <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: this.state.answerHTML}}></span>
+                                <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: this.state.answer.html}}></span>
                                 <audio controls autoPlay>
-                                    <source src={`/api/media/nhk/audio/${this.state.number.accent.soundFile}`} type='audio/mpeg' />
+                                    <source src={`/api/media/nhk/audio/${this.state.answer.soundFile}`} type='audio/mpeg' />
                                 </audio>
+
+                                {this.state.otherAnswers.length > 0 && <h4 className='mt-1'>Other Answers:</h4>}
+                                {this.state.otherAnswers.map(answer => <div className='d-flex justify-content-between mx-4 mb-1'>
+                                    <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: answer.html}}></span>
+                                    <audio controls>
+                                        <source src={`/api/media/nhk/audio/${answer.soundFile}`} type='audio/mpeg' />
+                                    </audio>
+                                </div>)}
                             </div>}
-                            {!this.state.answerHTML && <div className="d-grid">
+                            {!this.state.answer && <div className="d-grid">
                                 <Button block variant="primary" onClick={() => this.showAnswer()}>Show Answer</Button>
                             </div>}
-                            {this.state.answerHTML && <div className='d-flex justify-content-evenly mt-3'>
+                            {this.state.answer && <div className='d-flex justify-content-evenly mt-3'>
                                 <Button className='flex-fill mx-2' block variant='danger' onClick={() => this.markIncorrect()}>Incorrect</Button>
                                 <Button className='flex-fill mx-2' block variant='success' onClick={() => this.markCorrect()}>Correct</Button>
                             </div>}
