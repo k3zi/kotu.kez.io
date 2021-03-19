@@ -21,6 +21,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 import YouTube from 'react-youtube';
 
 import AddTargetLanguageModal from './AddTargetLanguageModal';
+import AutoSyncModal from './AutoSyncModal';
 import ContentEditable from './../Common/ContentEditable';
 import InviteUserModal from './InviteUserModal';
 import ShareURLModal from './ShareURLModal';
@@ -52,6 +53,7 @@ class Project extends React.Component {
             showInviteUserModal: false,
             showShareURLModal: false,
             showEditFragmentModal: null,
+            showAutoSyncModal: null,
             showFragmentEmbed: null,
             videoDuration: 0,
             currentTime: 0,
@@ -235,6 +237,15 @@ class Project extends React.Component {
         this.setState({
             showEditFragmentModal: fragment
         });
+    }
+
+    toggleShowAutoSyncModal(show) {
+        this.setState({
+            showAutoSyncModal: show
+        });
+        if (!show) {
+            this.loadProject();
+        }
     }
 
     async addedNewTargetTranslation(translation) {
@@ -553,10 +564,11 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <Container className='py-0 mt-3'><Row noGutters className="float-right text-center gap-2 justify-content-center">
-                                <Button variant='primary' className='col me-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                <Button variant='primary' className='col ms-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
-                            </Row></Container>}
+                            {this.state.canWrite && <div className='d-flex justify-content-between mx-4 mt-3'>
+                                <Button variant='primary' className='col mx-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                <Button variant='primary' className='col mx-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                                {this.state.fragments.length === 0 && <Button variant='primary' className='col mx-1' onClick={() => this.toggleShowAutoSyncModal(true)}>Auto Sync</Button>}
+                            </div>}
                         </Col>
                     </Row>
                     <Row className="align-items-center justify-content-center">
@@ -729,6 +741,7 @@ class Project extends React.Component {
                     <AddTargetLanguageModal project={this.state.project} show={this.state.showAddTargetLanguageModal} onHide={() => this.toggleAddTargetLanguageModal(false)} didCancel={() => this.toggleAddTargetLanguageModal(false)} onFinish={(t) => this.addedNewTargetTranslation(t)} />
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
                     <EditFragmentModal ws={this.ws} project={this.state.project} fragment={this.state.showEditFragmentModal} show={!!this.state.showEditFragmentModal} onHide={() => this.toggleShowEditFragmentModal(null)} didCancel={() => this.toggleShowEditFragmentModal(null)} onFinish={() => this.toggleShowEditFragmentModal(null)} />
+                    <AutoSyncModal project={this.state.project} show={this.state.showAutoSyncModal} onHide={() => this.toggleShowAutoSyncModal(false)} didCancel={() => this.toggleShowAutoSyncModal(false)} onFinish={() => this.toggleShowAutoSyncModal(false)} />
                     <FragmentEmbedModal project={this.state.project} fragment={this.state.showFragmentEmbed} onHide={() => this.showFragmentEmbed(null)} />
                     {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}

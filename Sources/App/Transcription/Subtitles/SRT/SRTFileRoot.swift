@@ -7,11 +7,7 @@ struct SRTFileRoot: SubtitleFileRoot {
     // <root> ::= <sub-seq>
     // <sub-seq> ::= <sub> | <sub>\n\n<sub-seq>
     static func parse(tokenizer: Tokenizer) throws -> SRTFileRoot {
-        var subtitles = [Subtitle]()
-        while Subtitle.canParse(tokenizer: tokenizer) {
-            subtitles.append(try Subtitle.parse(tokenizer: tokenizer))
-            tokenizer.consume(while: "\n")
-        }
+        let subtitles = tokenizer.input.match("\\d\\d:\\d\\d:\\d\\d.\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d.\\d\\d\\d.*?\\n(?:.*?)\\n\\n").concurrentMap { try? Subtitle.parse(tokenizer: Tokenizer(input: $0[0])) }.compactMap { $0 }
         return .init(subtitles: subtitles)
     }
 

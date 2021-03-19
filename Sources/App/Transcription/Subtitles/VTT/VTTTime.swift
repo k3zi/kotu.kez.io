@@ -10,7 +10,7 @@ extension VTTFileRoot.Subtitle.TimeRange {
             tokenizer.next?.isNumber ?? false
         }
 
-        // <time> ::= HH:MM:SS,MIL
+        // <time> ::= HH:MM:SS.MIL
         static func parse(tokenizer: Tokenizer) throws -> Time {
             let hoursString = try tokenizer.consume(times: 2)
             guard let hours = Double(hoursString) else {

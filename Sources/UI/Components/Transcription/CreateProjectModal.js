@@ -127,14 +127,14 @@ class CreateProjectModal extends React.Component {
                             </Form.Control>
                         </Form.Group>}
 
-                        {this.state.didError && <Alert variant="danger">
+                        {this.state.didError && <Alert variant="danger" className='mt-3'>
                             {this.state.message}
                         </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        {!this.state.didError && this.state.message && <Alert variant="info" className='mt-3'>
                             {this.state.message}
                         </Alert>}
 
-                        {this.state.youtubeVideoInfo.videoID && this.state.languages.length > 0 && !this.state.success && <Button className='mt-3 col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
+                        {this.state.youtubeVideoInfo.videoID && this.state.languages.length > 0 && <Button className='mt-3 col-12' variant="primary" type="submit" disabled={this.state.isSubmitting}>
                             {this.state.isSubmitting ? 'Loading...' : 'Create'}
                         </Button>}
                     </Form>

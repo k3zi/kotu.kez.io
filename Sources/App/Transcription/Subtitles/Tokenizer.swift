@@ -96,4 +96,8 @@ class Tokenizer {
         input.count > 1 ? input[input.index(after: input.startIndex)] : nil
     }
 
+    var reachedEnd: Bool {
+        input.isEmpty
+    }
+
 }

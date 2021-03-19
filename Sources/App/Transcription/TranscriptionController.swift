@@ -41,6 +41,16 @@ extension EventLoopFuture where Value == Project {
 
 }
 
+struct SubtitleWord {
+    let text: String
+    let time: VTTFileRoot.Subtitle.TimeRange
+}
+
+struct SubtitleCharacter {
+    let character: Character
+    let time: VTTFileRoot.Subtitle.TimeRange
+}
+
 class TranscriptionController: RouteCollection {
 
     var projectSessions = [UUID: ProjectSession]()
@@ -251,6 +261,175 @@ class TranscriptionController: RouteCollection {
                     response.headers.contentDisposition = .init(.attachment, filename: filename)
                     response.body = .init(data: data)
                     return response
+                }
+        }
+
+        func downloadSubtitles(uuid: String, youtubeID: String, directory: URL, auto: Bool) throws {
+            let task = Process()
+            task.currentDirectoryURL = directory
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
+            var env = task.environment ?? [:]
+            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+            task.environment = env
+
+            task.arguments = [
+                "youtube-dl",
+                "-q",
+                (auto ? "--write-auto-sub" : "--write-sub"),
+                "--sub-lang", "ja",
+                "--sub-format", "vtt",
+                "--skip-download",
+                "-o", "\(uuid)",
+                "--write-info-json",
+                "--no-warnings",
+                "https://youtu.be/\(youtubeID)"
+            ]
+            try task.run()
+            task.waitUntilExit()
+            if task.terminationStatus != 0 {
+                throw Abort(.internalServerError)
+            }
+        }
+
+        project.post(":id", "autoSync") { (req: Request) -> EventLoopFuture<Response> in
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            struct Body: Content {
+                let text: String
+            }
+            let originalText = try req.content.decode(Body.self).text
+
+            // In the future do a join for shared projects.
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .with(\.$translations) { translation in
+                    translation.with(\.$language)
+                }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guardWrite(req: req)
+                .throwingFlatMap { project in
+                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let uuid = UUID().uuidString
+
+                    try downloadSubtitles(uuid: uuid, youtubeID: project.youtubeID, directory: directory, auto: true)
+                    let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
+                    guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
+                        try FileManager.default.removeItem(at: fileURL)
+                        throw Abort(.internalServerError)
+                    }
+
+                    guard let translation = project.translations.first(where: { $0.isOriginal }) else {
+                        throw Abort(.badRequest)
+                    }
+                    let subtitles = subtitleRoot.subtitles
+                    let individualWords = subtitles.concurrentMap { subtitle -> [SubtitleWord] in
+                        var words = [SubtitleWord]()
+                        do {
+                            let tokenizer = Tokenizer(input: subtitle.text)
+                            tokenizer.consume(upUntil: "\n")
+                            try tokenizer.consume(expect: "\n")
+                            var start = subtitle.timeRange.start
+                            var isFirst = true
+                            while (isFirst || tokenizer.hasPrefix("<")) && !tokenizer.reachedEnd {
+                                let text: String
+                                if !isFirst {
+                                    try tokenizer.consume(expect: "<c>")
+                                    text = tokenizer.consume(upUntil: "<")
+                                    try tokenizer.consume(expect: "</c>")
+                                } else {
+                                    text = tokenizer.consume(upUntil: "<")
+                                }
+                                let end: VTTFileRoot.Subtitle.TimeRange.Time
+                                if tokenizer.hasPrefix("<") {
+                                    try tokenizer.consume(expect: "<")
+                                    end = try VTTFileRoot.Subtitle.TimeRange.Time.parse(tokenizer: tokenizer)
+
+                                    try tokenizer.consume(expect: ">")
+                                } else {
+                                    end = subtitle.timeRange.end
+                                }
+                                words.append(.init(text: text, time: .init(start: start, end: end)))
+                                start = end
+                                isFirst = false
+                            }
+                        } catch { }
+                        return words
+                    }.flatMap { $0 }
+
+                    let individualCharacters = individualWords.flatMap { word in
+                        Array(word.text).map { SubtitleCharacter(character: $0, time: word.time)}
+                    }
+                    let alignment = NeedlemanWunsch.align(input1: Array(originalText), input2: individualCharacters.concurrentMap { $0.character })
+                    let originalAlignedCharacters = alignment.output1.enumerated().splitKeepingSeparator(whereSeparator: {
+                        if case let .indexAndValue(_, char) = $0.element {
+                            return ["\n", "。", ".", "？", "?"].contains(char)
+                        }
+                        return false
+                    })
+                    .filter { !$0.isEmpty }
+
+                    let alignedSubtitles = originalAlignedCharacters.compactMap { characters -> MediaSubtitle? in
+                        let text = characters.compactMap {
+                            if case let .indexAndValue(_, value) = $0.element {
+                                return value
+                            }
+                            return nil
+                        }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        if text.isEmpty {
+                            return nil
+                        }
+
+                        let startIndex = characters.first!.offset
+                        let endIndex = characters.last!.offset
+                        let searchArea = alignment.output2[startIndex...endIndex]
+
+                        let optionalStartMatch = searchArea.first(where: {
+                            if case .indexAndValue(_, _) = $0 {
+                                return true
+                            }
+                            return false
+                        })
+                        guard case let .indexAndValue(matchStartIndex, _) = optionalStartMatch else {
+                            return nil
+                        }
+
+                        let optionalEndMatch = searchArea.last(where: {
+                            if case .indexAndValue(_, _) = $0 {
+                                return true
+                            }
+                            return false
+                        })
+                        guard case let .indexAndValue(matchEndIndex, _) = optionalEndMatch else {
+                            return nil
+                        }
+
+                        let startTime = individualCharacters[matchStartIndex].time.start.milliseconds / 1000
+                        let endTime = individualCharacters[matchEndIndex].time.end.milliseconds / 1000
+
+                        return MediaSubtitle(startTime: startTime, endTime: endTime, text: text)
+                    }
+
+                    let chunks = try alignedSubtitles.chunked(into: 127).map { chunk ->  EventLoopFuture<Void> in
+                        let futures = try chunk.map { subtitle -> EventLoopFuture<Void> in
+                            let fragment = Fragment(projectID: try project.requireID(), startTime: subtitle.startTime, endTime: subtitle.endTime)
+                            return fragment.create(on: req.db)
+                                .throwingFlatMap {
+                                    Subtitle(translationID: try translation.requireID(), fragmentID: try fragment.requireID(), text: subtitle.text)
+                                        .create(on: req.db)
+                                }
+                        }
+                        return EventLoopFuture.whenAllSucceed(futures, on: req.eventLoop).map { _ in () }
+                    }
+
+                    return EventLoopFuture.reduce((), chunks, on: req.eventLoop) { _,_  in () }
+                        .map { _ in Response(status: .ok) }
                 }
         }
 

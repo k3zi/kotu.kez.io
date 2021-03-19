@@ -9,7 +9,7 @@ import Modal from 'react-bootstrap/Modal';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
 
-class EditFragmentModal extends React.Component {
+class AutoSyncModal extends React.Component {
 
     constructor(props) {
         super(props);
@@ -19,23 +19,6 @@ class EditFragmentModal extends React.Component {
             message: null,
             success: false
         };
-    }
-
-    parseMilliseconds(time) {
-        let milliseconds = 0;
-        const s = time.split('.');
-        if (s.length > 1) {
-            milliseconds += parseInt(s[s.length - 1]);
-        }
-        const f = s[0];
-        const a = f.split(':');
-        const multipliers = [1000, 60 * 1000, 60 * 60 * 1000];
-        let i = 0;
-        while (a.length > 0 && i < 3) {
-            milliseconds += parseInt(a.pop() * multipliers[i]);
-            i += 1;
-        }
-        return milliseconds;
     }
 
     getShareHash(shouldEncode) {
@@ -52,25 +35,21 @@ class EditFragmentModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        data.startTime = this.parseMilliseconds(data.startTime) / 1000;
-        data.endTime = this.parseMilliseconds(data.endTime) / 1000;
-        const response = await fetch(`/api/transcription/project/${this.props.project.id}/fragment/${this.props.fragment.id}`, {
-            method: 'PUT',
+        const response = await fetch(`/api/transcription/project/${this.props.project.id}/autoSync`, {
+            method: 'POST',
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json',
                 'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
-        const result = await response.json();
-        const success = !result.error;
         this.setState({
             isSubmitting: false,
-            success
+            success: response.ok
         });
 
         if (response.ok) {
-            this.props.onFinish(result);
+            this.props.onFinish();
         } else {
             this.setState({
                 didError: result.error,
@@ -84,19 +63,15 @@ class EditFragmentModal extends React.Component {
             <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
-                        Update Fragment
+                        Auto Sync
                     </Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
                         <Form.Group controlId="editFragmentModalStartTime">
-                            <Form.Label>Start Time (format: hh:mm:ss:zzz)</Form.Label>
-                            <Form.Control autoComplete='off' name="startTime" placeholder="Enter start time (ex: 0:02)" />
-                        </Form.Group>
-                        <Form.Group controlId="editFragmentModalEndTime" className='mt-3'>
-                            <Form.Label>End Time (format: hh:mm:ss:zzz)</Form.Label>
-                            <Form.Control autoComplete='off' name="endTime" placeholder="Enter end time (ex: 0:25)" />
+                            <Form.Label>Original Text</Form.Label>
+                            <Form.Control as='textarea' autoComplete='off' name="text" placeholder="Enter the original text" />
                         </Form.Group>
 
                         {this.state.didError && <Alert variant="danger" className='mt-3'>
@@ -106,11 +81,11 @@ class EditFragmentModal extends React.Component {
                             {this.state.message}
                         </Alert>}
 
-                        {<Button variant="secondary" className='mt-3' disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>}
+                        <Button variant="secondary" className='mt-3' disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>
                         {' '}
-                        {<Button variant="primary" className='mt-3' type="submit" disabled={this.state.isSubmitting}>
-                            {this.state.isSubmitting ? 'Saving...' : 'Save'}
-                        </Button>}
+                        <Button variant="primary" className='mt-3' type="submit" disabled={this.state.isSubmitting}>
+                            {this.state.isSubmitting ? 'Syncing...' : 'Sync'}
+                        </Button>
                     </Form>
                 </Modal.Body>
             </Modal>
@@ -118,4 +93,4 @@ class EditFragmentModal extends React.Component {
     }
 }
 
-export default EditFragmentModal;
+export default AutoSyncModal;
