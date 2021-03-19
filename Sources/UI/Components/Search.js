@@ -23,6 +23,7 @@ class Search extends React.Component {
             query: '',
             isLoading: false,
             option: null,
+            isAudiobook: false,
             options: [
                 {
                     endpoint: '/api/dictionary/search',
@@ -53,19 +54,28 @@ class Search extends React.Component {
         this.load();
     }
 
-    componentDidUpdate(prevProps) {
+    componentDidUpdate(prevProps, prevState) {
+        console.log('state changed');
+        console.log(prevState);
+        console.log(this.state);
+        const audiobook = this.getQueryParam('audiobook') === 'true';
         if (
             this.props.match.params.query != prevProps.match.params.query
             || this.props.match.params.optionValue != prevProps.match.params.optionValue
             || this.props.match.params.page != prevProps.match.params.page
-            || this.props.match.params.per != prevProps.match.params.per) {
+            || this.props.match.params.per != prevProps.match.params.per
+            || this.state.isAudiobook != audiobook) {
+            console.log('did load');
+            this.setState({ isAudiobook: audiobook });
             this.load();
         }
     }
 
+    getQueryParam(key) {
+        return new URLSearchParams(window.location.search).get(key);
+    }
+
     async load() {
-        console.log(this.props.match);
-        console.log(this.props.match.params);
         const query = this.props.match.params.query;
         const optionValue = this.props.match.params.optionValue;
         const option = this.state.options.filter(o => o.value === optionValue)[0] || this.state.options[0];
@@ -83,7 +93,7 @@ class Search extends React.Component {
         if (!query || query.length === 0) {
             return;
         }
-        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}`);
+        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}&audiobook=${this.getQueryParam('audiobook') === 'true' ? 'true' : 'false'}`);
         if (response.ok) {
             const result = await response.json();
 
@@ -103,15 +113,22 @@ class Search extends React.Component {
         this.search(this.props.match.params.query, 1, option);
     }
 
-    async search(query, page, newOption) {
+    async search(query, page, newOption, newAudiobook) {
         const option = newOption || this.state.option || this.state.options[0];
+        const audiobook = typeof newAudiobook !== 'undefined' ? newAudiobook : this.state.isAudiobook;
         const metadata = this.state.metadata;
         metadata.page = page;
-        if (query.length === 0) {
+        if (!query || query.length === 0) {
             this.props.history.push(`/search`);
         } else {
-            this.props.history.push(`/search/${encodeURIComponent(query)}/${option.value}/${page}/${this.state.metadata.per}`);
+            this.props.history.push(`/search/${encodeURIComponent(query)}/${option.value}/${page}/${this.state.metadata.per}?audiobook=${audiobook ? 'true' : 'false'}`);
         }
+    }
+
+    toggleIsAudiobook(e) {
+        console.log('set state');
+        console.log(e.target.checked);
+        this.search(this.props.match.params.query, 1, undefined, e.target.checked);
     }
 
     render() {
@@ -134,6 +151,9 @@ class Search extends React.Component {
                         </ToggleButton>
                     ))}
                 </ButtonGroup>
+                {this.state.option && this.state.option.value === 'other' && <Form.Group className='mb-3' controlId="searchFilters">
+                    <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook || this.getQueryParam('audiobook') === 'true'} onChange={(e) => this.toggleIsAudiobook(e)} />
+                </Form.Group>}
                 <hr />
                 {this.state.option && this.state.option.value === 'words' && <ListGroup>
                     {this.state.results.map((r, i) => {

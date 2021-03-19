@@ -17,13 +17,21 @@ final class AnkiDeckSubtitle: Model, Content {
     @Field(key: "text")
     var text: String
 
+    @OptionalField(key: "start_time")
+    var startTime: Double?
+
+    @OptionalField(key: "end_time")
+    var endTime: Double?
+
     init() { }
 
-    init(id: UUID? = nil, video: AnkiDeckVideo, text: String, externalFile: ExternalFile) {
+    init(id: UUID? = nil, video: AnkiDeckVideo, text: String, externalFile: ExternalFile, startTime: Double? = nil, endTime: Double? = nil) {
         self.id = id
         self.$video.id = try! video.requireID()
         self.$externalFile.id = try! externalFile.requireID()
         self.text = text
+        self.startTime = startTime
+        self.endTime = endTime
     }
 
 }
@@ -44,6 +52,24 @@ extension AnkiDeckSubtitle {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "AnkiDeckSubtitleTiming" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("start_time", .double)
+                .field("end_time", .double)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("start_time")
+                .deleteField("end_time")
+                .update()
         }
     }
 

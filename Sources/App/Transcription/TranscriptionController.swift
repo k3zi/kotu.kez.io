@@ -433,6 +433,142 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
+        func saveSection(application: Application, file: URL, start: Double, end: Double) throws -> URL {
+            let directory = URL(fileURLWithPath: application.directory.resourcesDirectory).appendingPathComponent("Temp")
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let uuid = UUID().uuidString
+
+            let task = Process()
+            task.currentDirectoryURL = directory
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
+            var env = task.environment ?? [:]
+            env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+            task.environment = env
+
+            task.arguments = [
+                "ffmpeg",
+                "-ss", start.toString(),
+                "-to", end.toString(),
+                "-i", file.path,
+                "\(uuid).\(file.pathExtension)"
+            ]
+            try task.run()
+            task.waitUntilExit()
+            if task.terminationStatus != 0 {
+                throw Abort(.internalServerError)
+            }
+
+            return directory.appendingPathComponent(uuid).appendingPathExtension(file.pathExtension)
+        }
+
+        project.grouped(GuardPermissionMiddleware(require: .subtitles)).post(":id", "systemImport") { (req: Request) -> EventLoopFuture<Response> in
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            struct Body: Content {
+                let isAudiobook: Bool
+            }
+            let object = try req.content.decode(Body.self)
+            let tags: [String] = [
+                object.isAudiobook ? "audiobook" : nil
+            ]
+            .compactMap { $0 }
+
+            return Project.query(on: req.db)
+                .with(\.$owner)
+                .with(\.$shares) {
+                    $0.with(\.$sharedUser)
+                }
+                .with(\.$translations) { translation in
+                    translation.with(\.$language)
+                }
+                .with(\.$fragments) { fragments in
+                    fragments.with(\.$subtitles) { subtitle in
+                        subtitle
+                            .with(\.$translation)
+                            .with(\.$fragment)
+                    }
+                }
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
+                .guardRead(req: req)
+                .throwingFlatMap { project in
+                    guard let translation = project.translations.first(where: { $0.isOriginal }) else {
+                        throw Abort(.badRequest)
+                    }
+                    
+                    let subtitles = project.fragments.flatMap { $0.subtitles.filter { $0.translation.id == translation.id } }.sorted(by: { $0.fragment.startTime < $1.fragment.startTime })
+
+                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+                    let externalFilesDirectory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files")
+                    try? FileManager.default.createDirectory(at: externalFilesDirectory, withIntermediateDirectories: true)
+
+                    let uuid = UUID().uuidString
+
+                    let task = Process()
+                    task.currentDirectoryURL = directory
+                    task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
+                    var env = task.environment ?? [:]
+                    env["PATH"] = "/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+                    task.environment = env
+
+                    task.arguments = [
+                        "youtube-dl",
+                        "-q",
+                        "--extract-audio",
+                        "--audio-format", "m4a",
+                        "--audio-quality", "0",
+                        "-o", "\(uuid).%(ext)s",
+                        "https://youtu.be/\(project.youtubeID)"
+                    ]
+                    try task.run()
+                    task.waitUntilExit()
+                    if task.terminationStatus != 0 {
+                        throw Abort(.internalServerError)
+                    }
+
+                    let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("m4a")
+
+                    let savedFiles = try subtitles.map {
+                        try saveSection(application: req.application, file: fileURL, start: $0.fragment.startTime, end: $0.fragment.endTime)
+                    }
+
+                    let video = AnkiDeckVideo(title: project.name, source: "youtube", tags: tags)
+                    return video.create(on: req.db).throwingFlatMap {
+                        let chunks = try Array(subtitles.enumerated()).chunked(into: 127).map { chunk ->  EventLoopFuture<Void> in
+                            let futures = try chunk.map { (index, subtitle) -> EventLoopFuture<Void> in
+                                let filePath = savedFiles[index]
+                                let fileSize: UInt64
+                                let attr = try FileManager.default.attributesOfItem(atPath: filePath.path)
+                                let ext = filePath.pathExtension
+                                fileSize = attr[FileAttributeKey.size] as! UInt64
+                                let externalFile = ExternalFile(size: Int(fileSize), path: "", ext: ext)
+                                return externalFile
+                                    .create(on: req.db)
+                                    .throwingFlatMap {
+                                        let uuid = try externalFile.requireID().uuidString
+                                        let newFilePath = externalFilesDirectory.appendingPathComponent("\(uuid).\(ext)")
+                                        externalFile.path = newFilePath.pathComponents.last!
+                                        try FileManager.default.moveItem(at: filePath, to: newFilePath)
+                                        return externalFile.update(on: req.db)
+                                    }
+                                    .flatMap {
+                                        AnkiDeckSubtitle(video: video, text: subtitle.text, externalFile: externalFile, startTime: subtitle.fragment.startTime, endTime: subtitle.fragment.endTime)
+                                            .create(on: req.db)
+                                    }
+                            }
+
+                            return EventLoopFuture.whenAllSucceed(futures, on: req.eventLoop).map { _ in () }
+                        }
+                        return EventLoopFuture.reduce((), chunks, on: req.eventLoop) { _,_  in () }
+                            .map { _ in Response(status: .ok) }
+                    }
+                }
+        }
+
         // MARK: Socket
 
         project.webSocket(":id", "socket") { (req: Request, ws: WebSocket) in

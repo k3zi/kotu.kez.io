@@ -5,6 +5,7 @@ enum Permission: String, Codable {
     case admin
     case blog
     case api
+    case subtitles
 }
 
 extension Permission: LosslessStringConvertible {

@@ -25,8 +25,11 @@ import AutoSyncModal from './AutoSyncModal';
 import ContentEditable from './../Common/ContentEditable';
 import InviteUserModal from './InviteUserModal';
 import ShareURLModal from './ShareURLModal';
+import SystemImportModal from './SystemImportModal';
 import EditFragmentModal from './EditFragmentModal';
 import FragmentEmbedModal from './FragmentEmbedModal';
+
+import UserContext from './../Context/User';
 
 const CustomMenu = React.forwardRef(({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
     const [value, setValue] = useState('');
@@ -53,7 +56,8 @@ class Project extends React.Component {
             showInviteUserModal: false,
             showShareURLModal: false,
             showEditFragmentModal: null,
-            showAutoSyncModal: null,
+            showAutoSyncModal: false,
+            showSystemImportModal: false,
             showFragmentEmbed: null,
             videoDuration: 0,
             currentTime: 0,
@@ -246,6 +250,12 @@ class Project extends React.Component {
         if (!show) {
             this.loadProject();
         }
+    }
+
+    toggleShowSystemImportModal(show) {
+        this.setState({
+            showSystemImportModal: show
+        });
     }
 
     async addedNewTargetTranslation(translation) {
@@ -564,10 +574,11 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <div className='d-flex justify-content-between mx-4 mt-3'>
+                            {this.state.canWrite && <div className='d-flex justify-content-between mt-3'>
                                 <Button variant='primary' className='col mx-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
                                 <Button variant='primary' className='col mx-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
                                 {this.state.fragments.length === 0 && <Button variant='primary' className='col mx-1' onClick={() => this.toggleShowAutoSyncModal(true)}>Auto Sync</Button>}
+                                {this.state.fragments.length > 0 && this.context && this.context.permissions.includes('subtitles') && <Button variant='primary' className='col mx-1' onClick={() => this.toggleShowSystemImportModal(true)}>System Import</Button>}
                             </div>}
                         </Col>
                     </Row>
@@ -742,6 +753,7 @@ class Project extends React.Component {
                     <InviteUserModal project={this.state.project} show={this.state.showInviteUserModal} onHide={() => this.toggleInviteUserModal(false)} didCancel={() => this.toggleInviteUserModal(false)} onFinish={() => this.toggleInviteUserModal(false)} />
                     <EditFragmentModal ws={this.ws} project={this.state.project} fragment={this.state.showEditFragmentModal} show={!!this.state.showEditFragmentModal} onHide={() => this.toggleShowEditFragmentModal(null)} didCancel={() => this.toggleShowEditFragmentModal(null)} onFinish={() => this.toggleShowEditFragmentModal(null)} />
                     <AutoSyncModal project={this.state.project} show={this.state.showAutoSyncModal} onHide={() => this.toggleShowAutoSyncModal(false)} didCancel={() => this.toggleShowAutoSyncModal(false)} onFinish={() => this.toggleShowAutoSyncModal(false)} />
+                    <SystemImportModal project={this.state.project} show={this.state.showSystemImportModal} onHide={() => this.toggleShowSystemImportModal(false)} didCancel={() => this.toggleShowSystemImportModal(false)} onFinish={() => this.toggleShowSystemImportModal(false)} />
                     <FragmentEmbedModal project={this.state.project} fragment={this.state.showFragmentEmbed} onHide={() => this.showFragmentEmbed(null)} />
                     {this.state.canWrite && <ShareURLModal project={this.state.project} show={this.state.showShareURLModal} onHide={() => this.toggleShareURLModal(false)} didCancel={() => this.toggleShareURLModal(false)} onFinish={() => this.toggleShareURLModal(false)} />}
                 </div>}
@@ -750,4 +762,5 @@ class Project extends React.Component {
     }
 }
 
+Project.contextType = UserContext;
 export default withRouter(Project);

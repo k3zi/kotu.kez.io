@@ -9,7 +9,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
 import ResponsiveEmbed from 'react-bootstrap/ResponsiveEmbed';
 import Row from 'react-bootstrap/Row';
-InputGroup;
+
 class ShareURLModal extends React.Component {
 
     constructor(props) {

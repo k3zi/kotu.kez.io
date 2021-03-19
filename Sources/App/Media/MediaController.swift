@@ -97,8 +97,12 @@ class MediaController: RouteCollection {
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { file in
                     let filePath = req.application.directory.resourcesDirectory.appending("Files/\(file.path)")
+                    var type: HTTPMediaType?
+                    if filePath.hasSuffix(".m4a") {
+                        type = .init(type: "audio", subType: "x-m4a")
+                    }
 
-                    return req.fileio.streamFile(at: filePath)
+                    return req.fileio.streamFile(at: filePath, mediaType: type)
                 }
         }
 
@@ -135,8 +139,15 @@ class MediaController: RouteCollection {
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
             var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
             modifiedQuery = "%\(modifiedQuery)%"
-            return AnkiDeckSubtitle.query(on: req.db)
-                .filter(\.$text, .custom("LIKE"), modifiedQuery)
+            let tags: [String] = [
+                ((try? req.query.get(Bool.self, at: "audiobook")) ?? false) ? "audiobook" : nil
+            ].compactMap { $0 }
+            var query = AnkiDeckSubtitle.query(on: req.db)
+                .join(parent: \.$video)
+            if !tags.isEmpty {
+                query = query.filter(AnkiDeckVideo.self, \.$tags, .custom("@>"), tags)
+            }
+            return query.filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$video)
                 .paginate(for: req)
         }

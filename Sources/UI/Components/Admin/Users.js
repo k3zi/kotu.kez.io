@@ -82,6 +82,7 @@ class Decks extends React.Component {
                             <th className="text-center">Admin</th>
                             <th className="text-center">Articles</th>
                             <th className="text-center">API Access</th>
+                            <th className="text-center">Subtitles</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -99,6 +100,9 @@ class Decks extends React.Component {
                                 </td>
                                 <td className="align-middle text-center">
                                     <Form.Check defaultChecked={user.permissions.includes('api')} onChange={(e) => this.updatePermission(user, 'api', e.target.checked)} type="checkbox" />
+                                </td>
+                                <td className="align-middle text-center">
+                                    <Form.Check defaultChecked={user.permissions.includes('subtitles')} onChange={(e) => this.updatePermission(user, 'subtitles', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
                                     <Button variant="warning" onClick={() => this.resetPassword(user)}><i className="bi bi-arrow-counterclockwise"></i></Button>

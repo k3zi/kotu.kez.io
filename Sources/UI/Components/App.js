@@ -288,7 +288,13 @@ class App extends React.Component {
     }
 
     playAudio(url) {
-        new Audio(url).play();
+        if (this.audio) {
+            this.audio.pause();
+        }
+
+        const audio = new Audio(url)
+        audio.play();
+        this.audio = audio;
     }
 
     render() {
