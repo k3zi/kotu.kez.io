@@ -55,9 +55,6 @@ class Search extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        console.log('state changed');
-        console.log(prevState);
-        console.log(this.state);
         const audiobook = this.getQueryParam('audiobook') === 'true';
         if (
             this.props.match.params.query != prevProps.match.params.query
@@ -65,7 +62,6 @@ class Search extends React.Component {
             || this.props.match.params.page != prevProps.match.params.page
             || this.props.match.params.per != prevProps.match.params.per
             || this.state.isAudiobook != audiobook) {
-            console.log('did load');
             this.setState({ isAudiobook: audiobook });
             this.load();
         }
@@ -126,8 +122,6 @@ class Search extends React.Component {
     }
 
     toggleIsAudiobook(e) {
-        console.log('set state');
-        console.log(e.target.checked);
         this.search(this.props.match.params.query, 1, undefined, e.target.checked);
     }
 

@@ -96,13 +96,30 @@ class MediaController: RouteCollection {
                 .first()
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { file in
-                    let filePath = req.application.directory.resourcesDirectory.appending("Files/\(file.path)")
-                    var type: HTTPMediaType?
-                    if filePath.hasSuffix(".m4a") {
-                        type = .init(type: "audio", subType: "x-m4a")
+                    let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent(file.path)
+                    var mediaType: HTTPMediaType?
+                    if file.path.hasSuffix(".m4a") {
+                        mediaType = .init(type: "audio", subType: "x-m4a")
                     }
+                    let fileExtension = fileURL.pathExtension
+                    let type = mediaType ?? HTTPMediaType.fileExtension(fileExtension)
 
-                    return req.fileio.streamFile(at: filePath, mediaType: type)
+                    let rangeString = req.headers.first(name: .range) ?? ""
+                    let response = Response(status: .ok)
+                    response.headers.contentType = type
+                    response.headers.contentDisposition = .init(.attachment, filename: fileURL.pathComponents.last!)
+
+                    let fileData = try Data(contentsOf: fileURL)
+                    if rangeString.count > 0 {
+                        let range = try Range.parse(tokenizer: .init(input: rangeString))
+                        let data = fileData[range.startByte...min(range.endByte, fileData.endIndex - 1)]
+                        response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(fileData.count)")
+                        response.headers.add(name: .contentLength, value: String(data.count))
+                        response.body = .init(data: data)
+                    } else {
+                        response.body = .init(data: fileData)
+                    }
+                    return response
                 }
         }
 
