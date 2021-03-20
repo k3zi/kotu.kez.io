@@ -921,7 +921,6 @@ class TranscriptionController: RouteCollection {
         }
 
         project.post(":id", "subtitle", "create") { (req: Request) -> EventLoopFuture<Subtitle> in
-            let user = req.auth.get(User.self) ?? User.guest
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "Project ID not provided") }
 
             try Subtitle.Create.validate(content: req)

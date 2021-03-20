@@ -126,7 +126,7 @@ public struct KeyStore {
     }
 
     public static func parse(tokenizer: DataTokenizer) throws -> KeyStore {
-        let unknown1 = tokenizer.consumeInt32()
+        let _ = tokenizer.consumeInt32()
         try tokenizer.consumeInt32(expect: 0)
         let offset = tokenizer.consumeInt32()
         let startOfThirdSection = tokenizer.consumeInt32()
@@ -136,7 +136,7 @@ public struct KeyStore {
         try tokenizer.consumeInt32(expect: 0)
         try tokenizer.consumeInt32(expect: 0)
 
-        let count = tokenizer.consumeInt32()
+        let _ = tokenizer.consumeInt32()
         let dataStartIndex = tokenizer.consumeInt32()
         var dataIndices = [dataStartIndex]
         while tokenizer.currentOffset < (dataStartIndex + offset) {

@@ -10,7 +10,7 @@ public struct ContentIndex {
     }
 
     public static func parse(tokenizer: DataTokenizer) throws -> ContentIndex {
-        let count = tokenizer.consumeInt32()
+        _ = tokenizer.consumeInt32()
         try tokenizer.consumeInt32(expect: 0)
 
         var mapping = [Int: Int]()

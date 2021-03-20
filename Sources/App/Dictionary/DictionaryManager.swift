@@ -66,15 +66,14 @@ struct DictionaryManager {
         let eDictURL = directoryURL.appendingPathComponent("../Dictionaries/misc/edict2u")
         var eDictWords = [String]()
         if let eDictString = try? String(contentsOf: eDictURL) {
-            Array(eDictString.split(whereSeparator: \.isNewline).suffix(from: 1)).forEach { string in
+            eDictWords = Array(eDictString.split(whereSeparator: \.isNewline).suffix(from: 1)).concurrentMap { string -> [String] in
                 let properties = string.split(separator: "/")
                 let cleaned = properties[0]
                     .replacingOccurrences(of: "[", with: ";")
                     .replacingOccurrences(of: "]", with: ";")
                     .replacingOccurrences(of: "(P)", with: "")
-                let itemWords = cleaned.split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-                eDictWords.append(contentsOf: itemWords)
-            }
+                return cleaned.split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            }.flatMap { $0 }
         }
 
         var frequencyList: [FrequencyListElement] = []

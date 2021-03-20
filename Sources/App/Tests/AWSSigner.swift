@@ -18,7 +18,7 @@ struct AWSSigner {
     private func iso8601() -> (full: String, short: String) {
         let date = iso8601Formatter.string(from: Date())
         let index = date.index(date.startIndex, offsetBy: 8)
-        let shortDate = date.substring(to: index)
+        let shortDate = String(date[..<index])
         return (full: date, short: shortDate)
     }
 

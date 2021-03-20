@@ -19,7 +19,7 @@ public struct ContentMap {
 
     public static func parse(tokenizer: DataTokenizer) throws -> ContentMap {
         try tokenizer.consumeInt32(expect: 0)
-        let count = tokenizer.consumeInt32()
+        _ = tokenizer.consumeInt32()
 
         var pairs = [Pair]()
         var index = 1

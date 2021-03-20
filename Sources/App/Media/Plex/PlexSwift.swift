@@ -221,7 +221,7 @@ extension Plex {
     private func download(client: Client, _ url: String, to saveLocation: URL, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
         let request = makeURLRequest(urlString: url, token: token)
         let url = request.url
-        var headers = request.headers.map {
+        let headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.get(.init(string: url.absoluteString), headers: HTTPHeaders(headers))
@@ -230,7 +230,7 @@ extension Plex {
     private func post(client: Client, _ url: String, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
         let request = makeURLRequest(urlString: url, token: token)
         let url = request.url
-        var headers = request.headers.map {
+        let headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.post(.init(string: url.absoluteString), headers: HTTPHeaders(headers))
@@ -239,7 +239,7 @@ extension Plex {
     private func put(client: Client, _ url: String, token: String? = nil, timeoutInterval: TimeInterval? = nil) -> EventLoopFuture<ClientResponse> {
         let request = makeURLRequest(urlString: url, token: token)
         let url = request.url
-        var headers = request.headers.map {
+        let headers = request.headers.map {
             ($0.key, $0.value)
         }
         return client.put(.init(string: url.absoluteString), headers: HTTPHeaders(headers))

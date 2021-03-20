@@ -124,7 +124,7 @@ public struct HeadlineStore {
                 let headline = Headline(index: UInt(integerID), subindex: 0, text: "\(kana)\(spelling ?? "")\(kanjis.joined())")
                 headlines.append(headline)
             } else {
-                print(id, type, rank, kana, spelling, kanjis)
+                print(id, type, rank, kana ?? "nil", spelling ?? "nil", kanjis)
             }
         }
         return .init(headlines: headlines)
@@ -133,8 +133,8 @@ public struct HeadlineStore {
     public static func parse(tokenizer: DataTokenizer) throws -> HeadlineStore {
         try tokenizer.consumeInt32(expect: 0)
         try tokenizer.consumeInt32(expect: 2)
-        let count = tokenizer.consumeInt32()
-        let offset = tokenizer.consumeInt32()
+        let _ = tokenizer.consumeInt32()
+        let _ = tokenizer.consumeInt32()
         let secondSectionStart = tokenizer.consumeInt32()
         try tokenizer.consumeInt32(expect: 24)
         try tokenizer.consumeInt32(expect: 0)

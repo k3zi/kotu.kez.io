@@ -123,7 +123,7 @@ class DictionaryController: RouteCollection {
                 }
         }
 
-        dictionary.get("exact") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+        dictionary.get("exact") { (req: Request) -> EventLoopFuture<Page<Headword.Simple>> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -140,11 +140,15 @@ class DictionaryController: RouteCollection {
                         \.$text == text
                     }
                 }
-                .sort(\.$text)
-                .sort(Dictionary.self, \.$name)
+                .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
+                .field(DictionaryOwner.self, \.$order)
+                .sort(\.$headline)
+                .sort(DictionaryOwner.self, \.$order)
+                .unique()
                 .paginate(for: req)
                 .map { page in
-                    Page(items: Swift.Dictionary(grouping: page.items, by: { $0.$entry.id }).flatMap { (key: UUID?, value: [Headword]) -> [Headword] in key == nil ? value : [value.first!] }, metadata: page.metadata)
+                    let items = page.items.map { Headword.Simple(headword: $0) }
+                    return Page(items: items, metadata: page.metadata)
                 }
         }
 
