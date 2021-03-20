@@ -48,7 +48,7 @@ class SearchResultModal extends React.Component {
         if (headword.entry) {
             response = await fetch(`/api/dictionary/entry/${headword.entry.id}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
         } else {
-            response = await fetch(`/api/dictionary/entry/${headword.dictionary.id}/${headowrd.entryIndex}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
+            response = await fetch(`/api/dictionary/entry/${headword.dictionary.id}/${headoword.entryIndex}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
         }
         const result = await response.text();
         this.setState({ selectedResultHTML: result, isLoading: false, headword: headword });
