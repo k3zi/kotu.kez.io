@@ -268,7 +268,7 @@ class App extends React.Component {
 
     async searchExact(query) {
         if (query.length === 0) return;
-        const response = await fetch(`/api/dictionary/exact?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/dictionary/exact?q=${encodeURIComponent(query)}&per=100`);
         if (response.ok) {
             const headwords = (await response.json()).items;
             this.setState({ headwords });
@@ -517,7 +517,7 @@ class App extends React.Component {
                                 <Route exact path="/article/edit/:id">
                                     {this.loginProtect(<EditBlogPost />)}
                                 </Route>
-                                <Route ecact path="/article/:id">
+                                <Route exact path="/article/:id">
                                     <BlogPost />
                                 </Route>
 
