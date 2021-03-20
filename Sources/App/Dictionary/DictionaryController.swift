@@ -26,12 +26,43 @@ class DictionaryController: RouteCollection {
             .grouped(User.guardMiddleware())
         let dictionaryID = dictionary.grouped(":id")
 
-        dictionary.get("all") { (req: Request) -> EventLoopFuture<[Dictionary]> in
+        dictionary.get("all") { (req: Request) -> EventLoopFuture<[Dictionary.Simple]> in
             let user = try req.auth.require(User.self)
             return user.$dictionaries
                 .query(on: req.db)
+                .field(\.$name).field(\.$id)
+                .with(\.$owners.$pivots)
                 .with(\.$insertJob)
+                .sort(DictionaryOwner.self, \.$order)
                 .all()
+                .map {
+                    $0.map { Dictionary.Simple(dictionary: $0, user: user) }
+                }
+        }
+
+        dictionary.put("all") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let objects = try req.content.decode([Dictionary.Update].self)
+            return user.$dictionaries
+                .query(on: req.db)
+                .field(\.$id)
+                .with(\.$owners.$pivots)
+                .all()
+                .flatMap { dictionaries in
+                    let pivots = dictionaries.compactMap { dictionary -> DictionaryOwner? in
+                        guard let object = objects.first(where: { $0.id == dictionary.id }) else {
+                            return nil
+                        }
+
+                        let pivot = dictionary.$owners.pivots.filter { $0.$owner.id == user.id }.first
+                        pivot?.order = object.order
+                        return pivot
+                    }
+
+                    let futures = pivots.map { $0.save(on: req.db) }
+                    return EventLoopFuture.whenAllComplete(futures, on: req.eventLoop)
+                        .map { _ in Response(status: .ok) }
+                }
         }
 
         dictionary.post("upload") { (req: Request) -> EventLoopFuture<Dictionary> in
@@ -117,7 +148,7 @@ class DictionaryController: RouteCollection {
                 }
         }
 
-        dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword>> in
+        dictionary.get("search") { (req: Request) -> EventLoopFuture<Page<Headword.Simple>> in
             let user = try req.auth.require(User.self)
             let userID = try user.requireID()
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -133,12 +164,15 @@ class DictionaryController: RouteCollection {
                 .join(from: Dictionary.self, siblings: \.$owners)
                 .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .filter(User.self, \.$id == userID)
-                .sort(\.$text)
+                .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
+                .field(DictionaryOwner.self, \.$order)
+                .sort(\.$headline)
                 .sort(DictionaryOwner.self, \.$order)
-                .sort(Dictionary.self, \.$name)
+                .unique()
                 .paginate(for: req)
                 .map { page in
-                    Page(items: Swift.Dictionary(grouping: page.items, by: { $0.$entry.id }).flatMap { (key: UUID?, value: [Headword]) -> [Headword] in key == nil ? value : [value.first!] }, metadata: page.metadata)
+                    let items = page.items.map { Headword.Simple(headword: $0) }
+                    return Page(items: items, metadata: page.metadata)
                 }
         }
 
@@ -162,72 +196,92 @@ class DictionaryController: RouteCollection {
                 }
         }
 
+        func outputEntry(text rawText: String, dictionary: Dictionary, forceHorizontalText: Bool, forceDarkCSS: Bool) -> String {
+            var text = rawText
+            var css = dictionary.css + "\n" + (forceDarkCSS ? dictionary.darkCSS : "")
+            var cssWordMappings = [String: String]()
+            let directoryName = dictionary.directoryName
+            if !directoryName.isEmpty {
+                css = DictionaryManager.shared.cssStrings[directoryName]!
+                cssWordMappings = DictionaryManager.shared.cssWordMappings[directoryName]!
+            } else {
+                cssWordMappings = css.replaceNonASCIICharacters()
+            }
+            for (original, replacement) in cssWordMappings {
+                text = text
+                    .replacingOccurrences(of: "<\(original) ", with: "<\(replacement) ")
+                    .replacingOccurrences(of: "<\(original)>", with: "<\(replacement)>")
+                    .replacingOccurrences(of: "</\(original) ", with: "</\(replacement) ")
+                    .replacingOccurrences(of: "</\(original)>", with: "</\(replacement)>")
+                    .replacingOccurrences(of: "\"\(original)\"", with: "\"\(replacement)\"")
+                    .replacingOccurrences(of: "<entry-index id=\"index\"/>", with: "")
+                    .replacingOccurrences(of: "<entry-index xmlns=\"\" id=\"index\"/>", with: "")
+            }
+            text.replaceNonASCIIHTMLNodes()
+            let horizontalTextCSS = """
+            body {
+                writing-mode: horizontal-tb !important;
+            }
+            """
+            return """
+            <style>
+                \(css)
+                \(forceHorizontalText ? horizontalTextCSS : "")
+            </style>
+            <script>
+                document.addEventListener('copy', function (e) {
+                    e.preventDefault();
+                    const rts = [...document.getElementsByTagName('rt')];
+                    rts.forEach(rt => {
+                        rt.style.display = 'none';
+                    });
+                    e.clipboardData.setData('text', window.getSelection().toString());
+                    rts.forEach(rt => {
+                        rt.style.removeProperty('display');
+                    });
+                });
+            </script>
+            \(text)
+            """
+        }
+
         dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
             let id = try req.parameters.require("id", as: UUID.self)
             let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
             let forceDarkCSS = (try? req.query.get(Bool.self, at: "forceDarkCSS")) ?? false
-            return Headword
+            return Entry
                 .query(on: req.db)
                 .with(\.$dictionary)
-                .with(\.$entry)
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { headword in
-                    let dictionary = headword.dictionary.directoryName
-                    var text = ""
-                    var css = headword.dictionary.css + "\n" + (forceDarkCSS ? headword.dictionary.darkCSS : "")
-                    var cssWordMappings = [String: String]()
-                    if !dictionary.isEmpty {
-                        css = DictionaryManager.shared.cssStrings[dictionary]!
-                        cssWordMappings = DictionaryManager.shared.cssWordMappings[dictionary]!
+                .flatMapThrowing { entry in
+                    let text = entry.content
+                    return outputEntry(text: text, dictionary: entry.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                }
+        }
 
-                        let container = DictionaryManager.shared.containers[dictionary]!
-                        let contentIndex = DictionaryManager.shared.contentIndexes[dictionary]!
-
-                        let realEntryIndex = contentIndex.indexMapping[headword.entryIndex]!
-                        let file = container.files[realEntryIndex]
-                        text = file.text
-                    } else {
-                        cssWordMappings = css.replaceNonASCIICharacters()
-                        text = headword.entry?.content ?? ""
+        dictionary.get("entry", ":id", ":entryIndex") { (req: Request) -> EventLoopFuture<String> in
+            let id = try req.parameters.require("id", as: UUID.self)
+            let entryIndex = try req.parameters.require("entryIndex", as: Int.self)
+            let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
+            let forceDarkCSS = (try? req.query.get(Bool.self, at: "forceDarkCSS")) ?? false
+            return Dictionary.query(on: req.db)
+                .filter(\.$id == id)
+                .first()
+                .unwrap(orError: Abort(.notFound))
+                .flatMapThrowing { dictionary in
+                    guard let contentIndex = DictionaryManager.shared.contentIndexes[dictionary.directoryName] else {
+                        throw Abort(.notFound)
                     }
-                    for (original, replacement) in cssWordMappings {
-                        text = text
-                            .replacingOccurrences(of: "<\(original) ", with: "<\(replacement) ")
-                            .replacingOccurrences(of: "<\(original)>", with: "<\(replacement)>")
-                            .replacingOccurrences(of: "</\(original) ", with: "</\(replacement) ")
-                            .replacingOccurrences(of: "</\(original)>", with: "</\(replacement)>")
-                            .replacingOccurrences(of: "\"\(original)\"", with: "\"\(replacement)\"")
-                            .replacingOccurrences(of: "<entry-index id=\"index\"/>", with: "")
-                            .replacingOccurrences(of: "<entry-index xmlns=\"\" id=\"index\"/>", with: "")
+                    guard let realEntryIndex = contentIndex.indexMapping[entryIndex] else {
+                        throw Abort(.notFound)
                     }
-                    text.replaceNonASCIIHTMLNodes()
-                    let horizontalTextCSS = """
-                    body {
-                        writing-mode: horizontal-tb !important;
+                    guard let container = DictionaryManager.shared.containers[dictionary.directoryName] else {
+                        throw Abort(.notFound)
                     }
-                    """
-                    return """
-                    <style>
-                        \(css)
-                        \(forceHorizontalText ? horizontalTextCSS : "")
-                    </style>
-                    <script>
-                        document.addEventListener('copy', function (e) {
-                            e.preventDefault();
-                            const rts = [...document.getElementsByTagName('rt')];
-                            rts.forEach(rt => {
-                                rt.style.display = 'none';
-                            });
-                            e.clipboardData.setData('text', window.getSelection().toString());
-                            rts.forEach(rt => {
-                                rt.style.removeProperty('display');
-                            });
-                        });
-                    </script>
-                    \(text)
-                    """
+                    let text = container.files[realEntryIndex].text
+                    return outputEntry(text: text, dictionary: dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
                 }
         }
 

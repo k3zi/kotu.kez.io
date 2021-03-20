@@ -32,7 +32,7 @@ class SettingsModal extends React.Component {
         setInterval(() => {
             if (this.props.show)
                 this.loadDictionaries();
-        }, 2000);
+        }, 5000);
     }
 
     componentDidUpdate(prevProps) {
@@ -53,8 +53,47 @@ class SettingsModal extends React.Component {
         const response = await fetch(`/api/dictionary/all`);
         if (response.ok) {
             const dictionaries = await response.json();
+            for (const [i, d] of dictionaries.entries()) {
+                d.order = i;
+            }
             this.setState({ dictionaries });
         }
+    }
+
+    canMoveDictionaryUp(dictionary) {
+        const index = this.state.dictionaries.indexOf(dictionary);
+        return index > 0;
+    }
+
+    moveDictionaryUp(dictionary) {
+        if (!this.canMoveDictionaryUp(dictionary)) {
+            return;
+        }
+        const index = this.state.dictionaries.indexOf(dictionary);
+        this.state.dictionaries[index] = this.state.dictionaries[index - 1];
+        this.state.dictionaries[index].order = index;
+        this.state.dictionaries[index - 1] = dictionary;
+        this.state.dictionaries[index - 1].order = index - 1;
+        this.setState({ dictionaries: this.state.dictionaries });
+        this.updateDictionaries();
+    }
+
+    canMoveDictionaryDown(dictionary) {
+        const index = this.state.dictionaries.indexOf(dictionary);
+        return index < (this.state.dictionaries.length - 1) && index >= 0;
+    }
+
+    moveDictionaryDown(dictionary) {
+        if (!this.canMoveDictionaryDown(dictionary)) {
+            return;
+        }
+        const index = this.state.dictionaries.indexOf(dictionary);
+        this.state.dictionaries[index] = this.state.dictionaries[index + 1];
+        this.state.dictionaries[index].order = index;
+        this.state.dictionaries[index + 1] = dictionary;
+        this.state.dictionaries[index + 1].order = index + 1;
+        this.setState({ dictionaries: this.state.dictionaries });
+        this.updateDictionaries();
     }
 
     async regenerateToken() {
@@ -102,6 +141,17 @@ class SettingsModal extends React.Component {
         await this.loadDictionaries();
     }
 
+    async updateDictionaries() {
+        await fetch(`/api/dictionary/all`, {
+            method: 'PUT',
+            body: JSON.stringify(this.state.dictionaries),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        await this.loadDictionaries();
+    }
+
     async removeDictionary(dictionary) {
         await fetch(`/api/dictionary/${dictionary.id}`, {
             method: 'DELETE'
@@ -127,9 +177,16 @@ class SettingsModal extends React.Component {
                     <h5>Dictionaries</h5>
                     <ListGroup className="mb-3">
                         {this.state.dictionaries.map((dictionary, i) => {
-                            return <ListGroup.Item key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'info'}>
-                                {dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}
-                                <span class='float-end text-danger' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
+                            return <ListGroup.Item className='d-flex justify-content-between' key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'secondary'}>
+                                <div className='d-flex justify-content-start align-items-center'>
+                                    <div>
+                                        <i onClick={() => this.moveDictionaryUp(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryUp(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-up'></i>
+                                        <br />
+                                        <i onClick={() => this.moveDictionaryDown(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryDown(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-down'></i>
+                                    </div>
+                                    <span className='px-3'>{dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}</span>
+                                </div>
+                                <span class='float-end text-danger fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
                                 {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
                             </ListGroup.Item>;
                         })}

@@ -54,13 +54,13 @@ struct PitchAccentManager {
         })
         let groupsByKana: [[PitchAccentEntry]] = Array(grouping.values).filter { $0.count > 1 }
 
-        let groupsByKanaGroupedByAccent: [[[PitchAccentEntry]]] = groupsByKana.map { Array(Swift.Dictionary(grouping: $0, by: { $0.soloAccent }).values) }
-        let minimalPairs = groupsByKanaGroupedByAccent.filter { $0.count > 1 }.map {
+        let groupsByKanaGroupedByAccent: [[[PitchAccentEntry]]] = groupsByKana.concurrentMap { Array(Swift.Dictionary(grouping: $0, by: { $0.soloAccent }).values) }
+        let minimalPairs = groupsByKanaGroupedByAccent.filter { $0.count > 1 }.concurrentMap {
             MinimalPair(kana: $0[0][0].kana, pairs: $0.map { .init(pitchAccent: $0[0].accents[0].accent[0].pitchAccent, entries: $0, soundFile: $0[0].accents[0].soundFile!) })
         }
-        
+
         let counters = entries.filter { $0.type == .counter }
-        let allCounters = counters.map { Counter(id: $0.id, name: "\($0.kanji.count > 0 ? "\($0.kanji[0]) (\($0.kana))" : $0.kana)\($0.usage.flatMap { " (\($0))" } ?? "")") }
+        let allCounters = counters.concurrentMap { Counter(id: $0.id, name: "\($0.kanji.count > 0 ? "\($0.kanji[0]) (\($0.kana))" : $0.kana)\($0.usage.flatMap { " (\($0))" } ?? "")") }
 
         let nameData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/misc/random/names.yml"))
         let decoder = YAMLDecoder()

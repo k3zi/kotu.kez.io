@@ -55,6 +55,38 @@ final class Dictionary: Model, Content {
 
 extension Dictionary {
 
+    struct Update: Content {
+        let id: UUID
+        let order: Int
+    }
+
+    struct Simple: Content {
+        let id: UUID?
+        let order: Int
+        let name: String
+        let insertJob: DictionaryInsertJob?
+
+        init(dictionary: Dictionary, user: User) {
+            id = dictionary.id
+            order = dictionary.$owners.pivots.filter { $0.$owner.id == user.id }.first?.order ?? 0
+            name = dictionary.name
+            insertJob = dictionary.insertJob
+        }
+    }
+
+}
+
+extension Dictionary.Update: Validatable {
+
+    static func validations(_ validations: inout Validations) {
+        validations.add("id", as: UUID.self)
+        validations.add("order", as: Int.self)
+    }
+
+}
+
+extension Dictionary {
+
     struct Migration: Fluent.Migration {
         var name: String { "CreateDictionary" }
 

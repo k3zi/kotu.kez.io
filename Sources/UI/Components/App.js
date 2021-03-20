@@ -455,7 +455,16 @@ class App extends React.Component {
                                 <Route path="/changelog">
                                     <Changelog />
                                 </Route>
-                                <Route path="/search/:query?/:optionValue?/:page?/:per?">
+                                <Route exact path="/search/:query/:optionValue/:page/:per">
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                </Route>
+                                <Route exact path="/search/:optionValue/:page/:per">
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                </Route>
+                                <Route exact path="/search/:query">
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                </Route>
+                                <Route exact path="/search">
                                     {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
                                 </Route>
 

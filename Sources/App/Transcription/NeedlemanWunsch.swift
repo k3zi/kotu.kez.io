@@ -41,8 +41,6 @@ enum NeedlemanWunsch {
             }
         }
 
-
-
         var i = seq2.count
         var j = seq1.count
         var output1 = [Match]()

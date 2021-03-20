@@ -67,10 +67,24 @@ class Component extends React.Component {
         return (<UserContext.Consumer>{user => (
             (<ColorSchemeContext.Consumer>{colorScheme => (
                 <div>
-                    <h1>
+                    <h1 className='mb-0'>
                         {!user && 'Login / Register to access the rest of the site.'}
                         {user && `Hello ${user.username}!`}
                     </h1>
+                    <div className='mb-2'><strong>Quick Links:</strong>
+                        {' '}
+                        <LinkContainer to='/media/reader'>
+                            <a href='#' className='text-decoration-none'>Reader</a>
+                        </LinkContainer>
+                        ・
+                        <LinkContainer to='/media/youtube'>
+                            <a href='#' className='text-decoration-none'>YouTube</a>
+                        </LinkContainer>
+                        ・
+                        <LinkContainer to='/search'>
+                            <a href='#' className='text-decoration-none'>Advanced Search</a>
+                        </LinkContainer>
+                    </div>
 
                     <Row>
                         {this.state.readerSessions.items.length > 0 && <Col xs={12} lg={6}>

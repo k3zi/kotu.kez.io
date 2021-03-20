@@ -9,42 +9,6 @@ import ZIPFoundation
 
 let ankiDeckQueue = DispatchQueue(label: "io.kez.kotu.setup.anki")
 
-//final class DJSIndex: Model, Content {
-//    static let schema = "t_search"
-//
-//    @ID(custom: "refid", generatedBy: .user)
-//    var id: String?
-//
-//    @Field(key: "chars")
-//    var chars: String
-//
-//    init() { }
-//}
-//
-//final class DJSTitle: Model, Content {
-//    static let schema = "t_refid"
-//
-//    @ID(custom: "refid", generatedBy: .user)
-//    var id: String?
-//
-//    @Field(key: "text")
-//    var text: String
-//
-//    init() { }
-//}
-//
-//final class DJSBody: Model, Content {
-//    static let schema = "t_body"
-//
-//    @ID(custom: "refid", generatedBy: .user)
-//    var id: String?
-//
-//    @Field(key: "xhtml")
-//    var html: String
-//
-//    init() { }
-//}
-
 public func configure(_ app: Application) throws {
 
     app.redis.configuration = try RedisConfiguration(hostname: "127.0.0.1")
@@ -122,29 +86,10 @@ public func configure(_ app: Application) throws {
     PitchAccentManager.configure(app: app)
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let directoryName = "djs"
-//    let dictionaryName = "大辞泉"
+//    let directoryName = "SANSEIDO-SANKOKU7"
+//    let dictionaryName = "三省堂国語辞典"
 //    let dictionaryType = "ja"
 //    let dictionaryURL = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)")
-//    let indexDatabaseURL = dictionaryURL.appendingPathComponent("index/index.db")
-//    let titleDatabaseURL = dictionaryURL.appendingPathComponent("index/title.db")
-//    let bodyDatabaseURL = dictionaryURL.appendingPathComponent("index/body.db")
-//
-//    app.databases.use(.sqlite(.file(indexDatabaseURL.path)), as: .init(string: "index"))
-//    app.databases.use(.sqlite(.file(titleDatabaseURL.path)), as: .init(string: "title"))
-//    app.databases.use(.sqlite(.file(bodyDatabaseURL.path)), as: .init(string: "body"))
-//    let indexDB = app.db(.init(string: "index"))
-//    let titleDB = app.db(.init(string: "title"))
-//    let bodyDB = app.db(.init(string: "body"))
-//
-//    let indexes = try DJSIndex.query(on: indexDB).all().wait()
-//    let titles = try DJSTitle.query(on: titleDB).all().wait()
-//    let bodies = try DJSBody.query(on: bodyDB).all().wait()
-//
-//    let headlinesDict = Swift.Dictionary(grouping: titles, by: { $0.id })
-//    let allRefids = bodies.map { $0.id }.enumerated()
-//    let refids = Swift.Dictionary(grouping: allRefids, by: { $0.element }).mapValues({ $0[0].offset })
-//
 ////
 ////    let bzippedOutputData = try Data(contentsOf: directoryURL.appendingPathComponent("Taishukan-G5.mkd"))
 ////    let bunzippedOutputData = try bzippedOutputData.gunzipped()
@@ -157,66 +102,67 @@ public func configure(_ app: Application) throws {
 //
 //
 //// For saving dictionary headlines to JSON.
+//    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
+//    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
+//    let contentIndexData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
+//    let contentIndex = try ContentIndex.parse(tokenizer: .init(data: contentIndexData))
+////    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
+////    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
+////    for (i, file) in fileContainer.files.enumerated() {
+////        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
+////        try file.text.data(using: .utf8)!.write(to: outputFileURL)
+////    }
+////    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/SMK8/headline/headline.headlinestore"))
+////    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
+////    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
+////    try! data.write(to: directoryURL.appendingPathComponent("listOfAllHeadlineUsages.json"))
+//
+//
+////
+////    try Dictionary.query(on: app.db)
+////        .filter(\.$name == dictionaryName)
+////        .delete()
+////        .wait()
+////    let dictionary = oldDictionary ?? Dictionary(name: dictionaryName, directoryName: directoryName)
+////    if dictionary.id == nil {
+////        try dictionary.create(on: app.db).wait()
+////    }
+////
+////    // For saving HTML files to folder
 ////    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
 ////    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
-////    let contentIndexData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
-////    let contentIndex = try ContentIndex.parse(tokenizer: .init(data: contentIndexData))
-//////    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
-//////    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
-//////    for (i, file) in fileContainer.files.enumerated() {
-//////        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
-//////        try file.text.data(using: .utf8)!.write(to: outputFileURL)
-//////    }
-//////    let headlineStoreData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/SMK8/headline/headline.headlinestore"))
-//////    let headlineStore = try HeadlineStore.parse(tokenizer: DataTokenizer(data: headlineStoreData))
-//////    let data = try! JSONEncoder().encode(headlineStore.headlines.filter { $0.subindex > 20480 }.map { $0.text })
-//////    try! data.write(to: directoryURL.appendingPathComponent("listOfAllHeadlineUsages.json"))
+////    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
+////    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
+////    for (i, file) in fileContainer.files.enumerated() {
+////        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
+////        try file.text.data(using: .utf8)!.write(to: outputFileURL)
+////    }
 ////
+////    // For saving content mapping
+////    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
+////    let contentIndex = try! ContentIndex.parse(tokenizer: .init(data: contentIndexData))
+////    try JSONSerialization.data(withJSONObject: contentIndex.indexMapping.map { ["key": $0.key, "value": $0.value]}).write(to: directoryURL.appendingPathComponent("content-mapping.json"))
 ////
-//////
-//////    try Dictionary.query(on: app.db)
-//////        .filter(\.$name == dictionaryName)
-//////        .delete()
-//////        .wait()
-//////    let dictionary = oldDictionary ?? Dictionary(name: dictionaryName, directoryName: directoryName)
-//////    if dictionary.id == nil {
-//////        try dictionary.create(on: app.db).wait()
-//////    }
-//////
-//////    // For saving HTML files to folder
-//////    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
-//////    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
-//////    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
-//////    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
-//////    for (i, file) in fileContainer.files.enumerated() {
-//////        let outputFileURL = exportedFolder.appendingPathComponent("\(String(format: "%05d", i)).html")
-//////        try file.text.data(using: .utf8)!.write(to: outputFileURL)
-//////    }
-//////
-//////    // For saving content mapping
-//////    let contentIndexData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
-//////    let contentIndex = try! ContentIndex.parse(tokenizer: .init(data: contentIndexData))
-//////    try JSONSerialization.data(withJSONObject: contentIndex.indexMapping.map { ["key": $0.key, "value": $0.value]}).write(to: directoryURL.appendingPathComponent("content-mapping.json"))
-//////
-//////    try Headword.query(on: app.db)
-//////        .filter("dictionary_id", .equal, try dictionary.requireID())
-//////        .delete().wait()
-////
-////    let shortHeadlineStore = try HeadlineStore.parse(dictionaryFolder: dictionaryURL, short: true)
-////    let headlineStore = try HeadlineStore.parse(dictionaryFolder: dictionaryURL)!
-////    let headWordKeyStore = try KeyStore.parse(dictionaryFolder: dictionaryURL)!
-////
-////    let headlinesDict = Swift.Dictionary(grouping: headlineStore.headlines, by: { $0.index })
-////    let shortHeadlinesDict = shortHeadlineStore.flatMap { Swift.Dictionary(grouping: $0.headlines, by: { $0.index }) }
-////    print("total: \(headWordKeyStore.pairs.count)")
-//    let headwords: [[Any]] = indexes.flatMap { index -> [[Any]] in
-//            let matches = index.chars.split(separator: "\t")
-//            let headline = headlinesDict[index.id]?.first
-//            return matches.map { match -> [Any] in
-//                return [match, headline?.text ?? "", "", refids[index.id]!, 0]
+////    try Headword.query(on: app.db)
+////        .filter("dictionary_id", .equal, try dictionary.requireID())
+////        .delete().wait()
+//
+//    let shortHeadlineStore = try HeadlineStore.parse(dictionaryFolder: dictionaryURL, short: true)
+//    let headlineStore = try HeadlineStore.parse(dictionaryFolder: dictionaryURL)!
+//    let headWordKeyStore = try KeyStore.parse(dictionaryFolder: dictionaryURL)!
+//
+//    let headlinesDict = Swift.Dictionary(grouping: headlineStore.headlines, by: { $0.index })
+//    let shortHeadlinesDict = shortHeadlineStore.flatMap { Swift.Dictionary(grouping: $0.headlines, by: { $0.index }) }
+//    print("total: \(headWordKeyStore.pairs.count)")
+//    let headwords = headWordKeyStore.pairs.enumerated()
+//        .flatMap { (i, headword) in
+//            headword.matches.map { match -> [Any] in
+//                let headline = headlinesDict[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
+//                let shortHeadline = shortHeadlinesDict?[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
+//                return [headword.value, headline?.text ?? "", shortHeadline?.text ?? "", contentIndex.indexMapping[Int(match.entryIndex)]!, Int(match.subentryIndex)]
 //            }
 //        }
-//    let entries = bodies.map { $0.html }
+//    let entries = fileContainer.files.map { $0.text }
 //
 //    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/style.css"))
 //    let css = String(data: cssData, encoding: .utf8)!
@@ -241,7 +187,7 @@ public func configure(_ app: Application) throws {
 //
 //    let outputData = try JSONSerialization.data(withJSONObject: output)
 //    let zippedOutputData = try outputData.gzipped(level: .bestCompression)
-//    try zippedOutputData.write(to: directoryURL.appendingPathComponent("\(directoryName).mkd"))
+//    try zippedOutputData.write(to: directoryURL.appendingPathComponent("\(dictionaryName).mkd"))
 
     func importAnkiDeck(fileURL: URL) throws {
         var deckName = (fileURL.pathComponents.last ?? "")

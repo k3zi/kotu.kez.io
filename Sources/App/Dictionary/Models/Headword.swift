@@ -48,6 +48,38 @@ final class Headword: Model, Content {
 
 extension Headword {
 
+    struct Simple: Content {
+        struct Dictionary: Content {
+            let id: UUID
+        }
+
+        struct Entry: Content {
+            let id: UUID
+        }
+
+        let dictionary: Dictionary
+        let entry: Entry?
+
+        let headline: String
+        let shortHeadline: String
+        let entryIndex: Int
+        let subentryIndex: Int
+
+        init(headword: Headword) {
+            dictionary = .init(id: headword.$dictionary.id)
+            entry = headword.$entry.id.flatMap { .init(id: $0) }
+
+            headline = headword.headline
+            shortHeadline = headword.shortHeadline
+            entryIndex = headword.entryIndex
+            subentryIndex = headword.subentryIndex
+        }
+    }
+
+}
+
+extension Headword {
+
     struct Migration: Fluent.Migration {
         var name: String { "CreateDictionaryHeadword" }
 

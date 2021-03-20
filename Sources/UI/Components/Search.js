@@ -1,6 +1,7 @@
 import React from 'react';
 import { withRouter } from 'react-router';
 import { LinkContainer } from 'react-router-bootstrap';
+import FadeIn from 'react-fade-in';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -83,7 +84,7 @@ class Search extends React.Component {
 
         this.setState({
             option,
-            results: [],
+            results: option != this.state.option ? [] : this.state.results,
             isLoading: true
         });
         if (!query || query.length === 0) {
@@ -114,10 +115,12 @@ class Search extends React.Component {
         const audiobook = typeof newAudiobook !== 'undefined' ? newAudiobook : this.state.isAudiobook;
         const metadata = this.state.metadata;
         metadata.page = page;
+        query = query || '';
+        const params = `${option.value}/${page}/${this.state.metadata.per}?audiobook=${audiobook ? 'true' : 'false'}`;
         if (!query || query.length === 0) {
-            this.props.history.push(`/search`);
+            this.props.history.push(`/search/${params}`);
         } else {
-            this.props.history.push(`/search/${encodeURIComponent(query)}/${option.value}/${page}/${this.state.metadata.per}?audiobook=${audiobook ? 'true' : 'false'}`);
+            this.props.history.push(`/search/${encodeURIComponent(query)}/${params}`);
         }
     }
 
@@ -148,37 +151,45 @@ class Search extends React.Component {
                 {this.state.option && this.state.option.value === 'other' && <Form.Group className='mb-3' controlId="searchFilters">
                     <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook || this.getQueryParam('audiobook') === 'true'} onChange={(e) => this.toggleIsAudiobook(e)} />
                 </Form.Group>}
-                <hr />
-                {this.state.option && this.state.option.value === 'words' && <ListGroup>
-                    {this.state.results.map((r, i) => {
-                      return <ListGroup.Item action active={false} className='d-flex align-items-center text-break text-wrap' onClick={() => this.props.onSelectWord(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
-                          <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
-                          <span dangerouslySetInnerHTML={{ __html: r.headline.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
-                      </ListGroup.Item>;
-                  })}
-                </ListGroup>}
+                {this.props.match.params.query && this.props.match.params.query.length > 0 && <FadeIn>
+                    <hr />
+                    {this.state.option && this.state.option.value === 'words' && <ListGroup>
+                        <FadeIn>
+                            {this.state.results.map((r, i) => {
+                              return <ListGroup.Item action active={false} className='d-flex align-items-center text-break text-wrap' onClick={() => this.props.onSelectWord(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
+                                  <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
+                                  <span dangerouslySetInnerHTML={{ __html: r.headline.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                              </ListGroup.Item>;
+                          })}
+                      </FadeIn>
+                    </ListGroup>}
 
-                {this.state.option && this.state.option.value === 'youtube' && <ListGroup>
-                    {this.state.results.map((s, i) => {
-                        return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
-                            <ListGroup.Item action className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
-                                <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
-                            </ListGroup.Item>
-                        </LinkContainer>;
-                    })}
-                </ListGroup>}
+                    {this.state.option && this.state.option.value === 'youtube' && <ListGroup>
+                        <FadeIn>
+                            {this.state.results.map((s, i) => {
+                                return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
+                                    <ListGroup.Item action className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                        <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
+                                        <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                                    </ListGroup.Item>
+                                </LinkContainer>;
+                            })}
+                        </FadeIn>
+                    </ListGroup>}
 
-                {this.state.option && this.state.option.value === 'other' && <ListGroup>
-                    {this.state.results.map((s, i) => {
-                        return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                            <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
-                            <br />
-                            <small>{s.video.title}</small>
-                        </ListGroup.Item>;
-                    })}
-                </ListGroup>}
-                <Pagination className='mt-3' totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
+                    {this.state.option && this.state.option.value === 'other' && <ListGroup>
+                        <FadeIn>
+                            {this.state.results.map((s, i) => {
+                                return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                    <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                                    <br />
+                                    <small>{s.video.title}</small>
+                                </ListGroup.Item>;
+                            })}
+                        </FadeIn>
+                    </ListGroup>}
+                    <Pagination className='mt-3' totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
+                </FadeIn>}
             </div>
         );
     }

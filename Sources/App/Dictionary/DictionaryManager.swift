@@ -80,7 +80,7 @@ struct DictionaryManager {
         var frequencyList: [FrequencyListElement] = []
         let frequencyListURL = directoryURL.appendingPathComponent("../Dictionaries/frequency_lists/netflix/word_freq_report.txt")
         if let frequencyListString = try? String(contentsOf: frequencyListURL) {
-            let arrays = frequencyListString.split(separator: "\r\n").map { $0.split(separator: "\t").map { String($0) } }
+            let arrays = frequencyListString.split(separator: "\r\n").concurrentMap { $0.split(separator: "\t").map { String($0) } }
             
             if let data = try? JSONEncoder().encode(arrays), let list = try? JSONDecoder().decode([FrequencyListElement].self, from: data) {
                 frequencyList = list

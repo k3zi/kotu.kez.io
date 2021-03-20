@@ -5,11 +5,11 @@ public struct CompressedFileContainer {
     public init(withDirectory directoryURL: URL, encoding: String.Encoding = .utf8) throws {
         let fileManager = FileManager.default
         let fileURLs = try fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil)
-        let collections: [Self.Collection] = try fileURLs
+        let collections: [Self.Collection] = fileURLs
             .filter { $0.pathExtension == "rsc" }
             .sorted(by: { $0.path < $1.path })
-            .map {
-                return try Collection.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)), encoding: encoding)
+            .concurrentMap {
+                try! Collection.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)), encoding: encoding)
             }
         files = collections.flatMap { $0.files }
     }
