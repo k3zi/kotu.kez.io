@@ -142,8 +142,8 @@ class DictionaryController: RouteCollection {
                 }
                 .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
                 .field(DictionaryOwner.self, \.$order)
-                .sort(\.$headline)
                 .sort(DictionaryOwner.self, \.$order)
+                .sort(\.$headline)
                 .unique()
                 .paginate(for: req)
                 .map { page in
@@ -170,8 +170,8 @@ class DictionaryController: RouteCollection {
                 .filter(User.self, \.$id == userID)
                 .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
                 .field(DictionaryOwner.self, \.$order)
-                .sort(\.$headline)
                 .sort(DictionaryOwner.self, \.$order)
+                .sort(\.$headline)
                 .unique()
                 .paginate(for: req)
                 .map { page in
