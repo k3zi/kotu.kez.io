@@ -365,7 +365,7 @@ class TranscriptionController: RouteCollection {
                     let individualCharacters = individualWords.flatMap { word in
                         Array(word.text).map { SubtitleCharacter(character: $0, time: word.time)}
                     }
-                    let alignment = NeedlemanWunsch.align(input1: Array(originalText), input2: individualCharacters.concurrentMap { $0.character })
+                    let alignment = try NeedlemanWunsch.align(input1: Array(originalText), input2: individualCharacters.concurrentMap { $0.character })
                     let originalAlignedCharacters = alignment.output1.enumerated().splitKeepingSeparator(whereSeparator: {
                         if case let .indexAndValue(_, char) = $0.element {
                             return ["\n", "。", ".", "？", "?"].contains(char)
@@ -375,12 +375,12 @@ class TranscriptionController: RouteCollection {
                     .filter { !$0.isEmpty }
 
                     let alignedSubtitles = originalAlignedCharacters.compactMap { characters -> MediaSubtitle? in
-                        let text = characters.compactMap {
-                            if case let .indexAndValue(_, value) = $0.element {
+                        let text = String(characters.compactMap { match -> Character? in
+                            if case let .indexAndValue(_, value) = match.element {
                                 return value
                             }
                             return nil
-                        }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+                        }).trimmingCharacters(in: .whitespacesAndNewlines)
 
                         if text.isEmpty {
                             return nil

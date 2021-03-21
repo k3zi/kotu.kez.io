@@ -71,7 +71,7 @@ class Component extends React.Component {
                         {!user && 'Login / Register to access the rest of the site.'}
                         {user && `Hello ${user.username}!`}
                     </h1>
-                    <div className='mb-2'><strong>Quick Links:</strong>
+                    {user && <div className='mb-2'><strong>Quick Links:</strong>
                         {' '}
                         <LinkContainer to='/media/reader'>
                             <a href='#' className='text-decoration-none'>Reader</a>
@@ -84,7 +84,7 @@ class Component extends React.Component {
                         <LinkContainer to='/search'>
                             <a href='#' className='text-decoration-none'>Advanced Search</a>
                         </LinkContainer>
-                    </div>
+                    </div>}
 
                     <Row>
                         {this.state.readerSessions.items.length > 0 && <Col xs={12} lg={6}>

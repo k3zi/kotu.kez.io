@@ -231,6 +231,9 @@ class DictionaryController: RouteCollection {
             <style>
                 \(css)
                 \(forceHorizontalText ? horizontalTextCSS : "")
+                body {
+                    color: \(forceDarkCSS ? "white" : "black") !important;
+                }
             </style>
             <script>
                 document.addEventListener('copy', function (e) {

@@ -173,6 +173,43 @@ public struct KeyStore {
 
 extension Array {
 
+    func firstSeries(length: Int, where handler: (Element) -> Bool) -> Index? {
+        var startIndex = self.startIndex
+        var index = startIndex
+        var currentLength = 0
+        while currentLength != length && index != endIndex {
+            if handler(self[index]) {
+                currentLength += 1
+                index += 1
+            } else {
+                currentLength = 0
+                index += 1
+                startIndex = index
+            }
+        }
+
+        return currentLength == length ? startIndex : nil
+    }
+
+    func lastSeries(length: Int, where handler: (Element) -> Bool) -> Index? {
+        guard !isEmpty else { return nil }
+        var startIndex = self.endIndex.advanced(by: -1)
+        var index = startIndex
+        var currentLength = 0
+        while currentLength != length && index != self.startIndex {
+            if handler(self[index]) {
+                currentLength += 1
+                index -= 1
+            } else {
+                currentLength = 0
+                index -= 1
+                startIndex = index
+            }
+        }
+
+        return currentLength == length ? (index + 1) : nil
+    }
+
     func dropLast(while handler: (Element) -> Bool) -> Array {
         var array = self
         while let last = array.last, handler(last) {
@@ -185,6 +222,13 @@ extension Array {
         return stride(from: 0, to: count, by: size).map {
             Array(self[$0 ..< Swift.min($0 + size, count)])
         }
+    }
+
+    func split() -> [[Element]] {
+        let half = count / 2
+        let leftSplit = self[0 ..< half]
+        let rightSplit = self[half ..< count]
+        return [Array(leftSplit), Array(rightSplit)]
     }
 
 }
