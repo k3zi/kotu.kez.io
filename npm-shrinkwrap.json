@@ -17,7 +17,7 @@
                 "html-whitespace-sensitive-tag-names": "^1.0.3",
                 "pako": "^2.0.3",
                 "react-bootstrap": "k3zi/react-bootstrap#bs5-dev",
-                "react-bootstrap-4-pagination": "^1.0.4",
+                "react-bootstrap-4-pagination": "github:turrione/react-bootstrap-pagination#master",
                 "react-fade-in": "^2.0.1",
                 "react-markdown": "^5.0.3",
                 "rehype-autolink-headings": "^5.0.1",
@@ -10356,9 +10356,9 @@
             }
         },
         "node_modules/react-bootstrap-4-pagination": {
-            "version": "1.0.4",
-            "resolved": "https://registry.npmjs.org/react-bootstrap-4-pagination/-/react-bootstrap-4-pagination-1.0.4.tgz",
-            "integrity": "sha512-+SGbZ8Gq1OTczSukI+oWuMazWTMIY42uyZcB4647Q3oXOJeQqbNTof1jzBz4+/TQQWYjMZy/oRkLIx4YR6hYjw==",
+            "version": "1.0.3",
+            "resolved": "git+ssh://git@github.com/turrione/react-bootstrap-pagination.git#b3d5d215e8c4b066109f08465bee57f520235a11",
+            "license": "MIT",
             "dependencies": {
                 "react": "^15.5.4",
                 "webpack": "^4.43.0"
@@ -23107,9 +23107,8 @@
             }
         },
         "react-bootstrap-4-pagination": {
-            "version": "1.0.4",
-            "resolved": "https://registry.npmjs.org/react-bootstrap-4-pagination/-/react-bootstrap-4-pagination-1.0.4.tgz",
-            "integrity": "sha512-+SGbZ8Gq1OTczSukI+oWuMazWTMIY42uyZcB4647Q3oXOJeQqbNTof1jzBz4+/TQQWYjMZy/oRkLIx4YR6hYjw==",
+            "version": "git+ssh://git@github.com/turrione/react-bootstrap-pagination.git#b3d5d215e8c4b066109f08465bee57f520235a11",
+            "from": "react-bootstrap-4-pagination@github:turrione/react-bootstrap-pagination#master",
             "requires": {
                 "react": "^15.5.4",
                 "webpack": "^4.43.0"
