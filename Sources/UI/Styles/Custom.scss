@@ -446,6 +446,16 @@ space {
     padding-right: 6px;
 }
 
+.word-status-enabled {
+    .status-unknown {
+        @extend .text-danger;
+    }
+
+    .status-learning {
+        @extend .text-warning;
+    }
+}
+
 .visual-type-showPitchAccentDrops {
     visual {
         display: inline !important;

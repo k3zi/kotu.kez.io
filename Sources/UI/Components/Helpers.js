@@ -174,7 +174,7 @@ helpers.generateManualPitchElement = (rawText) => {
         }).join('');
         result += `${preMiscText}<phrase><visual>${parsedText}</visual></phrase>${postMiscText}`;
     }
-    result = result.replace(/<\/phrase><phrase>/g, '</phrase><space></space><phrase>');
+    result = result.replace(/<\/phrase><phrase/g, '</phrase><space></space><phrase');
     return `<span class='visual-type-showPitchAccentDrops'>${result}</span>`;
 }
 
@@ -215,7 +215,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
                 newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
             } else {
                 newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
-                        return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency}'>${c.ruby}</component>`;
+                        return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
                 }).join('')}</phrase>`;
             }
 

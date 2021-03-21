@@ -35,6 +35,7 @@ import RegisterModal from './RegisterModal';
 import SearchResultModal from './SearchResultModal';
 import SettingsModal from './SettingsModal';
 import ContextMenu from './ContextMenu';
+import ComponentContextMenu from './ComponentContextMenu';
 
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
@@ -83,6 +84,7 @@ class App extends React.Component {
             user: null,
             isReady: false,
             showContextMenu: {},
+            showComponentContextMenu: {},
 
             numberOfReviews: 0,
 
@@ -120,7 +122,12 @@ class App extends React.Component {
 
         this.updateColorScheme();
         if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            const match = window.matchMedia('(prefers-color-scheme: dark)');
+            if (!match.addEventListener) {
+                return;
+            }
+
+            match.addEventListener('change', e => {
                 const colorScheme = ((this.state.user && this.state.user.settings.ui.prefersDarkMode) || e.matches) ? 'dark' : 'light';
                 this.setState({ colorScheme });
             });
@@ -160,6 +167,20 @@ class App extends React.Component {
             this.setState({ showContextMenu: contextMenu });
         });
 
+        Helpers.addLiveEventListeners('component', 'contextmenu', (e, target) => {
+            if (!this.state.user.settings.wordStatus.isEnabled) {
+                return;
+            }
+            e.preventDefault();
+            const contextMenu = {
+                y: e.clientY,
+                x: e.clientX,
+                selection: window.getSelection().toString(),
+                target
+            };
+            this.setState({ showComponentContextMenu: contextMenu });
+        });
+
         Helpers.addLiveEventListeners('component', 'click', (e, target) => {
             const original = target.dataset.original;
             const surface = target.dataset.surface;
@@ -191,6 +212,12 @@ class App extends React.Component {
                 document.body.classList.add('prefers-dark-mode');
             } else {
                 document.body.classList.remove('prefers-dark-mode');
+            }
+
+            if (user.settings.wordStatus.isEnabled) {
+                document.body.classList.add('word-status-enabled');
+            } else {
+                document.body.classList.remove('word-status-enabled');
             }
             this.setState({ user });
             this.updateColorScheme(user);
@@ -570,6 +597,7 @@ class App extends React.Component {
                         <SearchResultModal headwords={this.state.headwords} show={this.state.headwords.length > 0} onHide={() => this.setState({ headwords: [], isFocused: false })} />
                         <SettingsModal user={this.state.user} show={this.state.showSettingsModal} onHide={() => this.toggleShowSettingsModal(false)} onSave={() => this.loadUser()} />
                         <ContextMenu {...this.state.showContextMenu} onHide={() => this.setState({ showContextMenu: {} })} />
+                        <ComponentContextMenu {...this.state.showComponentContextMenu} onHide={() => this.setState({ showComponentContextMenu: {} })} />
                     </Router>
                 </ColorSchemeContext.Provider>
             </UserContext.Provider>

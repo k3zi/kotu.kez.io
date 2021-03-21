@@ -292,6 +292,21 @@ class DictionaryController: RouteCollection {
                 }
         }
 
+        dictionary.post("status", ":word", ":status") { (req: Request) -> EventLoopFuture<Response> in
+            let user = try req.auth.require(User.self)
+            let word = try req.parameters.require("word", as: String.self)
+            let statusString = try req.parameters.require("status", as: String.self)
+            guard let status = Word.Status(rawValue: statusString) else {
+                throw Abort(.badRequest, reason: "Invalid status.")
+            }
+
+            var words = user.words ?? []
+            words.removeAll(where: { $0.word == word })
+            words.append(Word(word: word, status: status))
+            user.words = words
+            return user.save(on: req.db).map { Response(status: .ok) }
+        }
+
         dictionary.post("parse") { (req: Request) -> EventLoopFuture<[Sentence]> in
             struct Offset {
                 let accentPhraseComponent: AccentPhraseComponent
@@ -305,10 +320,46 @@ class DictionaryController: RouteCollection {
             let includeListWords = (try? req.query.get(Bool.self, at: "includeListWords")) ?? false
             let mecab = try Mecab()
             let nodes = try mecab.tokenize(string: sentenceString)
+
+            let nonLearningWords = (user.words ?? []).filter { $0.status != .learning }
+            let inputData = nonLearningWords.map { word -> [Double] in
+                let rank = DictionaryManager.shared.frequencyList[word.word]?.numberOfTimes ?? 0
+                let difficultyRank = DictionaryManager.shared.difficultyList[word.word]?.difficultyRank ?? 3
+                let numberOfKanji = word.word.match("\\p{Han}").count
+                return [
+                    Double(rank),
+                    Double(difficultyRank),
+                    Double(numberOfKanji)
+                ]
+            }
+            let outputData = nonLearningWords.map { $0.status }
+
+            let bayesian = try NaiveBayes(type: .gaussian, data: inputData, classes: outputData).train()
+
             let listWordsFuture = includeListWords
                 ? user.$listWords.query(on: req.db).all()
                 : req.eventLoop.future([])
-            var sentences = try Sentence.parseMultiple(db: req.db, tokenizer: .init(nodes: nodes))
+            
+            var sentences = try Sentence.parseMultiple(tokenizer: .init(nodes: nodes))
+
+            for (sentenceOffset, sentence) in sentences.enumerated() {
+                for (accentPhraseOffset, accentPhrase) in sentence.accentPhrases.enumerated() {
+                    for (componentOffset, component) in accentPhrase.components.enumerated() {
+                        let word = component.frequencySurface ?? component.surface
+                        let rank = DictionaryManager.shared.frequencyList[word]?.numberOfTimes ?? 0
+                        let difficultyRank = DictionaryManager.shared.difficultyList[word]?.difficultyRank ?? 3
+                        let numberOfKanji = word.match("\\p{Han}").count
+                        let inputData: [Double] = [
+                            Double(rank),
+                            Double(difficultyRank),
+                            Double(numberOfKanji)
+                        ]
+
+                        sentences[sentenceOffset].accentPhrases[accentPhraseOffset].components[componentOffset].status = (user.words ?? []).first { $0.word == word }?.status ?? bayesian.classify(with: inputData) ?? .unknown
+                        sentences[sentenceOffset].accentPhrases[accentPhraseOffset].components[componentOffset].frequencySurface = word
+                    }
+                }
+            }
 
             // Headwords are required for the list words so it doesn't make sense
             // going past this point.

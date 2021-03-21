@@ -11,7 +11,7 @@ import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import ListGroup from 'react-bootstrap/ListGroup';
-import Pagination from 'react-bootstrap-4-pagination';
+import Pagination from './react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import ToggleButton from 'react-bootstrap/ToggleButton';

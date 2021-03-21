@@ -6,7 +6,7 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown';
-import Pagination from 'react-bootstrap-4-pagination';
+import Pagination from './../react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 

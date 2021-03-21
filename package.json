@@ -54,7 +54,6 @@
         "html-whitespace-sensitive-tag-names": "^1.0.3",
         "pako": "^2.0.3",
         "react-bootstrap": "k3zi/react-bootstrap#bs5-dev",
-        "react-bootstrap-4-pagination": "github:turrione/react-bootstrap-pagination#master",
         "react-fade-in": "^2.0.1",
         "react-markdown": "^5.0.3",
         "rehype-autolink-headings": "^5.0.1",

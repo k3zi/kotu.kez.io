@@ -8,7 +8,6 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
-import Pagination from 'react-bootstrap-4-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Tabs from 'react-bootstrap/Tabs';

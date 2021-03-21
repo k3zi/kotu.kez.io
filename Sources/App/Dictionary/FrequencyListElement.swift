@@ -65,3 +65,20 @@ struct FrequencyListElement: Decodable, Comparable {
     }
 
 }
+
+struct DifficultyListElement: Decodable {
+
+    let id: Int
+    let word: String
+    let katakana: String
+    let difficultyRank: Int
+
+    init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        id = Int(try container.decode(String.self))!
+        word = try container.decode(String.self)
+        katakana = try container.decode(String.self)
+        difficultyRank = Int(try container.decode(String.self).components(separatedBy: ".").first!)!
+    }
+
+}

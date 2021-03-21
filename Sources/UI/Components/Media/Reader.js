@@ -102,6 +102,20 @@ class Reader extends React.Component {
         let session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         if (session) {
             this.setState({ isLoading: false, html: session.annotatedContent, session, text: session.url || session.textContent });
+
+            const requestID = this.currentRequestID + 1;
+            this.currentRequestID = requestID;
+            const annotatedContent = await Helpers.generateVisualSentenceElement(session.content, session.textContent, () => {
+                return requestID != this.currentRequestID;
+            });
+
+            if (annotatedContent) {
+                const session = this.state.session;
+                if (!session) { return; }
+                session.annotatedContent = annotatedContent.innerHTML;
+                this.setState({ html: annotatedContent.innerHTML, session });
+                this.updateSession();
+            }
         } else {
             this.props.history.push(`/media/reader`);
         }

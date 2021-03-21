@@ -5,7 +5,7 @@ import UserContext from './Context/User';
 import Col from 'react-bootstrap/Col';
 import { LinkContainer } from 'react-router-bootstrap';
 import ListGroup from 'react-bootstrap/ListGroup';
-import Pagination from 'react-bootstrap-4-pagination';
+import Pagination from './react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 
 import { ResponsiveCalendar } from '@nivo/calendar';

@@ -27,7 +27,10 @@ final class User: Model, Content {
     var passwordResetKey: String?
 
     @Field(key: "ignore_words")
-    var ignoreWords: [String]
+    var knownWords: [String]
+
+    @OptionalField(key: "words")
+    var words: [Word]?
 
     @OptionalField(key: "plex_auth")
     var plexAuth: SignInResponse?
@@ -86,7 +89,7 @@ final class User: Model, Content {
         self.username = username
         self.passwordHash = passwordHash
         self.permissions = []
-        self.ignoreWords = []
+        self.knownWords = []
     }
 
     func beforeEncode() throws {
@@ -227,7 +230,7 @@ extension User {
                 .update()
                 .flatMap {
                     User.query(on: database)
-                        .set(\.$ignoreWords, to: [])
+                        .set(\.$knownWords, to: [])
                         .update()
                 }
         }
@@ -267,6 +270,40 @@ extension User {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema("users")
                 .deleteField("settings")
+                .update()
+        }
+    }
+
+    struct Migration11: Fluent.Migration {
+        var name: String { "AddUserWords" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .field("words", .json)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("words")
+                .update()
+        }
+    }
+
+    struct Migration12: Fluent.Migration {
+        var name: String { "AddUserWords1" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("words")
+                .field("words", .array(of: .json))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema("users")
+                .deleteField("words")
+                .field("words", .json)
                 .update()
         }
     }

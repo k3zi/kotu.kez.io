@@ -98,8 +98,8 @@ class ListsController: RouteCollection {
             let word = try req.content.get(String.self, at: "word").trimmingCharacters(in: .whitespacesAndNewlines)
             guard word.count > 0 else { throw Abort(.badRequest, reason: "Empty word passed.") }
 
-            if !user.ignoreWords.contains(word) {
-                user.ignoreWords.append(word)
+            if !user.knownWords.contains(word) {
+                user.knownWords.append(word)
             }
             return user.save(on: req.db)
                 .map { Response(status: .ok) }

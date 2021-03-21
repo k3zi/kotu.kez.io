@@ -174,6 +174,8 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.anki.showFieldPreview} onChange={(e) => this.save(e, (s) => s.anki.showFieldPreview = e.target.checked)} type="checkbox" label="Show Field Preview" />
                     </Form.Group>
 
+                    <hr />
+
                     <h5>Dictionaries</h5>
                     <ListGroup className="mb-3">
                         {this.state.dictionaries.map((dictionary, i) => {
@@ -186,7 +188,7 @@ class SettingsModal extends React.Component {
                                     </div>
                                     <span className='px-3'>{dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}</span>
                                 </div>
-                                <span class='float-end text-danger fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
+                                <span class='float-end text-danger d-flex align-items-center fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
                                 {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
                             </ListGroup.Item>;
                         })}
@@ -212,16 +214,22 @@ class SettingsModal extends React.Component {
                         </Form.Group>
                     </Form>
 
+                    <hr />
+
                     <h5>Reader</h5>
                     <Form.Group className='mb-3' controlId="settingsShowCardForm">
                         <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
+
+                    <hr />
 
                     <h5>Tests</h5>
                     <h6>Pitch Accent</h6>
                     <Form.Group className='mb-3' controlId="settingsTestsPitchAccentShowFurigana">
                         <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.showFurigana} onChange={(e) => this.save(e, (s) => s.tests.pitchAccent.showFurigana = e.target.checked)} type="checkbox" label="Show Furigana Over Kanji" />
                     </Form.Group>
+
+                    <hr />
 
                     <h5>UI</h5>
                     <Form.Group className='mb-3' controlId="settingsPrefersColorContrast">
@@ -237,7 +245,18 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.ui.prefersHorizontalText} onChange={(e) => this.save(e, (s) => s.ui.prefersHorizontalText = e.target.checked)} type="checkbox" label="Prefer Horizontal Text" />
                     </Form.Group>
 
+                    <hr />
+
+                    <h5>Word Status (Experimental)</h5>
+                    <Form.Group className='mb-3' controlId="settingsWordStatusIsEnabled">
+                        <Form.Check defaultChecked={this.props.user.settings.wordStatus.isEnabled} onChange={(e) => this.save(e, (s) => s.wordStatus.isEnabled = e.target.checked)} type="checkbox" label="Enable" />
+                        <Form.Text className="text-muted">
+                            This feature is still experimental. Please make sure to leave feedback if you run in to any issues or have suggestions.
+                        </Form.Text>
+                    </Form.Group>
+
                     {this.props.user.permissions.includes('api') && <>
+                        <hr />
                         <h5>API</h5>
                         <Form.Group className='mb-3' controlId="settingsShowCardForm">
                             <InputGroup>

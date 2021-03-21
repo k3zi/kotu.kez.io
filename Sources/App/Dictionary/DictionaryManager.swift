@@ -86,6 +86,16 @@ struct DictionaryManager {
             }
         }
 
+        var difficultyList: [DifficultyListElement] = []
+        let difficultyListURL = directoryURL.appendingPathComponent("../Dictionaries/misc/goi.csv")
+        if let frequencyListString = try? String(contentsOf: difficultyListURL, encoding: .shiftJIS) {
+            let arrays = frequencyListString.split(separator: "\r\n").suffix(from: 1).concurrentMap { $0.split(separator: ",").map { String($0) } }
+
+            if let data = try? JSONEncoder().encode(arrays), let list = try? JSONDecoder().decode([DifficultyListElement].self, from: data) {
+                difficultyList = list
+            }
+        }
+
         return Dictionary
             .query(on: app.db)
             .all()
@@ -114,6 +124,8 @@ struct DictionaryManager {
                     contentIndexes[dictionary.directoryName] = contentIndex
                 }
 
+                let uniqueDifficultyList = Swift.Dictionary(grouping: difficultyList, by: { $0.word }).map { $0.value.first! }
+
                 _shared = .init(
                     containers: containers,
                     cssStrings: cssStrings,
@@ -121,6 +133,7 @@ struct DictionaryManager {
                     icons: icons,
                     contentIndexes: contentIndexes,
                     frequencyList: Swift.Dictionary(uniqueKeysWithValues: frequencyList.map { ($0.word, $0) }),
+                    difficultyList: Swift.Dictionary(uniqueKeysWithValues: uniqueDifficultyList.map { ($0.word, $0) }),
                     words: Set(eDictWords)
                 )
             }
@@ -135,6 +148,8 @@ struct DictionaryManager {
 
     // MARK: Misc
     let frequencyList: [String: FrequencyListElement]
+    let difficultyList: [String: DifficultyListElement]
+
     /// Just a list of all possible words we should consider.
     let words: Set<String>
 

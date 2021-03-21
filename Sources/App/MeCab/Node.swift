@@ -108,7 +108,7 @@ extension Node {
     }
 
     func shouldIgnore(for user: User) -> Bool {
-        isBasic || user.ignoreWords.contains(original)
+        isBasic
     }
 
     var isBasic: Bool {

@@ -2,13 +2,6 @@ import Vapor
 
 struct Settings: Content {
 
-    enum CodingKeys: String, CodingKey {
-        case anki
-        case reader
-        case tests
-        case ui
-    }
-
     struct Anki: Content {
         enum CodingKeys: String, CodingKey {
             case showFieldPreview
@@ -45,27 +38,6 @@ struct Settings: Content {
         }
     }
 
-    struct UI: Content {
-        enum CodingKeys: String, CodingKey {
-            case prefersColorContrast
-            case prefersDarkMode
-            case prefersHorizontalText
-        }
-
-        var prefersColorContrast: Bool = false
-        var prefersDarkMode: Bool = false
-        var prefersHorizontalText: Bool = false
-
-        init() { }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            prefersColorContrast = (try? container.decodeIfPresent(Bool.self, forKey: .prefersColorContrast)) ?? false
-            prefersDarkMode = (try? container.decodeIfPresent(Bool.self, forKey: .prefersDarkMode)) ?? false
-            prefersHorizontalText = (try? container.decodeIfPresent(Bool.self, forKey: .prefersHorizontalText)) ?? false
-        }
-    }
-
     struct Tests: Content {
         enum CodingKeys: String, CodingKey {
             case pitchAccent
@@ -96,10 +68,55 @@ struct Settings: Content {
         }
     }
 
+    struct UI: Content {
+        enum CodingKeys: String, CodingKey {
+            case prefersColorContrast
+            case prefersDarkMode
+            case prefersHorizontalText
+        }
+
+        var prefersColorContrast: Bool = false
+        var prefersDarkMode: Bool = false
+        var prefersHorizontalText: Bool = false
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            prefersColorContrast = (try? container.decodeIfPresent(Bool.self, forKey: .prefersColorContrast)) ?? false
+            prefersDarkMode = (try? container.decodeIfPresent(Bool.self, forKey: .prefersDarkMode)) ?? false
+            prefersHorizontalText = (try? container.decodeIfPresent(Bool.self, forKey: .prefersHorizontalText)) ?? false
+        }
+    }
+
+    struct WordStatus: Content {
+        enum CodingKeys: String, CodingKey {
+            case isEnabled
+        }
+
+        var isEnabled: Bool = false
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            isEnabled = (try? container.decodeIfPresent(Bool.self, forKey: .isEnabled)) ?? false
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case anki
+        case reader
+        case tests
+        case ui
+        case wordStatus
+    }
+
     var anki = Anki()
     var reader = Reader()
     var tests = Tests()
     var ui = UI()
+    var wordStatus = WordStatus()
 
     init() { }
 
@@ -109,6 +126,7 @@ struct Settings: Content {
         reader = (try? container.decodeIfPresent(Reader.self, forKey: .reader)) ?? Reader()
         tests = (try? container.decodeIfPresent(Tests.self, forKey: .tests)) ?? Tests()
         ui = (try? container.decodeIfPresent(UI.self, forKey: .ui)) ?? UI()
+        wordStatus = (try? container.decodeIfPresent(WordStatus.self, forKey: .wordStatus)) ?? WordStatus()
     }
 
 }

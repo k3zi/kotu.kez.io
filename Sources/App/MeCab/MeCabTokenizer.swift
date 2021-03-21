@@ -206,18 +206,18 @@ extension String {
 
 struct Sentence: Content {
 
-    static func parseMultiple(db: Database, tokenizer: MeCabTokenizer) throws -> [Sentence] {
+    static func parseMultiple(tokenizer: MeCabTokenizer) throws -> [Sentence] {
         var sentences = [Sentence]()
         while !tokenizer.reachedEnd {
-            let sentence = try parse(db: db, tokenizer: tokenizer)
+            let sentence = try parse(tokenizer: tokenizer)
             sentences.append(sentence)
         }
         return sentences.filter { !$0.accentPhrases.isEmpty }
     }
 
-    static func parse(db: Database, tokenizer: MeCabTokenizer) throws -> Sentence {
+    static func parse(tokenizer: MeCabTokenizer) throws -> Sentence {
         try tokenizer.consume(expect: { $0.type == .beginOfSentence })
-        let accentPhrases = try AccentPhrase.parseMultiple(db: db, tokenizer: tokenizer, until: { $0.type == .endOfSentence })
+        let accentPhrases = try AccentPhrase.parseMultiple(tokenizer: tokenizer, until: { $0.type == .endOfSentence })
         try tokenizer.consume(expect: { $0.type == .endOfSentence })
         return .init(accentPhrases: accentPhrases)
     }
@@ -228,17 +228,17 @@ struct Sentence: Content {
 
 struct AccentPhrase: Content {
 
-    static func parseMultiple(db: Database, tokenizer: MeCabTokenizer, until: @escaping (Node) -> Bool) throws -> [AccentPhrase] {
+    static func parseMultiple(tokenizer: MeCabTokenizer, until: @escaping (Node) -> Bool) throws -> [AccentPhrase] {
         var words = [AccentPhrase]()
         while !tokenizer.reachedEnd && !until(tokenizer.next) {
-            let word = try parse(db: db, tokenizer: tokenizer)
+            let word = try parse(tokenizer: tokenizer)
             words.append(word)
         }
         return words
     }
 
-    static func parse(db: Database, tokenizer: MeCabTokenizer) throws -> AccentPhrase {
-        let morphemes = try Morpheme.parseMultiple(db: db, tokenizer: tokenizer)
+    static func parse(tokenizer: MeCabTokenizer) throws -> AccentPhrase {
+        let morphemes = try Morpheme.parseMultiple(tokenizer: tokenizer)
 
         // TODO: isBasic: node.isBasic
         let startComplex = Array(morphemes.prefix(while: { !$0.isBasic }))
@@ -296,7 +296,9 @@ struct AccentPhraseComponent: Content {
             original: original,
             pronunciation: pronunciation,
             ruby: ruby,
+
             frequency: frequencyItem?.frequency ?? .unknown,
+            frequencySurface: frequencyItem?.word,
             isCompound: morphemes.count > 1,
             isBasic: morphemes.count == 1 && morphemes[0].isBasic
         )
@@ -309,21 +311,23 @@ struct AccentPhraseComponent: Content {
     let pronunciation: String
     let ruby: String
     let frequency: Frequency
+    var frequencySurface: String?
     let isCompound: Bool
     let isBasic: Bool
 
+    var status: Word.Status = .unknown
     var headwords = [Headword]()
     var listWords = [ListWord]()
 
     func shouldIgnore(for user: User) -> Bool {
-        isBasic || user.ignoreWords.contains(original)
+        isBasic
     }
 
 }
 
 struct Morpheme: Content {
 
-    static func parseMultiple(db: Database, tokenizer: MeCabTokenizer, morphemes: [Morpheme] = []) throws -> [Morpheme] {
+    static func parseMultiple(tokenizer: MeCabTokenizer, morphemes: [Morpheme] = []) throws -> [Morpheme] {
         if tokenizer.reachedEnd || tokenizer.next.isBosEos {
             return morphemes
         }
@@ -333,7 +337,7 @@ struct Morpheme: Content {
         let nextMorpheme = parse(from: tokenizer.next)
 
         if morphemes.isEmpty {
-            return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: [Morpheme.parse(from: tokenizer.consume())])
+            return try parseMultiple(tokenizer: tokenizer, morphemes: [Morpheme.parse(from: tokenizer.consume())])
         }
 
         let lastMorpheme = morphemes.last!
@@ -343,14 +347,14 @@ struct Morpheme: Content {
         }
 
         if ["接尾辞", "助動詞", "助詞"].contains(nextMorpheme.partOfSpeech) || ["接続助詞", "副助詞"].contains(nextMorpheme.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
-            return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
+            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
         if nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: nextMorpheme.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && (nextMorpheme.features.contains("助数詞可能") || nextMorpheme.features[1] == "数詞")) {
-            return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
+            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
         }
 
-        if (!["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(morphemes.last!.partOfSpeech)) || ["連体詞"].contains(morphemes.last!.partOfSpeech) {
+        if (!["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(lastMorpheme.partOfSpeech)) || ["連体詞"].contains(lastMorpheme.partOfSpeech) {
             return morphemes
         }
 
@@ -372,7 +376,7 @@ struct Morpheme: Content {
         if foundMorphemes.isEmpty {
             return morphemes + foundMorphemes
         }
-        return try parseMultiple(db: db, tokenizer: tokenizer, morphemes: morphemes + foundMorphemes)
+        return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + foundMorphemes)
     }
 
     static func parse(from node: Node) -> Morpheme {

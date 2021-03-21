@@ -79,6 +79,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(ReviewLog.Migration(), ReviewLog.Migration1())
     app.migrations.add(DictionaryOwner.Migration1())
     app.migrations.add(AnkiDeckVideo.Migration1(), AnkiDeckSubtitle.Migration1(), AnkiDeckVideo.Migration2())
+    app.migrations.add(User.Migration11(), User.Migration12())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
