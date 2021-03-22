@@ -25,6 +25,7 @@ class Search extends React.Component {
             isLoading: false,
             option: null,
             isAudiobook: false,
+            isExact: false,
             options: [
                 {
                     endpoint: '/api/dictionary/search',
@@ -57,13 +58,15 @@ class Search extends React.Component {
 
     componentDidUpdate(prevProps, prevState) {
         const audiobook = this.getQueryParam('audiobook') === 'true';
+        const exact = this.getQueryParam('exact') === 'true';
         if (
             this.props.match.params.query != prevProps.match.params.query
             || this.props.match.params.optionValue != prevProps.match.params.optionValue
             || this.props.match.params.page != prevProps.match.params.page
             || this.props.match.params.per != prevProps.match.params.per
-            || this.state.isAudiobook != audiobook) {
-            this.setState({ isAudiobook: audiobook });
+            || this.state.isAudiobook != audiobook
+            || this.state.isExact != exact) {
+            this.setState({ isAudiobook: audiobook, isExact: exact });
             this.load();
         }
     }
@@ -90,7 +93,7 @@ class Search extends React.Component {
         if (!query || query.length === 0) {
             return;
         }
-        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}&audiobook=${this.getQueryParam('audiobook') === 'true' ? 'true' : 'false'}`);
+        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}&audiobook=${this.getQueryParam('audiobook') === 'true' ? 'true' : 'false'}&exact=${this.getQueryParam('exact') === 'true' ? 'true' : 'false'}`);
         if (response.ok) {
             const result = await response.json();
 
@@ -110,13 +113,14 @@ class Search extends React.Component {
         this.search(this.props.match.params.query, 1, option);
     }
 
-    async search(query, page, newOption, newAudiobook) {
+    async search(query, page, newOption, newAudiobook, newExact) {
         const option = newOption || this.state.option || this.state.options[0];
         const audiobook = typeof newAudiobook !== 'undefined' ? newAudiobook : this.state.isAudiobook;
+        const exact = typeof newExact !== 'undefined' ? newExact : this.state.isExact;
         const metadata = this.state.metadata;
         metadata.page = page;
         query = query || '';
-        const params = `${option.value}/${page}/${this.state.metadata.per}?audiobook=${audiobook ? 'true' : 'false'}`;
+        const params = `${option.value}/${page}/${this.state.metadata.per}?audiobook=${audiobook ? 'true' : 'false'}&exact=${exact ? 'true' : 'false'}`;
         if (!query || query.length === 0) {
             this.props.history.push(`/search/${params}`);
         } else {
@@ -126,6 +130,10 @@ class Search extends React.Component {
 
     toggleIsAudiobook(e) {
         this.search(this.props.match.params.query, 1, undefined, e.target.checked);
+    }
+
+    toggleIsExact(e) {
+        this.search(this.props.match.params.query, 1, undefined, undefined, e.target.checked);
     }
 
     render() {
@@ -148,8 +156,9 @@ class Search extends React.Component {
                         </ToggleButton>
                     ))}
                 </ButtonGroup>
-                {this.state.option && this.state.option.value === 'other' && <Form.Group className='mb-3' controlId="searchFilters">
-                    <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook || this.getQueryParam('audiobook') === 'true'} onChange={(e) => this.toggleIsAudiobook(e)} />
+                {this.state.option && <Form.Group className='mb-3' controlId="searchFilters">
+                    {this.state.option.value === 'words' && <Form.Check inline type="checkbox" label="Exact" name='isExact' defaultChecked={this.state.isExact || this.getQueryParam('exact') === 'true'} onChange={(e) => this.toggleIsExact(e)} />}
+                    {this.state.option.value === 'other' && <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook || this.getQueryParam('audiobook') === 'true'} onChange={(e) => this.toggleIsAudiobook(e)} />}
                 </Form.Group>}
                 {this.props.match.params.query && this.props.match.params.query.length > 0 && <FadeIn>
                     <hr />

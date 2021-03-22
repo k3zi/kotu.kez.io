@@ -157,17 +157,27 @@ class DictionaryController: RouteCollection {
             let userID = try user.requireID()
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
-            var modifiedQuery = (q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q).replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+            let katakanaQuery = q.applyingTransform(.hiraganaToKatakana, reverse: false) ?? q
+            var modifiedQuery = katakanaQuery.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
             if !modifiedQuery.contains("%") && !modifiedQuery.contains("_") {
                 modifiedQuery = "\(modifiedQuery)%"
             }
-            return Headword
+            let exact = (try? req.query.get(Bool.self, at: "exact")) ?? false
+            var query = Headword
                 .query(on: req.db)
                 .with(\.$dictionary)
                 .join(parent: \.$dictionary)
                 .join(from: Dictionary.self, siblings: \.$owners)
-                .filter(\.$text, .custom("LIKE"), modifiedQuery)
-                .filter(User.self, \.$id == userID)
+            if exact {
+                query = query.group(.or) {
+                    $0.filter(all: katakanaQuery.components(separatedBy: "|").filter { !$0.isEmpty }) { text in
+                        \.$text == text
+                    }
+                }
+            } else {
+                query = query.filter(\.$text, .custom("LIKE"), modifiedQuery)
+            }
+            return query.filter(User.self, \.$id == userID)
                 .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
                 .field(DictionaryOwner.self, \.$order)
                 .sort(DictionaryOwner.self, \.$order)
