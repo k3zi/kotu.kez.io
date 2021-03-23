@@ -6,8 +6,11 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
+import Pagination from './../react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
+
+import { ResponsiveLine } from '@nivo/line';
 
 class Decks extends React.Component {
 
@@ -17,20 +20,52 @@ class Decks extends React.Component {
             showCreateDeckModal: false,
             showDeleteDeckModal: null,
             users: [],
-            invites: [],
+            metadata: {
+                page: 1,
+                per: 15,
+                total: 0
+            },
+            usersGroupedByDate: [],
             resetURL: null
         };
     }
 
     componentDidMount() {
         this.load();
+        this.loadNumberOfUsersGroupedByDate();
     }
 
     async load() {
         const response = await fetch('/api/admin/users');
         if (response.ok) {
-            const users = await response.json();
-            this.setState({ users });
+            const result = await response.json();
+            this.setState({
+                users: result.items,
+                metadata: result.metadata
+            });
+        }
+    }
+
+    loadPage(page) {
+        const metadata = this.state.metadata;
+        metadata.page = page;
+        this.load();
+    }
+
+    async loadNumberOfUsersGroupedByDate() {
+        const response = await fetch(`/api/admin/numberOfUsersGroupedByDate`);
+        if (response.ok) {
+            const result = await response.json();
+            const usersGroupedByDate = result.filter(r => r.createdAt).map(r => {
+                const oldDate = new Date(r.createdAt);
+                const offset = oldDate.getTimezoneOffset();
+                const date = new Date(oldDate.getTime() - (offset * 60 * 1000));
+                return {
+                    x: date.toISOString().split('T')[0],
+                    y: r.count
+                };
+            });
+            this.setState({ usersGroupedByDate });
         }
     }
 
@@ -72,8 +107,51 @@ class Decks extends React.Component {
         return (
             <div>
                 <h2>Admin <small className="text-muted">User(s) {this.state.users.length}</small></h2>
+                <hr />
+                <div style={{ height: '254px' }}>
+                    <ResponsiveLine
+                        curve='monotoneX'
+                        animate={true}
+                        margin={{ top: 10, right: 20, bottom: 10, left: 20 }}
+                        data={[{
+                                id: 'Users Per Day',
+                                data: this.state.usersGroupedByDate
+                            }
+                        ]}
+                        xScale={{
+                            type: 'time',
+                            format: '%Y-%m-%d',
+                            useUTC: false,
+                            precision: 'day',
+                        }}
+                        xFormat="time:%Y-%m-%d"
+                        yScale={{
+                            type: 'linear',
+                            stacked: false,
+                        }}
+                        axisLeft={{
+                            legend: 'Registered Users',
+                            legendOffset: 12,
+                        }}
+                        axisBottom={{
+                            format: '%b %d',
+                            tickValues: 'every day',
+                            legend: 'Day',
+                            legendOffset: -12,
+                        }}
+                        enablePointLabel={true}
+                        pointSize={16}
+                        pointBorderWidth={1}
+                        pointBorderColor={{
+                            from: 'color',
+                            modifiers: [['darker', 0.3]],
+                        }}
+                        useMesh={true}
+                        enableSlices={false}
+                    />
+                </div>
+                <hr />
                 {this.state.resetURL && <Alert dismissible onClose={() => this.setState({ resetURL: null })} className='mt-3' variant='primary'>User Pasword Reset URL: <pre className='mb-0 user-select-all'>{this.state.resetURL}</pre></Alert>}
-                <hr/>
                 <Table striped bordered hover>
                     <thead>
                         <tr>
@@ -111,6 +189,7 @@ class Decks extends React.Component {
                         })}
                     </tbody>
                 </Table>
+                <Pagination totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
             </div>
         );
     }

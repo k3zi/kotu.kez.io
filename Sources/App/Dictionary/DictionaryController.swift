@@ -335,7 +335,7 @@ class DictionaryController: RouteCollection {
             let inputData = nonLearningWords.map { word -> [Double] in
                 let rank = DictionaryManager.shared.frequencyList[word.word]?.numberOfTimes ?? 0
                 let difficultyRank = DictionaryManager.shared.difficultyList[word.word]?.difficultyRank ?? 3
-                let numberOfKanji = word.word.match("\\p{Han}").count
+                let numberOfKanji = word.word.kanjiCount
                 return [
                     Double(rank),
                     Double(difficultyRank),
@@ -358,7 +358,7 @@ class DictionaryController: RouteCollection {
                         let word = component.frequencySurface ?? component.surface
                         let rank = DictionaryManager.shared.frequencyList[word]?.numberOfTimes ?? 0
                         let difficultyRank = DictionaryManager.shared.difficultyList[word]?.difficultyRank ?? 3
-                        let numberOfKanji = word.match("\\p{Han}").count
+                        let numberOfKanji = word.kanjiCount
                         let inputData: [Double] = [
                             Double(rank),
                             Double(difficultyRank),

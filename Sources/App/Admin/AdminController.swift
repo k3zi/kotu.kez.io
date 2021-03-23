@@ -1,4 +1,5 @@
 import Fluent
+import SQLKit
 import Vapor
 
 final class GuardPermissionMiddleware: Middleware {
@@ -37,11 +38,32 @@ class AdminController: RouteCollection {
                 .all()
         }
 
-        admin.get("users") { (req: Request) -> EventLoopFuture<[User]> in
+        admin.get("users") { (req: Request) -> EventLoopFuture<Page<User>> in
             return User
                 .query(on: req.db)
                 .sort(\.$createdAt)
+                .paginate(for: req)
+        }
+
+        struct GroupedUsers: Content {
+            let count: Int
+            let createdAt: Date?
+        }
+        admin.get("numberOfUsersGroupedByDate") { req -> EventLoopFuture<[GroupedUsers]> in
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLFunction("count", args: SQLLiteral.all))
+                .column("created_at")
+                .from(User.schema)
+                .groupBy("created_at")
                 .all()
+                .flatMapThrowing {
+                    try $0.map {
+                        try $0.decode(model: GroupedUsers.self, keyDecodingStrategy: .convertFromSnakeCase)
+                    }
+                }
         }
 
         admin.post("user", ":userID", "resetPassword") { (req: Request) -> EventLoopFuture<String> in

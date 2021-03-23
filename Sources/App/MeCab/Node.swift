@@ -129,6 +129,19 @@ extension String {
         filter { !Self.smallRowKanaExcludingSokuon.contains($0.unicodeScalars.first!) }.count
     }
 
+    static let cjkRanges: [ClosedRange<UInt32>] = [
+        0x4E00...0x9FFF,   // main block
+        0x3400...0x4DBF,   // extended block A
+        0x20000...0x2A6DF, // extended block B
+        0x2A700...0x2B73F, // extended block C
+    ]
+
+    var kanjiCount: Int {
+        filter { c in
+            String.cjkRanges.contains { $0.contains(c.unicodeScalars.first!.value) }
+        }.count
+    }
+
     func isSpecialMora(at index: Int) -> Bool {
         let filtered = String(filter { !Self.smallRowKanaExcludingSokuon.contains($0.unicodeScalars.first!) })
         guard filtered.count > index else { return false }

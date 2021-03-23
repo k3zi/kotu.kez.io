@@ -1,4 +1,5 @@
 import React from 'react';
+import { withRouter } from 'react-router';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -59,7 +60,7 @@ class CreateProjectModal extends React.Component {
         });
 
         if (success) {
-            window.history.push(`/transcription/${result.id}`);
+            this.props.history.push(`/transcription/${result.id}`);
         }
     }
 
@@ -141,4 +142,4 @@ class CreateProjectModal extends React.Component {
     }
 }
 
-export default CreateProjectModal;
+export default withRouter(CreateProjectModal);

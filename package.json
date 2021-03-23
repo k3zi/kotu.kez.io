@@ -46,8 +46,11 @@
         "webpack-cli": "^4.3.1"
     },
     "dependencies": {
+        "@babel/core": "^7.13.10",
         "@mozilla/readability": "^0.4.0",
         "@nivo/calendar": "^0.67.0",
+        "@nivo/core": "^0.67.0",
+        "@nivo/line": "^0.67.0",
         "buffer": "^6.0.3",
         "clipboard-polyfill": "^3.0.2",
         "dashjs": "^3.2.0",
