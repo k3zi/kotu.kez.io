@@ -574,11 +574,11 @@ class Project extends React.Component {
                                 <br />
                                 <strong>Video ID</strong>: {this.state.project.youtubeID}
                             </p>
-                            {this.state.canWrite && <div className='d-flex justify-content-between mt-3'>
-                                <Button variant='primary' className='col mx-1' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
-                                <Button variant='primary' className='col mx-1' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
-                                {this.state.fragments.length === 0 && <Button variant='primary' className='col mx-1' onClick={() => this.toggleShowAutoSyncModal(true)}>Auto Sync</Button>}
-                                {this.state.fragments.length > 0 && this.context && this.context.permissions.includes('subtitles') && <Button variant='primary' className='col mx-1' onClick={() => this.toggleShowSystemImportModal(true)}>System Import</Button>}
+                            {this.state.canWrite && <div className='d-flex justify-content-between mt-2'>
+                                <Button variant='primary' className='col' onClick={() => this.toggleShareURLModal(true)}>Share URL</Button>
+                                <Button variant='primary' className='col ms-2' onClick={() => this.toggleInviteUserModal(true)}>Invite User</Button>
+                                {this.state.fragments.length === 0 && <Button variant='primary' className='col ms-2' onClick={() => this.toggleShowAutoSyncModal(true)}>Auto Sync</Button>}
+                                {this.state.fragments.length > 0 && this.context && this.context.permissions.includes('subtitles') && <Button variant='primary' className='col ms-2' onClick={() => this.toggleShowSystemImportModal(true)}>System Import</Button>}
                             </div>}
                         </Col>
                     </Row>

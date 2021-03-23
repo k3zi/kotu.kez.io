@@ -409,7 +409,7 @@ class App extends React.Component {
                                     <InputGroup className="mr-sm-2">
                                         <div className='position-relative flex-fill'>
                                             <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
-                                            {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-4px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
+                                            {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-2px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
                                         </div>
                                         <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
                                             <Button variant="outline-secondary" disabled={this.state.query.length === 0}>

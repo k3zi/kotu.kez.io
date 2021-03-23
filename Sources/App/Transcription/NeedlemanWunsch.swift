@@ -113,10 +113,14 @@ enum NeedlemanWunsch {
         }
 
         for i in 1...seq2.count {
+            let diagSeq2 = seq2[i &- 1]
             for j in 1...seq1.count {
+                if i == 1 {
+                    paths[i][j].reserveCapacity(seq1.count)
+                }
                 let fromTop = scores[i &- 1][j] &+ gap
                 let fromLeft = scores[i][j &- 1] &+ gap
-                let fromDiagonal = scores[i &- 1][j &- 1] &+ (seq1[j &- 1] == seq2[i &- 1] ? match : substitution)
+                let fromDiagonal = scores[i &- 1][j &- 1] &+ (seq1[j &- 1] == diagSeq2 ? match : substitution)
                 let fromMax = max(fromTop, fromLeft, fromDiagonal)
 
                 scores[i][j] = fromMax

@@ -59,10 +59,7 @@ class CreateProjectModal extends React.Component {
         });
 
         if (success) {
-            setTimeout(() => {
-                location.reload();
-                window.location.href = `/transcription/${result.id}`;
-            }, 3000);
+            window.history.push(`/transcription/${result.id}`);
         }
     }
 
