@@ -61,9 +61,14 @@ class Decks extends React.Component {
                 const offset = oldDate.getTimezoneOffset();
                 const date = new Date(oldDate.getTime() - (offset * 60 * 1000));
                 return {
-                    x: date.toISOString().split('T')[0],
+                    x: date,
                     y: r.count
                 };
+            }).sort((a, b) => a.x - b.x).map(r => {
+                return {
+                    x: r.x.toISOString().split('T')[0],
+                    y: r.y
+                }
             });
             this.setState({ usersGroupedByDate });
         }
@@ -100,13 +105,13 @@ class Decks extends React.Component {
 
         const resetKey = await response.text();
         const resetURL = await `${location.origin}/auth/resetPassword/${user.id}/${resetKey}`;
-        this.setState({ resetURL })
+        this.setState({ resetURL });
     }
 
     render() {
         return (
             <div>
-                <h2>Admin <small className="text-muted">User(s) {this.state.users.length}</small></h2>
+                <h2>Admin <small className="text-muted">User(s) {this.state.metadata.total}</small></h2>
                 <hr />
                 <div style={{ height: '254px' }}>
                     <ResponsiveLine
