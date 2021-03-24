@@ -36,7 +36,7 @@ class Decks extends React.Component {
     }
 
     async load() {
-        const response = await fetch('/api/admin/users');
+        const response = await fetch(`/api/admin/users?page=${this.state.metadata.page}&per=${this.state.metadata.per}`);
         if (response.ok) {
             const result = await response.json();
             this.setState({
@@ -127,7 +127,7 @@ class Decks extends React.Component {
                             type: 'time',
                             format: '%Y-%m-%d',
                             useUTC: false,
-                            precision: 'day',
+                            precision: 'month',
                         }}
                         xFormat="time:%Y-%m-%d"
                         yScale={{
