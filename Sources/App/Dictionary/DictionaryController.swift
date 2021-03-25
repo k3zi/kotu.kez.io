@@ -233,7 +233,7 @@ class DictionaryController: RouteCollection {
             }
             text.replaceNonASCIIHTMLNodes()
             text = text.replacingOccurrences(of: "src=\"", with: "src=\"/api/dictionary/file/\(try dictionary.requireID())/")
-            text = text.replacingOccurrences(of: "href=\"", with: "src=\"/api/dictionary/file/\(try dictionary.requireID())/")
+            text = text.replacingOccurrences(of: "href=\"", with: "href=\"/api/dictionary/file/\(try dictionary.requireID())/")
             let horizontalTextCSS = """
             body {
                 writing-mode: horizontal-tb !important;
@@ -248,6 +248,19 @@ class DictionaryController: RouteCollection {
                 }
             </style>
             <script>
+                function addLiveEventListeners(selector, event, handler, useCapture, querySelector) {
+                    document.querySelector((typeof querySelector === 'undefined') ? 'body' : querySelector).addEventListener(event, (evt) => {
+                        let target = evt.target;
+                        while (target) {
+                            var isMatch = target.matches(selector);
+                            if (isMatch) {
+                                return handler(evt, target);
+                           }
+                           target = target.parentElement;
+                       }
+                   }, (typeof useCapture === 'undefined') ? true : useCapture);
+                }
+
                 document.addEventListener('copy', function (e) {
                     e.preventDefault();
                     const rts = [...document.getElementsByTagName('rt')];
@@ -258,6 +271,11 @@ class DictionaryController: RouteCollection {
                     rts.forEach(rt => {
                         rt.style.removeProperty('display');
                     });
+                });
+
+                addLiveEventListeners('sound a', 'click', (e, anchor) => {
+                    e.preventDefault();
+                    new Audio(anchor.href).play();
                 });
             </script>
             \(text)

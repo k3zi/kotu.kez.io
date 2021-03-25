@@ -62,6 +62,7 @@ class FlashcardController: RouteCollection {
                 .join(Card.schema, on: "\(Card.schema).id=\(ReviewLog.schema).card_id")
                 .join(Deck.schema, on: "\(Deck.schema).id=\(Card.schema).deck_id AND \(Deck.schema).owner_id='\(userID.uuidString)'")
                 .groupBy("grade")
+                .orderBy("grade")
                 .all()
                 .flatMapThrowing {
                     try $0.map {

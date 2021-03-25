@@ -201,7 +201,7 @@ class SettingsModal extends React.Component {
                             <InputGroup className="mb-1">
                                 <Form.Control type="file" name="dictionaryFile" custom />
                                 <Button variant="primary" type='submit' disabled={this.state.dictionary.isSubmitting}>
-                                    {this.state.dictionary.isSubmitting ? 'Processing...' : 'Upload'}
+                                    {this.state.dictionary.isSubmitting ? 'Uploading...' : 'Upload'}
                                 </Button>
                             </InputGroup>
                             <Form.Text className="text-muted">
