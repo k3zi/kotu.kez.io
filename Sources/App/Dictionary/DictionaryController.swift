@@ -273,9 +273,11 @@ class DictionaryController: RouteCollection {
                     });
                 });
 
-                addLiveEventListeners('sound a', 'click', (e, anchor) => {
-                    e.preventDefault();
-                    new Audio(anchor.href).play();
+                document.addEventListener("DOMContentLoaded", function() {
+                    addLiveEventListeners('sound a', 'click', (e, anchor) => {
+                        e.preventDefault();
+                        new Audio(anchor.href).play();
+                    });
                 });
             </script>
             \(text)
