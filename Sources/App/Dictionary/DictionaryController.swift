@@ -284,7 +284,7 @@ class DictionaryController: RouteCollection {
             """
         }
 
-        dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<String> in
+        dictionary.get("entry", ":id") { (req: Request) -> EventLoopFuture<Response> in
             let id = try req.parameters.require("id", as: UUID.self)
             let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
             let forceDarkCSS = (try? req.query.get(Bool.self, at: "forceDarkCSS")) ?? false
@@ -294,13 +294,17 @@ class DictionaryController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { entry in
-                    let text = entry.content
-                    return try outputEntry(text: text, dictionary: entry.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                .throwingFlatMap {
+                    try outputEntry(text: $0.content, dictionary: $0.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                        .encodeResponse(for: req)
+                        .map { response in
+                            response.headers.contentType = .html
+                            return response
+                        }
                 }
         }
 
-        dictionary.get("entry", ":id", ":entryIndex") { (req: Request) -> EventLoopFuture<String> in
+        dictionary.get("entry", ":id", ":entryIndex") { (req: Request) -> EventLoopFuture<Response> in
             let id = try req.parameters.require("id", as: UUID.self)
             let entryIndex = try req.parameters.require("entryIndex", as: Int.self)
             let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
@@ -309,7 +313,7 @@ class DictionaryController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { dictionary in
+                .throwingFlatMap { dictionary in
                     guard let contentIndex = DictionaryManager.shared.contentIndexes[dictionary.directoryName] else {
                         throw Abort(.notFound)
                     }
@@ -321,6 +325,11 @@ class DictionaryController: RouteCollection {
                     }
                     let text = container.files[realEntryIndex].text
                     return try outputEntry(text: text, dictionary: dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                        .encodeResponse(for: req)
+                        .map { response in
+                            response.headers.contentType = .html
+                            return response
+                        }
                 }
         }
 
@@ -331,8 +340,30 @@ class DictionaryController: RouteCollection {
                 .filter(\.$dictionary.$id == id)
                 .filter(\.$aliasPath == aliasPath)
                 .first()
-                .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { file in
+                .throwingFlatMap { file in
+                    guard let file = file else {
+                        if let entryIndex = Int(aliasPath.components(separatedBy: "-").first ?? "") {
+                            return Entry
+                                .query(on: req.db)
+                                .with(\.$dictionary)
+                                .filter(\.$index == entryIndex)
+                                .filter(\.$dictionary.$id == id)
+                                .first()
+                                .throwingFlatMap {
+                                    guard let element = $0 else {
+                                        return req.eventLoop.future(req.redirect(to: "/api/dictionary/entry/\(id.uuidString)/\(entryIndex)", type: .normal))
+                                    }
+                                    return try outputEntry(text: element.content, dictionary: element.dictionary, forceHorizontalText: true, forceDarkCSS: false)
+                                        .encodeResponse(for: req)
+                                        .map { response in
+                                            response.headers.contentType = .html
+                                            return response
+                                        }
+                                }
+                        } else {
+                            throw Abort(.notFound)
+                        }
+                    }
                     let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent(file.path)
                     var mediaType: HTTPMediaType?
                     if file.path.hasSuffix(".m4a") {
@@ -356,7 +387,7 @@ class DictionaryController: RouteCollection {
                     } else {
                         response.body = .init(data: fileData)
                     }
-                    return response
+                    return req.eventLoop.future(response)
                 }
         }
 
