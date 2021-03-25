@@ -11,6 +11,7 @@
             "dependencies": {
                 "@babel/core": "^7.13.10",
                 "@mozilla/readability": "^0.4.0",
+                "@nivo/bar": "^0.67.0",
                 "@nivo/calendar": "^0.67.0",
                 "@nivo/core": "^0.67.0",
                 "@nivo/line": "^0.67.0",
@@ -1434,6 +1435,29 @@
                 "d3-time": "^1.0.11",
                 "d3-time-format": "^2.1.3",
                 "react-spring": "9.0.0-rc.3"
+            },
+            "peerDependencies": {
+                "@nivo/core": "0.67.0",
+                "prop-types": ">= 15.5.10 < 16.0.0",
+                "react": ">= 16.8.4 < 18.0.0"
+            }
+        },
+        "node_modules/@nivo/bar": {
+            "version": "0.67.0",
+            "resolved": "https://registry.npmjs.org/@nivo/bar/-/bar-0.67.0.tgz",
+            "integrity": "sha512-Y8sIN3iW6r1nS/bWXkSOuWR1mekkVI0yF0uo0IHIXRA+cvhwSChYuH8nIKFbaSd4f4DM3SCogFoGj5ILooRneg==",
+            "dependencies": {
+                "@nivo/annotations": "0.67.0",
+                "@nivo/axes": "0.67.0",
+                "@nivo/colors": "0.67.0",
+                "@nivo/legends": "0.67.0",
+                "@nivo/scales": "0.67.0",
+                "@nivo/tooltip": "0.67.0",
+                "d3-scale": "^3.0.0",
+                "d3-shape": "^1.2.2",
+                "lodash": "^4.17.11",
+                "react-motion": "^0.5.2",
+                "recompose": "^0.30.0"
             },
             "peerDependencies": {
                 "@nivo/core": "0.67.0",
@@ -8090,6 +8114,24 @@
                 "d3-time": "^1.0.11",
                 "d3-time-format": "^2.1.3",
                 "react-spring": "9.0.0-rc.3"
+            }
+        },
+        "@nivo/bar": {
+            "version": "0.67.0",
+            "resolved": "https://registry.npmjs.org/@nivo/bar/-/bar-0.67.0.tgz",
+            "integrity": "sha512-Y8sIN3iW6r1nS/bWXkSOuWR1mekkVI0yF0uo0IHIXRA+cvhwSChYuH8nIKFbaSd4f4DM3SCogFoGj5ILooRneg==",
+            "requires": {
+                "@nivo/annotations": "0.67.0",
+                "@nivo/axes": "0.67.0",
+                "@nivo/colors": "0.67.0",
+                "@nivo/legends": "0.67.0",
+                "@nivo/scales": "0.67.0",
+                "@nivo/tooltip": "0.67.0",
+                "d3-scale": "^3.0.0",
+                "d3-shape": "^1.2.2",
+                "lodash": "^4.17.11",
+                "react-motion": "^0.5.2",
+                "recompose": "^0.30.0"
             }
         },
         "@nivo/calendar": {

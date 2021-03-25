@@ -11,11 +11,15 @@ final class DictionaryRemoveJob: Model, Content {
     @OptionalParent(key: "dictionary_id")
     var dictionary: Dictionary?
 
+    @Field(key: "has_started")
+    var hasStarted: Bool
+
     init() { }
 
     init(id: UUID? = nil, dictionary: Dictionary) {
         self.id = id
         self.$dictionary.id = try! dictionary.requireID()
+        self.hasStarted = false
     }
 
 }
@@ -34,6 +38,22 @@ extension DictionaryRemoveJob {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "CreateDictionaryRemoveJobHasStarted" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("has_started", .bool, .required, .sql(.default(false)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("has_started")
+                .update()
         }
     }
 

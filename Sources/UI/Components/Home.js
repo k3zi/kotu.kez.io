@@ -9,6 +9,7 @@ import Pagination from './react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 
 import { ResponsiveCalendar } from '@nivo/calendar';
+import { ResponsiveBar } from '@nivo/bar';
 
 class Component extends React.Component {
 
@@ -23,13 +24,15 @@ class Component extends React.Component {
                     total: 0
                 }
             },
-            reviewLogs: []
+            reviewLogs: [],
+            reviewsGroupedByGrade: []
         };
     }
 
     componentDidMount() {
         this.loadReaderSessions();
         this.loadReviewLogs();
+        this.loadReviewCountByGrade();
     }
 
     async loadReaderSessions() {
@@ -60,6 +63,14 @@ class Component extends React.Component {
                 };
             });
             this.setState({ reviewLogs });
+        }
+    }
+
+    async loadReviewCountByGrade() {
+        const response = await fetch(`/api/flashcard/numberOfReviewsGroupedByGrade`);
+        if (response.ok) {
+            const reviewsGroupedByGrade = await response.json();
+            this.setState({ reviewsGroupedByGrade });
         }
     }
 
@@ -139,6 +150,66 @@ class Component extends React.Component {
                                         }
                                     ]}
                                 />
+                            </div>
+                        </Col>}
+
+                        {this.state.reviewsGroupedByGrade.length > 0 && <Col xs={12} lg={6}>
+                            <h4>Anki Grading Spread</h4>
+                            <div style={{ height: '127px' }}>
+                            <ResponsiveBar
+                                data={this.state.reviewsGroupedByGrade}
+                                keys={[ 'count' ]}
+                                indexBy="grade"
+                                padding={0.3}
+                                axisTop={null}
+                                axisRight={null}
+                                axisBottom={{
+                                    tickSize: 5,
+                                    tickPadding: 5,
+                                    tickRotation: 0,
+                                    legend: 'Grade',
+                                    legendPosition: 'middle',
+                                    legendOffset: 32
+                                }}
+                                axisLeft={{
+                                    tickSize: 5,
+                                    tickPadding: 5,
+                                    tickRotation: 0,
+                                    legend: 'Count',
+                                    legendPosition: 'middle',
+                                    legendOffset: -40
+                                }}
+                                labelSkipWidth={12}
+                                labelSkipHeight={12}
+                                labelTextColor={{ from: 'color', modifiers: [ [ 'darker', 1.6 ] ] }}
+                                legends={[
+                                    {
+                                        dataFrom: 'keys',
+                                        anchor: 'bottom-right',
+                                        direction: 'column',
+                                        justify: false,
+                                        translateX: 120,
+                                        translateY: 0,
+                                        itemsSpacing: 2,
+                                        itemWidth: 100,
+                                        itemHeight: 20,
+                                        itemDirection: 'left-to-right',
+                                        itemOpacity: 0.85,
+                                        symbolSize: 20,
+                                        effects: [
+                                            {
+                                                on: 'hover',
+                                                style: {
+                                                    itemOpacity: 1
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]}
+                                animate={true}
+                                motionStiffness={90}
+                                motionDamping={15}
+                            />
                             </div>
                         </Col>}
                     </Row>

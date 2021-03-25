@@ -27,6 +27,9 @@ final class DictionaryInsertJob: Model, Content {
     @Field(key: "current_headword_index")
     var currentHeadwordIndex: Int
 
+    @Field(key: "current_file_index")
+    var currentFileIndex: Int
+
     @Field(key: "progress")
     var progress: Float
 
@@ -38,7 +41,7 @@ final class DictionaryInsertJob: Model, Content {
 
     init() { }
 
-    init(id: UUID? = nil, dictionary: Dictionary, tempDirectory: String, filename: String, type: String, currentEntryIndex: Int, currentHeadwordIndex: Int) {
+    init(id: UUID? = nil, dictionary: Dictionary, tempDirectory: String, filename: String, type: String, currentEntryIndex: Int = 0, currentHeadwordIndex: Int = 0, currentFileIndex: Int = 0) {
         self.id = id
         self.$dictionary.id = try! dictionary.requireID()
         self.tempDirectory = tempDirectory
@@ -46,6 +49,7 @@ final class DictionaryInsertJob: Model, Content {
         self.type = type
         self.currentEntryIndex = currentEntryIndex
         self.currentHeadwordIndex = currentHeadwordIndex
+        self.currentFileIndex = currentFileIndex
         self.progress = 0
         self.isComplete = false
     }
@@ -74,6 +78,22 @@ extension DictionaryInsertJob {
 
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema).delete()
+        }
+    }
+
+    struct Migration1: Fluent.Migration {
+        var name: String { "CreateDictionaryInsertJobFileIndex" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("current_file_index", .int, .required, .sql(.default(0)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("current_file_index")
+                .update()
         }
     }
 

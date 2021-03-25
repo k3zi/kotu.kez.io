@@ -45,6 +45,31 @@ class FlashcardController: RouteCollection {
                 }
         }
 
+        struct ReviewsGroupedByGrade: Content {
+            let count: Int
+            let grade: Double
+        }
+        guardedFlashcards.get("numberOfReviewsGroupedByGrade") { req -> EventLoopFuture<[ReviewsGroupedByGrade]> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLFunction("count", args: SQLLiteral.all))
+                .column("grade")
+                .from(ReviewLog.schema)
+                .join(Card.schema, on: "\(Card.schema).id=\(ReviewLog.schema).card_id")
+                .join(Deck.schema, on: "\(Deck.schema).id=\(Card.schema).deck_id AND \(Deck.schema).owner_id='\(userID.uuidString)'")
+                .groupBy("grade")
+                .all()
+                .flatMapThrowing {
+                    try $0.map {
+                        try $0.decode(model: ReviewsGroupedByGrade.self, keyDecodingStrategy: .convertFromSnakeCase)
+                    }
+                }
+        }
+
         // MARK: Card
         let guardedCard = guardedFlashcards.grouped("card")
         let guardedCardID = guardedCard.grouped(":cardID")

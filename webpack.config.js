@@ -22,6 +22,10 @@ module.exports = {
                 use: [
                     "url-loader",
                 ]
+            },
+            {
+                test: /react-spring/,
+                sideEffects: true
             }
         ]
     },

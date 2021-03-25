@@ -86,11 +86,11 @@ class AddTargetLanguageModal extends React.Component {
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
                         <Form.Group controlId="createProjectModalLanguage">
-                            <Form.Control as="select" name="languageID" placeholder="Select content original language" >
+                            <Form.Select name="languageID" placeholder="Select content original language" >
                                 {this.state.languages.map(language => {
                                     return <option key={language.id} value={language.id}>{language.name}</option>;
                                 })}
-                            </Form.Control>
+                            </Form.Select>
                         </Form.Group>
 
                         {this.state.didError && <Alert variant="danger" className='mt-3'>

@@ -127,7 +127,7 @@ class Decks extends React.Component {
                             type: 'time',
                             format: '%Y-%m-%d',
                             useUTC: false,
-                            precision: 'month',
+                            precision: 'day',
                         }}
                         xFormat="time:%Y-%m-%d"
                         yScale={{

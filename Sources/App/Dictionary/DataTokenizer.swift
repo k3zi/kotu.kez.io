@@ -61,6 +61,19 @@ public class DataTokenizer {
         return result
     }
 
+    func consume(from index: Int, until condition: (UInt8) -> Bool = { _ in true }) -> [UInt8] {
+        var index = index
+        var result = [UInt8]()
+        if index >= data.endIndex {
+            return result
+        }
+        while index < data.endIndex && !condition(data[index]) {
+            result.append(data[index])
+            index += 1
+        }
+        return result
+    }
+
     func dataConsuming(times: Int) -> Data {
         var result = [UInt8]()
         for _ in 0..<times {

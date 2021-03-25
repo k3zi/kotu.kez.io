@@ -179,16 +179,18 @@ class SettingsModal extends React.Component {
                     <h5>Dictionaries</h5>
                     <ListGroup className="mb-3">
                         {this.state.dictionaries.map((dictionary, i) => {
-                            return <ListGroup.Item className='d-flex justify-content-between' key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'secondary'}>
-                                <div className='d-flex justify-content-start align-items-center'>
-                                    <div>
-                                        <i onClick={() => this.moveDictionaryUp(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryUp(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-up'></i>
-                                        <br />
-                                        <i onClick={() => this.moveDictionaryDown(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryDown(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-down'></i>
+                            return <ListGroup.Item key={i} variant={dictionary.insertJob ? (dictionary.insertJob.isComplete ? 'danger' : 'warning') : 'secondary'}>
+                                <div className='d-flex justify-content-between'>
+                                    <div className='d-flex justify-content-start align-items-center'>
+                                        <div>
+                                            <i onClick={() => this.moveDictionaryUp(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryUp(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-up'></i>
+                                            <br />
+                                            <i onClick={() => this.moveDictionaryDown(dictionary)} style={{ cursor: 'pointer', opacity: this.canMoveDictionaryDown(dictionary) ? 1 : 0.25 }} className='bi bi-chevron-down'></i>
+                                        </div>
+                                        <span className='px-3'>{dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}</span>
                                     </div>
-                                    <span className='px-3'>{dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}</span>
+                                    <span class='float-end text-danger d-flex align-items-center fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
                                 </div>
-                                <span class='float-end text-danger d-flex align-items-center fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
                                 {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
                             </ListGroup.Item>;
                         })}

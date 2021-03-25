@@ -14,7 +14,7 @@ public func configure(_ app: Application) throws {
     app.redis.configuration = try RedisConfiguration(hostname: "127.0.0.1")
     app.sessions.use(.redis)
 
-    app.routes.defaultMaxBodySize = "100mb"
+    app.routes.defaultMaxBodySize = "1gb"
     app.http.server.configuration.responseCompression = .enabled
     app.http.server.configuration.requestDecompression = .enabled
     app.http.server.configuration.supportPipelining = true
@@ -80,6 +80,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(DictionaryOwner.Migration1())
     app.migrations.add(AnkiDeckVideo.Migration1(), AnkiDeckSubtitle.Migration1(), AnkiDeckVideo.Migration2())
     app.migrations.add(User.Migration11(), User.Migration12())
+    app.migrations.add(DictionaryInsertJob.Migration1(), ExternalFile.Migration2(), DictionaryRemoveJob.Migration1())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()

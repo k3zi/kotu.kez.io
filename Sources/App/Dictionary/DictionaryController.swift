@@ -210,7 +210,7 @@ class DictionaryController: RouteCollection {
                 }
         }
 
-        func outputEntry(text rawText: String, dictionary: Dictionary, forceHorizontalText: Bool, forceDarkCSS: Bool) -> String {
+        func outputEntry(text rawText: String, dictionary: Dictionary, forceHorizontalText: Bool, forceDarkCSS: Bool) throws -> String {
             var text = rawText
             var css = dictionary.css + "\n" + (forceDarkCSS ? dictionary.darkCSS : "")
             var cssWordMappings = [String: String]()
@@ -232,6 +232,8 @@ class DictionaryController: RouteCollection {
                     .replacingOccurrences(of: "<entry-index xmlns=\"\" id=\"index\"/>", with: "")
             }
             text.replaceNonASCIIHTMLNodes()
+            text = text.replacingOccurrences(of: "src=\"", with: "src=\"/api/dictionary/file/\(try dictionary.requireID())/")
+            text = text.replacingOccurrences(of: "href=\"", with: "src=\"/api/dictionary/file/\(try dictionary.requireID())/")
             let horizontalTextCSS = """
             body {
                 writing-mode: horizontal-tb !important;
@@ -274,7 +276,7 @@ class DictionaryController: RouteCollection {
                 .unwrap(orError: Abort(.notFound))
                 .flatMapThrowing { entry in
                     let text = entry.content
-                    return outputEntry(text: text, dictionary: entry.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                    return try outputEntry(text: text, dictionary: entry.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
                 }
         }
 
@@ -298,7 +300,43 @@ class DictionaryController: RouteCollection {
                         throw Abort(.notFound)
                     }
                     let text = container.files[realEntryIndex].text
-                    return outputEntry(text: text, dictionary: dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                    return try outputEntry(text: text, dictionary: dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
+                }
+        }
+
+        dictionary.get("file", ":id", "**") { (req: Request) -> EventLoopFuture<Response> in
+            let id = try req.parameters.require("id", as: UUID.self)
+            let aliasPath = req.parameters.getCatchall().joined(separator: "/")
+            return ExternalFile.query(on: req.db)
+                .filter(\.$dictionary.$id == id)
+                .filter(\.$aliasPath == aliasPath)
+                .first()
+                .unwrap(orError: Abort(.notFound))
+                .flatMapThrowing { file in
+                    let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent(file.path)
+                    var mediaType: HTTPMediaType?
+                    if file.path.hasSuffix(".m4a") {
+                        mediaType = .init(type: "audio", subType: "x-m4a")
+                    }
+                    let fileExtension = fileURL.pathExtension
+                    let type = mediaType ?? HTTPMediaType.fileExtension(fileExtension)
+
+                    let rangeString = req.headers.first(name: .range) ?? ""
+                    let response = Response(status: .ok)
+                    response.headers.contentType = type
+                    response.headers.contentDisposition = .init(.attachment, filename: fileURL.pathComponents.last!)
+
+                    let fileData = try Data(contentsOf: fileURL)
+                    if rangeString.count > 0 {
+                        let range = try Range.parse(tokenizer: .init(input: rangeString))
+                        let data = fileData[range.startByte...min(range.endByte, fileData.endIndex - 1)]
+                        response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(fileData.count)")
+                        response.headers.add(name: .contentLength, value: String(data.count))
+                        response.body = .init(data: data)
+                    } else {
+                        response.body = .init(data: fileData)
+                    }
+                    return response
                 }
         }
 

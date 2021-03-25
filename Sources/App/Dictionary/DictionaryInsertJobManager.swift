@@ -67,17 +67,47 @@ class DictionaryInsertJobManager {
             return
         }
         let usersCount = try dictionary.$owners.query(on: app.db).count().wait()
-        guard usersCount == .zero else {
+        guard usersCount == .zero || job.hasStarted else {
             try job.delete(on: app.db).wait()
             return
         }
+
+        job.hasStarted = true
+        try job.save(on: app.db).wait()
 
         try Headword.query(on: app.db)
             .filter("dictionary_id", .equal, (try dictionary.requireID()))
             .delete()
             .wait()
 
-        try Entry.query(on: app.db)
+        var entries = try Entry.query(on: app.db)
+            .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .field(\.$id)
+            .limit(127)
+            .all()
+            .wait()
+
+        while entries.count > 0 {
+            try entries.delete(on: app.db).wait()
+            entries = try Entry.query(on: app.db)
+                .filter("dictionary_id", .equal, (try dictionary.requireID()))
+                .field(\.$id)
+                .limit(127)
+                .all()
+                .wait()
+        }
+
+        let files = try ExternalFile.query(on: app.db)
+            .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .all()
+            .wait()
+        let externalFilesDirectory = URL(fileURLWithPath: app.directory.resourcesDirectory).appendingPathComponent("Files")
+        for file in files {
+            let fileURL = externalFilesDirectory.appendingPathComponent(file.path)
+            try? FileManager.default.removeItem(at: fileURL)
+        }
+
+        try ExternalFile.query(on: app.db)
             .filter("dictionary_id", .equal, (try dictionary.requireID()))
             .delete()
             .wait()
@@ -104,6 +134,8 @@ class DictionaryInsertJobManager {
         let uncompressedData = try data.gunzipped()
         let mkd = try JSONDecoder().decode(MKD.self, from: uncompressedData)
 
+        let parts = 2 + ((mkd.files ?? []).count > 0 ? 1 : 0)
+
         let dictionary = job.dictionary
         try dictionary.save(on: app.db).wait()
         let entries = Array(mkd.entries.enumerated())
@@ -115,7 +147,7 @@ class DictionaryInsertJobManager {
             let entryChunks = chunk.map { (i, text) in Entry(dictionary: dictionary, content: text, index: i) }
             try entryChunks.create(on: app.db).wait()
             job.currentEntryIndex += count
-            job.progress = (Float(job.currentEntryIndex) / Float(entries.count)) / 2
+            job.progress = (Float(job.currentEntryIndex) / Float(entries.count)) / Float(parts)
             try job.save(on: app.db).wait()
             savedEntries.append(contentsOf: entryChunks)
         }
@@ -131,7 +163,35 @@ class DictionaryInsertJobManager {
             }
             try headwords.create(on: app.db).wait()
             job.currentHeadwordIndex += count
-            job.progress = 0.5 + ((Float(job.currentHeadwordIndex) / Float(mkd.headwords.count)) / 2)
+            job.progress = (1 / Float(parts)) + ((Float(job.currentHeadwordIndex) / Float(mkd.headwords.count)) / Float(parts))
+            try job.save(on: app.db).wait()
+        }
+
+        let files = mkd.files ?? []
+        let remainingFiles = Array(files.suffix(from: job.currentFileIndex))
+        let chunkedFiles = remainingFiles.chunked(into: 127)
+        let externalFilesDirectory = URL(fileURLWithPath: app.directory.resourcesDirectory).appendingPathComponent("Files")
+        for chunk in chunkedFiles {
+            let count = chunk.count
+            let files = chunk.map { file -> EventLoopFuture<Void> in
+                let ext = file.aliasPath.components(separatedBy: ".").last!
+                guard let data = Data(base64Encoded: file.base64EncodedString) else {
+                    return app.db.eventLoop.future()
+                }
+                let externalFile = ExternalFile(dictionary: dictionary, size: Int(data.count), path: "", aliasPath: file.aliasPath, ext: ext)
+                return externalFile
+                    .create(on: app.db)
+                    .throwingFlatMap {
+                        let uuid = try externalFile.requireID().uuidString
+                        let newFilePath = externalFilesDirectory.appendingPathComponent("\(uuid).\(ext)")
+                        externalFile.path = newFilePath.pathComponents.last!
+                        try data.write(to: newFilePath)
+                        return externalFile.update(on: app.db)
+                    }
+            }
+            try _ = EventLoopFuture.whenAllComplete(files, on: app.db.eventLoop).wait()
+            job.currentFileIndex += count
+            job.progress = (2 / Float(parts)) + ((Float(job.currentFileIndex) / Float(mkd.files?.count ?? 0)) / Float(parts))
             try job.save(on: app.db).wait()
         }
 
@@ -169,12 +229,24 @@ struct MKD: Decodable {
         }
     }
 
+    struct File: Decodable {
+        let aliasPath: String
+        let base64EncodedString: String
+
+        init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            aliasPath = try container.decode(String.self)
+            base64EncodedString = try container.decode(String.self)
+        }
+    }
+
     let dictionaryName: String
     let css: String
     let darkCSS: String?
     let icon: String?
     let headwords: [Headword]
     let entries: [String]
+    let files: [File]?
     let type: String
 
 }

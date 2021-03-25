@@ -111,18 +111,18 @@ class CreateProjectModal extends React.Component {
                             </Col>
                         </Row>}
 
-                        {this.state.youtubeVideoInfo.videoID && <Form.Group controlId="createProjectModalName">
+                        {this.state.youtubeVideoInfo.videoID && <Form.Group controlId="createProjectModalName" className='mt-2'>
                             <Form.Label>Name</Form.Label>
                             <Form.Control type="text" name="name" defaultValue={this.state.youtubeVideoInfo.title} placeholder="Enter the name of the project" />
                         </Form.Group>}
 
-                        {this.state.youtubeVideoInfo.videoID && <Form.Group controlId="createProjectModalLanguage">
+                        {this.state.youtubeVideoInfo.videoID && <Form.Group controlId="createProjectModalLanguage" className='mt-2'>
                             <Form.Label>Original Language</Form.Label>
-                            <Form.Control as="select" name="languageID" placeholder="Select content original language" >
+                            <Form.Select name="languageID" placeholder="Select content original language">
                                 {this.state.languages.map(language => {
                                     return <option key={language.id} value={language.id}>{language.name}</option>;
                                 })}
-                            </Form.Control>
+                            </Form.Select>
                         </Form.Group>}
 
                         {this.state.didError && <Alert variant="danger" className='mt-3'>
