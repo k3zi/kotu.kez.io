@@ -118,17 +118,6 @@ struct PronunciationResolver: ExceptionResolver {
 
 }
 
-struct SentenceEnderResolver: ExceptionResolver {
-
-    func resolve(tokenizer: MeCabTokenizer) {
-        if tokenizer.next.partOfSpeech == "補助記号" && tokenizer.next.partOfSpeechSubType == "句点" {
-            tokenizer.nodes.insert(Node(surface: "*", features: Array(repeating: "*", count: 30), type: .endOfSentence), at: 1)
-            tokenizer.nodes.insert(Node(surface: "*", features: Array(repeating: "*", count: 30), type: .beginOfSentence), at: 2)
-        }
-    }
-
-}
-
 public class MeCabTokenizer {
 
     enum Error: Swift.Error {
@@ -141,8 +130,7 @@ public class MeCabTokenizer {
     let resolvers: [ExceptionResolver] = [
         DeAruExceptionResolver(),
         PitchAccentResolver(),
-        PronunciationResolver(),
-        SentenceEnderResolver()
+        PronunciationResolver()
     ]
 
     public init(nodes: [Node]) {
@@ -207,18 +195,27 @@ extension String {
 struct Sentence: Content {
 
     static func parseMultiple(tokenizer: MeCabTokenizer) throws -> [Sentence] {
-        var sentences = [Sentence]()
-        while !tokenizer.reachedEnd {
-            let sentence = try parse(tokenizer: tokenizer)
-            sentences.append(sentence)
-        }
-        return sentences.filter { !$0.accentPhrases.isEmpty }
+        return tokenizer.nodes
+            .filter { $0.type != .beginOfSentence && $0.type != .endOfSentence }
+            .splitKeepingSeparator(whereSeparator: {
+                $0.partOfSpeech == "補助記号" && $0.partOfSpeechSubType == "句点"
+            })
+            .concurrentMap { nodes -> [Sentence] in
+                var sentences = [Sentence]()
+                let tokenizer = MeCabTokenizer(nodes: Array(nodes))
+                while !tokenizer.reachedEnd {
+                    if let sentence = try? parse(tokenizer: tokenizer) {
+                        sentences.append(sentence)
+                    }
+                }
+                return sentences
+            }
+            .flatMap { $0 }
+            .filter { !$0.accentPhrases.isEmpty }
     }
 
     static func parse(tokenizer: MeCabTokenizer) throws -> Sentence {
-        try tokenizer.consume(expect: { $0.type == .beginOfSentence })
         let accentPhrases = try AccentPhrase.parseMultiple(tokenizer: tokenizer, until: { $0.type == .endOfSentence })
-        try tokenizer.consume(expect: { $0.type == .endOfSentence })
         return .init(accentPhrases: accentPhrases)
     }
 
@@ -381,7 +378,44 @@ struct Morpheme: Content {
 
     static func parse(from node: Node) -> Morpheme {
         let pitchCompounds = (node.features.count > 25 ? node.features[25] : "")
-        let kinds = pitchCompounds.match("(\\p{Han}+%)?[A-Z][0-9]+(@\\-?[0-9]+)?(,\\-?[0-9]+)*").map { $0[0] }
+        // 名詞%F1,動詞%F2@0,形容詞%F2@-1
+        let kindTokenizer = Tokenizer(input: pitchCompounds)
+        var kinds = [String]()
+        if pitchCompounds != "*" {
+            while !kindTokenizer.reachedEnd {
+                var kind = ""
+                kindTokenizer.consume(while: ",")
+                if kindTokenizer.next?.isKanji ?? false {
+                    kind += kindTokenizer.consume(while: { a, _ in a.isKanji })
+                    // Sometimes this doesn't appear: もん 動詞%F2@0,形容詞F2@-1
+                    kindTokenizer.consume(while: "%")
+                    kind += "%"
+                }
+
+                kind += kindTokenizer.consume(while: { a, _ in a.isLetter })
+                kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
+
+                if kindTokenizer.hasPrefix("@") {
+                    try? kindTokenizer.consume(expect: "@")
+                    kind += "@"
+                    func scanNumber() {
+                        if kindTokenizer.hasPrefix("-") {
+                            try? kindTokenizer.consume(expect: "-")
+                            kind += "-"
+                        }
+                        kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
+                    }
+
+                    scanNumber()
+                    while kindTokenizer.next == "," && ((kindTokenizer.nextNext?.isNumber ?? false) || (kindTokenizer.nextNext == "-")) {
+                        try? kindTokenizer.consume(expect: ",")
+                        kind += ","
+                        scanNumber()
+                    }
+                }
+                kinds.append(kind)
+            }
+        }
 
         return .init(
             id: node.id,
@@ -431,8 +465,10 @@ indirect enum PitchAccentConnectionKind: Content {
     case particleSecondHalfAccentShifting(m: Int)
     case particleSecondHalfAccentDominant(m: Int)
     case particleSecondHalfAccentDominantMultiple(m: Int, l: Int)
-    case prefixHeibanHeadElseSecondHalf
-    case prefixFlatHead
+    case prefixHeiban
+    case prefixHeibanOdakaFlatElseSame
+    case prefixHeibanHeadElseSame
+    case prefixHeibanOdakaFlatElsePrefix
     case prefixDominant
     case restricted(partOfSpeech: String, kind: PitchAccentConnectionKind)
 
@@ -452,10 +488,14 @@ indirect enum PitchAccentConnectionKind: Content {
             self = .firstHalfAccent
         case "F1":
             self = .particleOriginal
+        case "P1":
+            self = .prefixHeibanOdakaFlatElseSame
         case "P2":
-            self = .prefixHeibanHeadElseSecondHalf
+            self = .prefixHeibanHeadElseSame
         case "P4":
-            self = .prefixFlatHead
+            self = .prefixHeibanOdakaFlatElsePrefix
+        case "P6":
+            self = .prefixHeiban
         case "P13":
             self = .prefixDominant
         default:
@@ -480,7 +520,7 @@ indirect enum PitchAccentConnectionKind: Content {
                     }
                     self = .particleSecondHalfAccentDominantMultiple(m: m, l: l)
                 default:
-                    print("unknown pitch kind: \(string)")
+                    print(" v \(string)")
                     self = .unknown
                 }
             } else {
@@ -512,10 +552,14 @@ indirect enum PitchAccentConnectionKind: Content {
             return "C5"
         case .particleOriginal:
             return "F1"
-        case .prefixHeibanHeadElseSecondHalf:
+        case .prefixHeibanOdakaFlatElseSame:
+            return "P1"
+        case .prefixHeibanHeadElseSame:
             return "P2"
-        case .prefixFlatHead:
+        case .prefixHeibanOdakaFlatElsePrefix:
             return "P4"
+        case .prefixHeiban:
+            return "P6"
         case .prefixDominant:
             return "P13"
         case .restricted(let partOfSpeech, let kind):
@@ -546,7 +590,7 @@ indirect enum PitchAccentConnectionKind: Content {
         switch self {
         case .restricted(let pos, let kind):
             return pos == partOfSpeech && kind.canBeCombined(withNextPartOfSpeech: partOfSpeech)
-        case .prefixHeibanHeadElseSecondHalf, .prefixDominant, .prefixFlatHead:
+        case .prefixHeiban, .prefixHeibanOdakaFlatElseSame, .prefixHeibanHeadElseSame, .prefixDominant, .prefixHeibanOdakaFlatElsePrefix:
             return true
         default:
             return false

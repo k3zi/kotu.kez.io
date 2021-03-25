@@ -121,6 +121,14 @@ extension Node {
 
 }
 
+extension Character {
+
+    var isKanji: Bool {
+        String.cjkRanges.contains { $0.contains(self.unicodeScalars.first!.value) }
+    }
+
+}
+
 extension String {
 
     static let smallRowKanaExcludingSokuon = CharacterSet(charactersIn: "ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮぁぃぅぇぉゃゅょゎ")
@@ -137,9 +145,7 @@ extension String {
     ]
 
     var kanjiCount: Int {
-        filter { c in
-            String.cjkRanges.contains { $0.contains(c.unicodeScalars.first!.value) }
-        }.count
+        filter { $0.isKanji }.count
     }
 
     func isSpecialMora(at index: Int) -> Bool {

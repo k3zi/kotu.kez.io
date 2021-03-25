@@ -93,6 +93,8 @@ class NaiveBayes<T, C: Hashable> {
     var data: [[T]]
     var classes: [C]
 
+    var probaClass = [C: Double]()
+
     init(type: NBType, data: [[T]], classes: [C]) throws {
         self.type = type
         self.data = data
@@ -125,6 +127,12 @@ class NaiveBayes<T, C: Hashable> {
             }
         }
 
+        let amount = classes.count
+        probaClass = Swift.Dictionary<C, Double>(uniqueKeysWithValues: Array(classes.uniques()).concurrentMap { c in
+            let individual = classes.filter { $0 == c }.count
+            return (c, Double(individual) / Double(amount))
+        })
+
         return self
     }
 
@@ -141,15 +149,6 @@ class NaiveBayes<T, C: Hashable> {
     }
 
     func classifyProba(with input: [T]) -> [(C, Double)] {
-
-        var probaClass = [C: Double]()
-        let amount = classes.count
-
-        classes.forEach { c in
-            let individual = classes.filter { $0 == c }.count
-            probaClass[c] = Double(individual) / Double(amount)
-        }
-
         let classesAndFeatures = variables.map { (`class`, value) -> (C, [Double]) in
             let distribution = value.map { (feature, variables) -> Double in
                 return type.calcLikelihood(variables: variables, input: input[feature]) ?? 0.0
@@ -157,12 +156,12 @@ class NaiveBayes<T, C: Hashable> {
             return (`class`, distribution)
         }
 
-        let likelihoods = classesAndFeatures.map { (`class`, distribution) in
+        let likelihoods = classesAndFeatures.concurrentMap { (`class`, distribution) in
             return (`class`, distribution.reduce(1, *) * (probaClass[`class`] ?? 0.0))
         }
 
-        let sum = likelihoods.map { $0.1 }.reduce(0, +)
-        let normalized = likelihoods.map { (`class`, likelihood) in
+        let sum = likelihoods.concurrentMap { $0.1 }.reduce(0, +)
+        let normalized = likelihoods.concurrentMap { (`class`, likelihood) in
             return (`class`, likelihood / sum)
         }
 

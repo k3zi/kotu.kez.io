@@ -3,6 +3,7 @@ import Vapor
 struct PitchAccent: Content, Codable {
 
     static func pitchAccent(for morphemes: [Morpheme]) -> PitchAccent {
+        guard !morphemes.isEmpty else { return .init(mora: -1, length: 0) }
         if morphemes.count == 1 {
             return morphemes[0].pitchAccents[0]
         }
@@ -47,7 +48,21 @@ struct PitchAccent: Content, Codable {
             let secondHalfAccent = nextMorpheme.pitchAccents[0]
             var wasPrefix = false
             switch kind {
-            case .prefixHeibanHeadElseSecondHalf:
+            case .prefixHeiban:
+                wasPrefix = true
+                buildUpWord += nextMorpheme.pronunciation
+                accent = PitchAccent(mora: 0, length: buildUpWord.moraCount)
+            case .prefixHeibanOdakaFlatElseSame:
+                wasPrefix = true
+                if secondHalfAccent.descriptive == .heiban || secondHalfAccent.descriptive == .odaka {
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: 0, length: buildUpWord.moraCount)
+                } else {
+                    let i = buildUpWord.moraCount + secondHalfAccent.mora
+                    buildUpWord += nextMorpheme.pronunciation
+                    accent = PitchAccent(mora: i, length: buildUpWord.moraCount)
+                }
+            case .prefixHeibanHeadElseSame:
                 wasPrefix = true
                 if secondHalfAccent.descriptive == .heiban || secondHalfAccent.descriptive == .odaka {
                     let i = buildUpWord.moraCount + 1
@@ -62,7 +77,7 @@ struct PitchAccent: Content, Codable {
                 wasPrefix = true
                 buildUpWord += nextMorpheme.pronunciation
                 accent = PitchAccent(mora: accent.mora, length: buildUpWord.moraCount)
-            case .prefixFlatHead:
+            case .prefixHeibanOdakaFlatElsePrefix:
                 wasPrefix = true
                 if secondHalfAccent.descriptive == .heiban || secondHalfAccent.descriptive == .odaka {
                     let i = buildUpWord.moraCount + 1

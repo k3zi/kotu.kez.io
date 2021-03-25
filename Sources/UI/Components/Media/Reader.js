@@ -97,11 +97,15 @@ class Reader extends React.Component {
     }
 
     async loadSession(id) {
+        if (this.loadingSessionID === id) {
+            return;
+        }
+        this.loadingSessionID = id;
         if (!id) { return; }
         let sessionResponse = await fetch(`/api/media/reader/session/${id}`);
         let session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         if (session) {
-            this.setState({ isLoading: false, html: session.annotatedContent, session, text: session.url || session.textContent });
+            this.setState({ isLoading: true, html: session.annotatedContent, session, text: session.url || session.textContent });
 
             const requestID = this.currentRequestID + 1;
             this.currentRequestID = requestID;
@@ -113,7 +117,7 @@ class Reader extends React.Component {
                 const session = this.state.session;
                 if (!session) { return; }
                 session.annotatedContent = annotatedContent.innerHTML;
-                this.setState({ html: annotatedContent.innerHTML, session });
+                this.setState({ isLoading: false, html: annotatedContent.innerHTML, session });
                 this.updateSession();
             }
         } else {
@@ -153,12 +157,9 @@ class Reader extends React.Component {
             .replace(/<\/rp>/g, '');
         const article = new Readability(doc).parse();
         const self = this;
-        const annotatedContent = (await Helpers.generateVisualSentenceElement(article.content, article.textContent, () => {
-            return requestID != self.currentRequestID;
-        })).innerHTML;
 
         const sessionData = {
-            annotatedContent: annotatedContent,
+            annotatedContent: "",
             textContent: article.textContent,
             content: article.content,
             url: url,
