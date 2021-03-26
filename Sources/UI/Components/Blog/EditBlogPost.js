@@ -110,7 +110,7 @@ class EditBlogPost extends React.Component {
                         <Form.Group controlId="createPostModalContent" className='mt-2'>
                             <Row>
                                 <Col>
-                                    <ContentEditable value={this.state.post.content} onChange={(e) => this.onTextChange(e)} className='form-control h-auto text-break plaintext' />
+                                    <ContentEditable value={this.state.post.content} onChange={(e) => this.onTextChange(e)} className='form-control h-auto text-break plaintext clickable' />
                                 </Col>
                                 <Col>
                                     <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.post.content)}}></div>

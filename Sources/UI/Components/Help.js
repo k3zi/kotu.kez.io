@@ -77,6 +77,7 @@ Dictionaries can be imported via the Settings menu.
 An mkd file is a gzipped JSON containing the following keys:
 \`\`\`
 - dictionaryName: string
+- version: string (optional)
 - css: string
 - darkCSS: string (optional)
 - icon: string (optional, a base 64 encoded string of PNG data)
@@ -88,6 +89,12 @@ An mkd file is a gzipped JSON containing the following keys:
     3. entryIndex: int
     4. subentryIndex: int
 - entries: array of strings (the index of these should match the headword[3] aka the entryIndex)
+- files: **array of arrays** (optional) that include:
+    0. filename: string
+    1. data: string (base64 encoded)
+- references: **array of arrays** (optional) that include:
+    0. key: string
+    1. (entryIndex: int) OR (filePath: string)
 \`\`\`
 ---
 

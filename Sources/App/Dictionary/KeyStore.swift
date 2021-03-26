@@ -73,10 +73,16 @@ public struct KeyStore {
     public static func parse(dictionaryFolder: URL) throws -> KeyStore? {
         let keyFolder = dictionaryFolder.appendingPathComponent("key")
         if FileManager.default.fileExists(atPath: keyFolder.path) {
-            let keystoreFile = keyFolder.appendingPathComponent("headword.keystore")
-            if FileManager.default.fileExists(atPath: keystoreFile.path) {
-                let data = try Data(contentsOf: keystoreFile)
-                return try Self.parse(tokenizer: DataTokenizer(data: data))
+            let keystoreFileURLs = try FileManager.default.contentsOfDirectory(at: keyFolder, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "keystore" }
+            if !keystoreFileURLs.isEmpty {
+                let pairs = keystoreFileURLs
+                    .concurrentMap {
+                        try! Self.parse(tokenizer: DataTokenizer(data: Data(contentsOf: $0)))
+                    }
+                    .flatMap { $0.pairs }
+
+                return Self.init(pairs: pairs)
             }
 
             let rscFileURLs = try FileManager.default.contentsOfDirectory(at: keyFolder, includingPropertiesForKeys: nil)

@@ -196,7 +196,7 @@ struct Sentence: Content {
 
     static func parseMultiple(tokenizer: MeCabTokenizer) throws -> [Sentence] {
         return tokenizer.nodes
-            .filter { $0.type != .beginOfSentence && $0.type != .endOfSentence }
+            .filter { !$0.isBosEos }
             .splitKeepingSeparator(whereSeparator: {
                 $0.partOfSpeech == "補助記号" && $0.partOfSpeechSubType == "句点"
             })

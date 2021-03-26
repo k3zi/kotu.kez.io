@@ -30,6 +30,9 @@ final class DictionaryInsertJob: Model, Content {
     @Field(key: "current_file_index")
     var currentFileIndex: Int
 
+    @Field(key: "current_reference_index")
+    var currentReferenceIndex: Int
+
     @Field(key: "progress")
     var progress: Float
 
@@ -41,7 +44,7 @@ final class DictionaryInsertJob: Model, Content {
 
     init() { }
 
-    init(id: UUID? = nil, dictionary: Dictionary, tempDirectory: String, filename: String, type: String, currentEntryIndex: Int = 0, currentHeadwordIndex: Int = 0, currentFileIndex: Int = 0) {
+    init(id: UUID? = nil, dictionary: Dictionary, tempDirectory: String, filename: String, type: String, currentEntryIndex: Int = 0, currentHeadwordIndex: Int = 0, currentFileIndex: Int = 0, currentReferenceIndex: Int = 0) {
         self.id = id
         self.$dictionary.id = try! dictionary.requireID()
         self.tempDirectory = tempDirectory
@@ -50,6 +53,7 @@ final class DictionaryInsertJob: Model, Content {
         self.currentEntryIndex = currentEntryIndex
         self.currentHeadwordIndex = currentHeadwordIndex
         self.currentFileIndex = currentFileIndex
+        self.currentReferenceIndex = currentReferenceIndex
         self.progress = 0
         self.isComplete = false
     }
@@ -93,6 +97,22 @@ extension DictionaryInsertJob {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema)
                 .deleteField("current_file_index")
+                .update()
+        }
+    }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "CreateDictionaryInsertJobReferenceIndex" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("current_reference_index", .int, .required, .sql(.default(0)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("current_reference_index")
                 .update()
         }
     }

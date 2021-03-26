@@ -87,7 +87,8 @@ class DictionaryController: RouteCollection {
                         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                         try data.write(to: directory.appendingPathComponent(file.filename))
                         return dictionary.create(on: req.db)
-                            .flatMap { user.$dictionaries.attach(dictionary, on: req.db)
+                            .flatMap {
+                                user.$dictionaries.attach(dictionary, on: req.db)
                             }
                             .flatMap {
                                 DictionaryInsertJob(dictionary: dictionary, tempDirectory: uuid, filename: file.filename, type: "unknown", currentEntryIndex: 0, currentHeadwordIndex: 0)
@@ -333,37 +334,16 @@ class DictionaryController: RouteCollection {
                 }
         }
 
-        dictionary.get("file", ":id", "**") { (req: Request) -> EventLoopFuture<Response> in
-            let id = try req.parameters.require("id", as: UUID.self)
-            let aliasPath = req.parameters.getCatchall().joined(separator: "/")
+        func externalFile(for req: Request, dictionaryID: UUID, aliasPath: String) -> EventLoopFuture<Response?> {
             return ExternalFile.query(on: req.db)
-                .filter(\.$dictionary.$id == id)
+                .filter(\.$dictionary.$id == dictionaryID)
                 .filter(\.$aliasPath == aliasPath)
                 .first()
                 .throwingFlatMap { file in
                     guard let file = file else {
-                        if let entryIndex = Int(aliasPath.components(separatedBy: "-").first ?? "") {
-                            return Entry
-                                .query(on: req.db)
-                                .with(\.$dictionary)
-                                .filter(\.$index == entryIndex)
-                                .filter(\.$dictionary.$id == id)
-                                .first()
-                                .throwingFlatMap {
-                                    guard let element = $0 else {
-                                        return req.eventLoop.future(req.redirect(to: "/api/dictionary/entry/\(id.uuidString)/\(entryIndex)", type: .normal))
-                                    }
-                                    return try outputEntry(text: element.content, dictionary: element.dictionary, forceHorizontalText: true, forceDarkCSS: false)
-                                        .encodeResponse(for: req)
-                                        .map { response in
-                                            response.headers.contentType = .html
-                                            return response
-                                        }
-                                }
-                        } else {
-                            throw Abort(.notFound)
-                        }
+                        return req.eventLoop.future(nil)
                     }
+
                     let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent(file.path)
                     var mediaType: HTTPMediaType?
                     if file.path.hasSuffix(".m4a") {
@@ -388,6 +368,47 @@ class DictionaryController: RouteCollection {
                         response.body = .init(data: fileData)
                     }
                     return req.eventLoop.future(response)
+                }
+        }
+
+        dictionary.get("file", ":id", "**") { (req: Request) -> EventLoopFuture<Response> in
+            let id = try req.parameters.require("id", as: UUID.self)
+            let aliasPath = req.parameters.getCatchall().joined(separator: "/")
+            return DictionaryReference.query(on: req.db)
+                .filter(\.$dictionary.$id == id)
+                .group(.or) {
+                    $0.filter(all: [aliasPath, Int(aliasPath).flatMap { String($0) } ?? ""].filter { !$0.isEmpty }) { text in
+                        \.$key == text
+                    }
+                }
+                .first()
+                .throwingFlatMap { reference in
+                    return externalFile(for: req, dictionaryID: id, aliasPath: reference?.filePath ?? aliasPath)
+                        .throwingFlatMap { response in
+                            if let response = response {
+                                return req.eventLoop.future(response)
+                            }
+                            guard let entryIndex = reference?.entryIndex ?? Int(aliasPath.components(separatedBy: "-").first ?? "") else {
+                                throw Abort(.notFound)
+                            }
+                            return Entry
+                                .query(on: req.db)
+                                .with(\.$dictionary)
+                                .filter(\.$index == entryIndex)
+                                .filter(\.$dictionary.$id == id)
+                                .first()
+                                .throwingFlatMap {
+                                    guard let element = $0 else {
+                                        return req.eventLoop.future(req.redirect(to: "/api/dictionary/entry/\(id.uuidString)/\(entryIndex)", type: .normal))
+                                    }
+                                    return try outputEntry(text: element.content, dictionary: element.dictionary, forceHorizontalText: true, forceDarkCSS: false)
+                                        .encodeResponse(for: req)
+                                        .map { response in
+                                            response.headers.contentType = .html
+                                            return response
+                                        }
+                                }
+                        }
                 }
         }
 

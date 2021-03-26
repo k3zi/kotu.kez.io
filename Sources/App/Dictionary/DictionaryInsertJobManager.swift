@@ -80,31 +80,48 @@ class DictionaryInsertJobManager {
             .delete()
             .wait()
 
-        var entries = try Entry.query(on: app.db)
+        let entries = try Entry.query(on: app.db)
             .filter("dictionary_id", .equal, (try dictionary.requireID()))
             .field(\.$id)
-            .limit(127)
             .all()
             .wait()
 
-        while entries.count > 0 {
-            try entries.delete(on: app.db).wait()
-            entries = try Entry.query(on: app.db)
-                .filter("dictionary_id", .equal, (try dictionary.requireID()))
-                .field(\.$id)
-                .limit(127)
-                .all()
+        _ = entries.chunked(into: 127).concurrentMap(batchSize: 10) {
+            try? Entry.query(on: app.db)
+                .filter(\._$id ~~ $0.map { $0.id! })
+                .delete()
                 .wait()
         }
 
         let files = try ExternalFile.query(on: app.db)
             .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .field(\.$path).field(\.$id)
             .all()
             .wait()
-        let externalFilesDirectory = URL(fileURLWithPath: app.directory.resourcesDirectory).appendingPathComponent("Files")
-        for file in files {
-            let fileURL = externalFilesDirectory.appendingPathComponent(file.path)
+        let  externalFilesDirectory = URL(fileURLWithPath: app.directory.resourcesDirectory).appendingPathComponent("Files")
+        _ = files.concurrentMap {
+            let fileURL = externalFilesDirectory.appendingPathComponent($0.path)
             try? FileManager.default.removeItem(at: fileURL)
+        }
+
+        _ = files.chunked(into: 127).concurrentMap(batchSize: 10) {
+            try? ExternalFile.query(on: app.db)
+                .filter(\._$id ~~ $0.map { $0.id! })
+                .delete()
+                .wait()
+        }
+
+        let references = try DictionaryReference.query(on: app.db)
+            .filter("dictionary_id", .equal, (try dictionary.requireID()))
+            .field(\.$id)
+            .all()
+            .wait()
+
+        _ = references.chunked(into: 127).concurrentMap(batchSize: 10) {
+            try? DictionaryReference.query(on: app.db)
+                .filter(\._$id ~~ $0.map { $0.id! })
+                .delete()
+                .wait()
         }
 
         try ExternalFile.query(on: app.db)
@@ -134,8 +151,8 @@ class DictionaryInsertJobManager {
         let uncompressedData = try data.gunzipped()
         let mkd = try JSONDecoder().decode(MKD.self, from: uncompressedData)
 
-        let parts = 2 + ((mkd.files ?? []).count > 0 ? 1 : 0)
-
+        let parts = 2 + ((mkd.files ?? []).count > 0 ? 1 : 0) + ((mkd.references ?? []).count > 0 ? 1 : 0)
+        var index = 0
         let dictionary = job.dictionary
         try dictionary.save(on: app.db).wait()
         let entries = Array(mkd.entries.enumerated())
@@ -151,6 +168,7 @@ class DictionaryInsertJobManager {
             try job.save(on: app.db).wait()
             savedEntries.append(contentsOf: entryChunks)
         }
+        index += 1
 
         let headwords = mkd.headwords
         let remainingHeadwords = Array(headwords.suffix(from: job.currentHeadwordIndex))
@@ -163,9 +181,10 @@ class DictionaryInsertJobManager {
             }
             try headwords.create(on: app.db).wait()
             job.currentHeadwordIndex += count
-            job.progress = (1 / Float(parts)) + ((Float(job.currentHeadwordIndex) / Float(mkd.headwords.count)) / Float(parts))
+            job.progress = (Float(index) / Float(parts)) + ((Float(job.currentHeadwordIndex) / Float(mkd.headwords.count)) / Float(parts))
             try job.save(on: app.db).wait()
         }
+        index += 1
 
         let files = mkd.files ?? []
         let remainingFiles = Array(files.suffix(from: job.currentFileIndex))
@@ -191,8 +210,29 @@ class DictionaryInsertJobManager {
             }
             try _ = EventLoopFuture.whenAllComplete(files, on: app.db.eventLoop).wait()
             job.currentFileIndex += count
-            job.progress = (2 / Float(parts)) + ((Float(job.currentFileIndex) / Float(mkd.files?.count ?? 0)) / Float(parts))
+            job.progress = (Float(index) / Float(parts)) + ((Float(job.currentFileIndex) / Float(mkd.files?.count ?? 0)) / Float(parts))
             try job.save(on: app.db).wait()
+        }
+        if !files.isEmpty {
+            index += 1
+        }
+
+        let references = mkd.references ?? []
+        let remainingReferences = Array(references.suffix(from: job.currentReferenceIndex))
+        let chunkedReferences = remainingReferences.chunked(into: 127)
+        for chunk in chunkedReferences {
+            let count = chunk.count
+            let references = chunk.map {
+                DictionaryReference(dictionary: dictionary, key: $0.key, entryIndex: $0.entryIndex, filePath: $0.filePath)
+                    .create(on: app.db)
+            }
+            try _ = EventLoopFuture.whenAllComplete(references, on: app.db.eventLoop).wait()
+            job.currentReferenceIndex += count
+            job.progress = (Float(index) / Float(parts)) + ((Float(job.currentReferenceIndex) / Float(mkd.references?.count ?? 0)) / Float(parts))
+            try job.save(on: app.db).wait()
+        }
+        if !references.isEmpty {
+            index += 1
         }
 
         dictionary.css = mkd.css
@@ -240,6 +280,24 @@ struct MKD: Decodable {
         }
     }
 
+    struct Reference: Decodable {
+        let key: String
+        let entryIndex: Int?
+        let filePath: String?
+
+        init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            key = try container.decode(String.self)
+            if let string = try? container.decode(String.self) {
+                entryIndex = nil
+                filePath = string
+            } else {
+                entryIndex = try container.decode(Int.self)
+                filePath = nil
+            }
+        }
+    }
+
     let dictionaryName: String
     let css: String
     let darkCSS: String?
@@ -247,6 +305,7 @@ struct MKD: Decodable {
     let headwords: [Headword]
     let entries: [String]
     let files: [File]?
+    let references: [Reference]?
     let type: String
 
 }
