@@ -77,8 +77,8 @@ class SearchResultModal extends React.Component {
         const frame = this.frameRef.current;
         if (!frame || !frame.contentWindow.document.body) return;
         const writingMode = frame.contentWindow.getComputedStyle(frame.contentWindow.document.body)['writing-mode'];
-        const frameHeight = writingMode.includes('vertical') ? '60vh' : (frame.contentWindow.document.documentElement.scrollHeight + 'px');
-        const frameWidth = writingMode.includes('vertical') ? (frame.contentWindow.document.documentElement.scrollWidth + 'px') : '100%';
+        const frameHeight = writingMode.includes('vertical') ? '60vh' : (frame.contentWindow.document.documentElement.offsetHeight + 'px');
+        const frameWidth = writingMode.includes('vertical') ? (frame.contentWindow.document.documentElement.offsetWidth + 'px') : '100%';
         if (frameHeight != this.state.frameHeight || frameWidth != this.state.frameWidth) {
             this.setState({ frameHeight, frameWidth });
         }
