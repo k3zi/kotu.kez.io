@@ -207,14 +207,13 @@ class Reader extends React.Component {
             session.annotatedContent = annotatedContent;
             session.textContent = textContent;
             session.content = content;
-            const sessionResponse = await fetch(`/api/media/reader/session/${session.id}`, {
+            await fetch(`/api/media/reader/session/${session.id}`, {
                 method: 'PUT',
                 body: JSON.stringify(session),
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         } else {
             // Create New
             const sessionData = {
