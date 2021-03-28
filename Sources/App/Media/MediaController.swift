@@ -563,9 +563,16 @@ class MediaController: RouteCollection {
             let user = try req.auth.require(User.self)
             return user.$readerSessions
                 .query(on: req.db)
-                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url)
+                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url).field(\.$visualType).field(\.$rubyType).field(\.$owner.$id).field(\.$scrollPhraseIndex)
                 .sort(\.$updatedAt, .descending)
-                .paginate(for: req)
+                .paginate(for: req).map {
+                    let page = $0
+                    for item in page.items {
+                        item.$annotatedContent.value = ""
+                        item.$content.value = ""
+                    }
+                    return page
+                }
         }
 
         session.post() { (req: Request) -> EventLoopFuture<ReaderSession> in
