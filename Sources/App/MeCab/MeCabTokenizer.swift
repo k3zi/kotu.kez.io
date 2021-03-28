@@ -331,10 +331,8 @@ struct Morpheme: Content {
 
         tokenizer.lookAheadFix()
 
-        let nextMorpheme = parse(from: tokenizer.next)
-
         if morphemes.isEmpty {
-            return try parseMultiple(tokenizer: tokenizer, morphemes: [Morpheme.parse(from: tokenizer.consume())])
+            return try parseMultiple(tokenizer: tokenizer, morphemes: [parse(from: tokenizer.consume())])
         }
 
         let lastMorpheme = morphemes.last!
@@ -343,85 +341,45 @@ struct Morpheme: Content {
             return morphemes
         }
 
-        if ["接尾辞", "助動詞", "助詞"].contains(nextMorpheme.partOfSpeech) || ["接続助詞", "副助詞"].contains(nextMorpheme.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
-            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
+        if ["接尾辞", "助動詞", "助詞"].contains(tokenizer.next.partOfSpeech) || ["接続助詞", "副助詞"].contains(tokenizer.next.partOfSpeechSubType) || ["接頭辞"].contains(lastMorpheme.partOfSpeech) {
+            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [parse(from: tokenizer.consume())])
         }
 
-        if nextMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: nextMorpheme.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && (nextMorpheme.features.contains("助数詞可能") || nextMorpheme.features[1] == "数詞")) {
-            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [Morpheme.parse(from: tokenizer.consume())])
+        if tokenizer.next.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withPrevPartOfSpeech: lastMorpheme.partOfSpeech) }) || lastMorpheme.pitchAccentCompoundKinds.contains(where: { $0.canBeCombined(withNextPartOfSpeech: tokenizer.next.partOfSpeech) }) || (lastMorpheme.features[1] == "数詞" && (tokenizer.next.features.contains("助数詞可能") || tokenizer.next.features[1] == "数詞")) {
+            return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + [parse(from: tokenizer.consume())])
         }
 
-        if (!["名詞"].contains(nextMorpheme.partOfSpeech) && !["名詞"].contains(lastMorpheme.partOfSpeech)) || ["連体詞"].contains(lastMorpheme.partOfSpeech) {
+        if (!["名詞"].contains(tokenizer.next.partOfSpeech) && !["名詞"].contains(lastMorpheme.partOfSpeech)) || ["連体詞"].contains(lastMorpheme.partOfSpeech) {
             return morphemes
         }
 
-        var possibleNodes = morphemes
-        var longestMatchingNodes = morphemes
+        var possibleNodes = [Node]()
+        var longestMatchingNodes = [Node]()
         var index = 0
         while index < tokenizer.nodes.count && index < 10 && !tokenizer.nodes[index].isBosEos {
-            let addedMorpheme = Morpheme.parse(from: tokenizer.nodes[index])
-            possibleNodes.append(addedMorpheme)
-            let original = possibleNodes.map { $0.original }.joined()
-            let surface = possibleNodes.map { $0.surface }.joined()
-            if (!addedMorpheme.surface.isEmpty && DictionaryManager.shared.words.contains(surface)) || (!addedMorpheme.original.isEmpty && DictionaryManager.shared.words.contains(original)) {
+            let addedNode = tokenizer.nodes[index]
+            possibleNodes.append(addedNode)
+            let original = morphemes.map { $0.original }.joined() + possibleNodes.map { $0.original }.joined()
+            let surface = morphemes.map { $0.surface }.joined() + possibleNodes.map { $0.surface }.joined()
+            if (!addedNode.surface.isEmpty && DictionaryManager.shared.words.contains(surface)) || (!addedNode.original.isEmpty && DictionaryManager.shared.words.contains(original)) {
                 longestMatchingNodes = possibleNodes
             }
             index += 1
         }
 
-        let foundMorphemes = try tokenizer.consume(times: longestMatchingNodes.count - morphemes.count).map { Morpheme.parse(from: $0) }
+        let foundMorphemes = try tokenizer.consume(times: longestMatchingNodes.count).map { Morpheme.parse(from: $0) }
         if foundMorphemes.isEmpty {
-            return morphemes + foundMorphemes
+            return morphemes
         }
         return try parseMultiple(tokenizer: tokenizer, morphemes: morphemes + foundMorphemes)
     }
 
     static func parse(from node: Node) -> Morpheme {
-        let pitchCompounds = (node.features.count > 25 ? node.features[25] : "")
-        // 名詞%F1,動詞%F2@0,形容詞%F2@-1
-        let kindTokenizer = Tokenizer(input: pitchCompounds)
-        var kinds = [String]()
-        if pitchCompounds != "*" {
-            while !kindTokenizer.reachedEnd {
-                var kind = ""
-                kindTokenizer.consume(while: ",")
-                if kindTokenizer.next?.isKanji ?? false {
-                    kind += kindTokenizer.consume(while: { a, _ in a.isKanji })
-                    // Sometimes this doesn't appear: もん 動詞%F2@0,形容詞F2@-1
-                    kindTokenizer.consume(while: "%")
-                    kind += "%"
-                }
-
-                kind += kindTokenizer.consume(while: { a, _ in a.isLetter })
-                kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
-
-                if kindTokenizer.hasPrefix("@") {
-                    try? kindTokenizer.consume(expect: "@")
-                    kind += "@"
-                    func scanNumber() {
-                        if kindTokenizer.hasPrefix("-") {
-                            try? kindTokenizer.consume(expect: "-")
-                            kind += "-"
-                        }
-                        kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
-                    }
-
-                    scanNumber()
-                    while kindTokenizer.next == "," && ((kindTokenizer.nextNext?.isNumber ?? false) || (kindTokenizer.nextNext == "-")) {
-                        try? kindTokenizer.consume(expect: ",")
-                        kind += ","
-                        scanNumber()
-                    }
-                }
-                kinds.append(kind)
-            }
-        }
-
-        return .init(
+        .init(
             id: node.id,
             pitchAccents: node.pitchAccents,
-            pitchAccentCompoundKinds: kinds.map { PitchAccentConnectionKind(string: String($0)) },
-            pitchAccentModificationKind: PitchAccentModificationKind(string: (node.features.count > 26 ? node.features[26] : "")),
+            pitchAccentCompoundKinds: node.pitchAccentCompoundKinds,
+            pitchAccentModificationKind: node.pitchAccentModificationKind,
             surface: node.surface,
             original: node.original,
             partOfSpeech: node.partOfSpeech,

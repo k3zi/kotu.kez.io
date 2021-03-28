@@ -21,19 +21,66 @@ class SearchResultModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            isLoading: true,
+            isLoading: false,
             isFocused: false,
             inList: false,
             selectedResult: null,
             selectedResultHTML: '',
             isSubmitting: false,
-            headword: null
+            headword: null,
+            frameHeight: '0px',
+            frameWidth: '0px'
         };
+
+        this.frameRef = React.createRef();
+        this.adjustContentLinks = this.adjustContentLinks.bind(this);
+        this.adjustFrameHeight = this.adjustFrameHeight.bind(this);
+    }
+
+    componentDidMount() {
+        window.addEventListener('resize', () => {
+            this.adjustFrameHeight();
+        });
     }
 
     componentDidUpdate(prevProps, prevState) {
         if (prevProps.headwords !== this.props.headwords) {
             this.loadHeadword(this.props.headwords[0]);
+        }
+
+        this.adjustFrameHeight();
+        this.adjustContentLinks();
+
+        const frame = this.frameRef.current;
+        if (frame && this.frame != frame) {
+            this.frame = frame;
+            frame.addEventListener('load', this.adjustContentLinks);
+            frame.addEventListener('load', this.adjustFrameHeight);
+        }
+    }
+
+    adjustContentLinks() {
+        const frame = this.frameRef.current;
+        if (!frame) return;
+        const anchors = frame.contentWindow.document.getElementsByTagName('a');
+
+        for (let anchor of anchors) {
+            var url = new URL(anchor.href);
+            if (!url) continue;
+            url.searchParams.set('forceHorizontalText', this.context.settings.ui.prefersHorizontalText);
+            url.searchParams.set('forceDarkCSS', this.props.colorScheme === 'dark');
+            anchor.href = url.href;
+        }
+    }
+
+    adjustFrameHeight() {
+        const frame = this.frameRef.current;
+        if (!frame || !frame.contentWindow.document.body) return;
+        const writingMode = frame.contentWindow.getComputedStyle(frame.contentWindow.document.body)['writing-mode'];
+        const frameHeight = writingMode.includes('vertical') ? '60vh' : (frame.contentWindow.document.body.scrollHeight + 'px');
+        const frameWidth = writingMode.includes('vertical') ? (frame.contentWindow.document.body.scrollWidth + 'px') : '100%';
+        if (frameHeight != this.state.frameHeight || frameWidth != this.state.frameWidth) {
+            this.setState({ frameHeight, frameWidth });
         }
     }
 
@@ -103,9 +150,9 @@ class SearchResultModal extends React.Component {
                             <Modal.Title>{this.state.headword && this.state.headword.headline}</Modal.Title>
                             <Button onClick={() => this.addToList()} className='ms-2' variant='primary' disabled={this.state.inList}>{this.state.inList ? 'Added' : 'Add to List'}</Button>
                         </Modal.Header>
-                        <Modal.Body>
+                        <Modal.Body className='d-flex justify-content-center align-items-center overflow-auto'>
                             {this.state.isLoading && <h1 className="text-center" style={{ height: '60vh' }} ><Spinner animation="border" variant="secondary" /></h1>}
-                            {!this.state.isLoading && <iframe className="col-12" style={{ height: '60vh' }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
+                            {!this.state.isLoading && <iframe ref={this.frameRef} className="col-12" style={{ height: this.state.frameHeight, width: this.state.frameWidth }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
                         </Modal.Body>
                     </Col>
                 </Row>

@@ -64,7 +64,7 @@ class SystemImportModal extends React.Component {
             <Modal {...this.props} backdrop='static' size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
-                        Systen Import
+                        System Import
                     </Modal.Title>
                 </Modal.Header>
 
@@ -75,17 +75,14 @@ class SystemImportModal extends React.Component {
                             <Form.Check type="checkbox" label="Audiobook" name='isAudiobook' />
                         </Form.Group>
 
-                        {this.state.didError && <Alert variant="danger" className='mt-3'>
-                            {this.state.message}
-                        </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info" className='mt-3'>
+                        {this.state.message && <Alert variant={this.state.didError ? 'danger' : 'info'} className='mt-3'>
                             {this.state.message}
                         </Alert>}
 
                         <Button variant="secondary" className='mt-3' disabled={this.state.isSubmitting} onClick={() => this.props.didCancel()}>Cancel</Button>
                         {' '}
                         <Button variant="primary" className='mt-3' type="submit" disabled={this.state.isSubmitting}>
-                            {this.state.isSubmitting ? 'Syncing...' : 'Sync'}
+                            {this.state.isSubmitting ? 'Importing...' : 'Import'}
                         </Button>
                     </Form>
                 </Modal.Body>

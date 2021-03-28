@@ -82,11 +82,21 @@ public struct Node: TokenNode, CustomStringConvertible {
     public var alwaysHideFurigana = false
     public let type: Type
 
+    public let partOfSpeech: String
+    public let partOfSpeechSubType: String
+    public var original: String
+    public let id: String
+
     public init(surface: String, features: [String], type: Type) {
         self.isBosEos = type == .beginOfSentence || type == .endOfSentence
         self.surface = surface
         self.features = features
         self.type = type
+
+        self.partOfSpeech = features[0]
+        self.partOfSpeechSubType = features[1]
+        self.original = (features.count > 7 ? features[7] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
+        self.id = features.last ?? ""
     }
     
     init(_ node: UnsafePointer<mecab_node_t>) throws {
@@ -127,6 +137,11 @@ public struct Node: TokenNode, CustomStringConvertible {
         }
         self.isBosEos = type == .endOfSentence || type == .beginOfSentence
         self.type = type
+
+        self.partOfSpeech = features[0]
+        self.partOfSpeechSubType = features[1]
+        self.original = (features.count > 7 ? features[7] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
+        self.id = features.last ?? ""
     }
 }
 

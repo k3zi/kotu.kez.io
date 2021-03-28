@@ -158,9 +158,9 @@ extension ReaderSession {
     }
 
     struct Update: Content {
-        let annotatedContent: String
-        let textContent: String
-        let content: String
+        let annotatedContent: String?
+        let textContent: String?
+        let content: String?
         let rubyType: String
         let visualType: String
         let url: String?
@@ -184,9 +184,6 @@ extension ReaderSession.Create: Validatable {
 extension ReaderSession.Update: Validatable {
 
     static func validations(_ validations: inout Validations) {
-        validations.add("annotatedContent", as: String.self)
-        validations.add("textContent", as: String.self)
-        validations.add("content", as: String.self)
         validations.add("rubyType", as: String.self)
         validations.add("visualType", as: String.self)
         validations.add("scrollPhraseIndex", as: Int.self)

@@ -120,8 +120,9 @@ public struct HeadlineStore {
                 try t.consume(expect: "</cl>")
             })
             try t.consume(expect: "</h1>")
-            if let kana = kana, let integerID = Int(id) {
-                let headline = Headline(index: UInt(integerID), subindex: 0, text: "\(kana)\(spelling ?? "")\(kanjis.joined())")
+            let idSplit = id.components(separatedBy: "-")
+            if let kana = kana, let stringID = idSplit.first, let integerID = Int(stringID) {
+                let headline = Headline(index: UInt(integerID), subindex: idSplit.count > 1 ? idSplit.last.flatMap { UInt($0, radix: 16) } ?? 0 : 0, text: "\(kana)\(spelling ?? "")\(kanjis.joined())")
                 headlines.append(headline)
             } else {
                 print(id, type, rank, kana ?? "nil", spelling ?? "nil", kanjis)

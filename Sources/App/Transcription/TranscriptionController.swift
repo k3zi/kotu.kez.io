@@ -497,7 +497,9 @@ class TranscriptionController: RouteCollection {
                         throw Abort(.badRequest)
                     }
                     
-                    let subtitles = project.fragments.flatMap { $0.subtitles.filter { $0.translation.id == translation.id } }.sorted(by: { $0.fragment.startTime < $1.fragment.startTime })
+                    let subtitles = project.fragments.flatMap { $0.subtitles.filter { $0.translation.id == translation.id } }
+                        .filter { $0.fragment.startTime < $0.fragment.endTime }
+                        .sorted(by: { $0.fragment.startTime < $1.fragment.startTime })
 
                     let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
                     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

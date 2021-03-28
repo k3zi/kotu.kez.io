@@ -179,7 +179,7 @@ class Reader extends React.Component {
             this.setState({ isLoading: false, html: session.annotatedContent, session });
             this.props.history.push(`/media/reader/${session.id}`);
         } else {
-            this.setState({ isLoading: false, html: annotatedContent, session: null });
+            this.setState({ isLoading: false, html: '', session: null });
             this.props.history.push(`/media/reader`);
         }
     }
@@ -278,7 +278,11 @@ class Reader extends React.Component {
         if (!session) { return; }
         await fetch(`/api/media/reader/session/${session.id}`, {
             method: 'PUT',
-            body: JSON.stringify(session),
+            body: JSON.stringify({
+                visualType: session.visualType,
+                rubyType: session.rubyType,
+                scrollPhraseIndex: session.scrollPhraseIndex || 0
+            }),
             headers: {
                 'Content-Type': 'application/json'
             }

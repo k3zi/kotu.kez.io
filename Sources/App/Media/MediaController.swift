@@ -563,6 +563,7 @@ class MediaController: RouteCollection {
             let user = try req.auth.require(User.self)
             return user.$readerSessions
                 .query(on: req.db)
+                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url)
                 .sort(\.$updatedAt, .descending)
                 .paginate(for: req)
         }
@@ -589,7 +590,7 @@ class MediaController: RouteCollection {
                 .unwrap(or: Abort(.notFound))
         }
 
-        sessionID.put() { (req: Request) -> EventLoopFuture<ReaderSession> in
+        sessionID.put() { (req: Request) -> EventLoopFuture<Response> in
             let user = try req.auth.require(User.self)
             try ReaderSession.Update.validate(content: req)
             let object = try req.content.decode(ReaderSession.Update.self)
@@ -600,14 +601,20 @@ class MediaController: RouteCollection {
                 .first()
                 .unwrap(or: Abort(.notFound))
                 .flatMap { session in
-                    session.annotatedContent = object.annotatedContent
-                    session.textContent = object.textContent
-                    session.content = object.content
+                    if let annotatedContent = object.annotatedContent {
+                        session.annotatedContent = annotatedContent
+                    }
+                    if let textContent = object.textContent {
+                        session.textContent = textContent
+                    }
+                    if let content = object.content {
+                        session.content = content
+                    }
                     session.rubyType = object.rubyType
                     session.visualType = object.visualType
                     session.scrollPhraseIndex = object.scrollPhraseIndex
                     return session.update(on: req.db)
-                        .map { session }
+                        .map { Response(status: .ok) }
                 }
         }
 

@@ -140,21 +140,21 @@ enum NeedlemanWunsch {
         output1.reserveCapacity(m)
         output2.reserveCapacity(m)
 
-        while i != 0 && j != 0 {
+        while i != 0 || j != 0 {
             switch paths[i][j].first! {
             case .diagonal:
                 output1.insert(.indexAndValue(j - 1 + offset1, seq1[j &- 1]), at: .zero)
                 output2.insert(.indexAndValue(i - 1 + offset2, seq2[i &- 1]), at: .zero)
                 i &-= 1
                 j &-= 1
-            case .top:
-                output1.insert(.missing, at: 0)
-                output2.insert(.indexAndValue(i &- 1 &+ offset2, seq2[i &- 1]), at: .zero)
-                i &-= 1
             case .left:
                 output1.insert(.indexAndValue(j &- 1 &+ offset1, seq1[j &- 1]), at: .zero)
                 output2.insert(.missing, at: .zero)
                 j &-= 1
+            case .top:
+                output1.insert(.missing, at: 0)
+                output2.insert(.indexAndValue(i &- 1 &+ offset2, seq2[i &- 1]), at: .zero)
+                i &-= 1
             }
         }
 

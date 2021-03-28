@@ -18,6 +18,7 @@ public func configure(_ app: Application) throws {
     app.http.server.configuration.responseCompression = .enabled
     app.http.server.configuration.requestDecompression = .enabled
     app.http.server.configuration.supportPipelining = true
+    app.http.server.configuration.serverName = "kotu"
 
     app.databases.use(.postgres(
         hostname: "localhost",

@@ -60,6 +60,7 @@ import TestsPitchAccentCounters from './Tests/PitchAccent/Counters';
 
 import AdminUsers from './Admin/Users';
 import AdminFeedback from './Admin/Feedback';
+import AdminOtherVideos from './Admin/OtherVideos';
 
 import ResetPassword from './ResetPassword';
 
@@ -400,6 +401,9 @@ class App extends React.Component {
                                             <LinkContainer to="/admin/feedback">
                                                 <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
                                             </LinkContainer>
+                                            <LinkContainer to="/admin/otherVideos">
+                                                <NavDropdown.Item active={false}>Other Videos</NavDropdown.Item>
+                                            </LinkContainer>
                                         </NavDropdown>
                                     </>}
                                 </Nav>}
@@ -553,6 +557,9 @@ class App extends React.Component {
                                 </Route>
                                 <Route path="/admin/feedback">
                                     {this.loginProtect(<AdminFeedback />)}
+                                </Route>
+                                <Route path="/admin/otherVideos">
+                                    {this.loginProtect(<AdminOtherVideos />)}
                                 </Route>
 
                                 <Route path="/auth/resetPassword/:userID/:key">

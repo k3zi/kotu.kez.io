@@ -3,20 +3,51 @@ import Foundation
 
 extension Node {
 
-    var original: String {
-        (features.count > 7 ? features[7] : "").split(separator: "-").first.flatMap { String($0) } ?? ""
+    var pitchAccentCompoundKinds: [PitchAccentConnectionKind] {
+        let pitchCompounds = (features.count > 25 ? features[25] : "")
+        // 名詞%F1,動詞%F2@0,形容詞%F2@-1
+        let kindTokenizer = Tokenizer(input: pitchCompounds)
+        var kinds = [String]()
+        if pitchCompounds != "*" {
+            while !kindTokenizer.reachedEnd {
+                var kind = ""
+                kindTokenizer.consume(while: ",")
+                if kindTokenizer.next?.isKanji ?? false {
+                    kind += kindTokenizer.consume(while: { a, _ in a.isKanji })
+                    // Sometimes this doesn't appear: もん 動詞%F2@0,形容詞F2@-1
+                    kindTokenizer.consume(while: "%")
+                    kind += "%"
+                }
+
+                kind += kindTokenizer.consume(while: { a, _ in a.isLetter })
+                kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
+
+                if kindTokenizer.hasPrefix("@") {
+                    try? kindTokenizer.consume(expect: "@")
+                    kind += "@"
+                    func scanNumber() {
+                        if kindTokenizer.hasPrefix("-") {
+                            try? kindTokenizer.consume(expect: "-")
+                            kind += "-"
+                        }
+                        kind += kindTokenizer.consume(while: { a, _ in a.isNumber })
+                    }
+
+                    scanNumber()
+                    while kindTokenizer.next == "," && ((kindTokenizer.nextNext?.isNumber ?? false) || (kindTokenizer.nextNext == "-")) {
+                        try? kindTokenizer.consume(expect: ",")
+                        kind += ","
+                        scanNumber()
+                    }
+                }
+                kinds.append(kind)
+            }
+        }
+        return kinds.map { PitchAccentConnectionKind(string: String($0)) }
     }
 
-    var partOfSpeech: String {
-        features[0]
-    }
-
-    var partOfSpeechSubType: String {
-        features[1]
-    }
-
-    var id: String {
-        features.last ?? ""
+    var pitchAccentModificationKind: PitchAccentModificationKind {
+        .init(string: (features.count > 26 ? features[26] : ""))
     }
 
     var pronunciation: String {
@@ -59,34 +90,96 @@ extension Node {
         //  使う → 使ウ
         // 入り込む → 入リ込ム
         let katakanaSurface = surface.katakana
-        guard katakanaSurface != surfacePronunciation && !alwaysHideFurigana else {
+        guard katakanaSurface != surfacePronunciation && !alwaysHideFurigana && !surfacePronunciation.isEmpty && surfacePronunciation != "*" else {
             return surface
         }
 
-        //  使ウ → (.+)ウ
-        // 入リ込ム → (.+)リ(.+)ム
-        let regexString = katakanaSurface.replacingOccurrences(of: "\\p{Han}+", with: "(.+)", options: [.regularExpression])
-
-        // [ツカ]
-        // [ハイ, コ]
-        var captures = surfacePronunciation.match(regexString).first?.suffix(from: 1) ?? []
-        guard !captures.isEmpty else {
-            return "<ruby><rb>\(surface)</rb><rt>\(surfacePronunciation)</rt></ruby>"
+        let overlap = try! NeedlemanWunsch.align(input1: Array(katakanaSurface), input2: Array(surfacePronunciation))
+        let zipped = Array(zip(overlap.output1, overlap.output2))
+        enum Status {
+            case none
+            case matchFurigana(Int, Int?)
+            case matchOkurigana(Int, Int?)
         }
-
-        var result = surface
-        var startIndex: String.Index? = nil
-        while let range = result.range(of: "\\p{Han}+", options: .regularExpression, range: startIndex.flatMap { ($0..<result.endIndex) }) {
-            let kanji = result[range]
-            guard !captures.isEmpty else {
-                return "<ruby>\(surface)<rt>\(surfacePronunciation)</rt></ruby>"
+        var status = Status.none
+        var statuses = [(Status, ClosedRange<Int>)]()
+        for i in zipped.startIndex..<zipped.endIndex {
+            switch zipped[i] {
+            case (.missing, .indexAndValue), (.indexAndValue, .missing):
+                switch status {
+                case .none:
+                    status = .matchFurigana(i, nil)
+                case let .matchFurigana(a, _):
+                    status = .matchFurigana(a, i)
+                case let .matchOkurigana(a, b):
+                    statuses.append((status, a...(b ?? a)))
+                    status = .matchFurigana(i, nil)
+                }
+            case let (.indexAndValue(_, valueA), .indexAndValue(_, valueB)):
+                if valueA == valueB {
+                    switch status {
+                    case .none:
+                        status = .matchOkurigana(i, nil)
+                    case let .matchFurigana(a, b):
+                        statuses.append((status, a...(b ?? a)))
+                        status = .matchOkurigana(i, nil)
+                    case let .matchOkurigana(a, _):
+                        status = .matchOkurigana(a, i)
+                    }
+                } else {
+                    switch status {
+                    case .none:
+                        status = .matchFurigana(i, nil)
+                    case let .matchFurigana(a, _):
+                        status = .matchFurigana(a, i)
+                    case let .matchOkurigana(a, b):
+                        statuses.append((status, a...(b ?? a)))
+                        status = .matchFurigana(i, nil)
+                    }
+                }
+            case (.missing, .missing):
+                break
             }
-            let kana = captures.removeFirst().hiragana
-            result.replaceSubrange(range, with: "<ruby>\(kanji)<rt>\(kana)</rt></ruby>")
-            startIndex = result.lastIndex(of: ">")
+        }
+        switch status {
+        case .none:
+            break
+        case let .matchFurigana(a, b), let .matchOkurigana(a, b):
+            statuses.append((status, a...(b ?? a)))
         }
 
-        return result
+        var r = "<ruby>"
+        for (status, range) in statuses {
+            switch status {
+            case .matchFurigana:
+                let kanji = overlap.output1[range].reduce(into: "", { (x, match) in
+                    guard case let .indexAndValue(_, y) = match else {
+                        return
+                    }
+                    x.append(y)
+                })
+
+                let pronunciation = overlap.output2[range].reduce(into: "", { (x, match) in
+                    guard case let .indexAndValue(_, y) = match else {
+                        return
+                    }
+                    x.append(y)
+                })
+                r += "\(kanji.hiragana)<rt>\(pronunciation.hiragana)</rt>"
+            case .matchOkurigana:
+                let pronunciation = overlap.output2[range].reduce(into: "", { (x, match) in
+                    guard case let .indexAndValue(_, y) = match else {
+                        return
+                    }
+                    x.append(y)
+                })
+                r += "\(pronunciation.hiragana)<rt></rt>"
+            case .none:
+                break
+            }
+        }
+        r += "</ruby>"
+        return r
     }
 
     var pitchAccentIntegers: [Int] {

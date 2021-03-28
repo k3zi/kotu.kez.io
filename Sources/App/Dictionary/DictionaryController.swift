@@ -246,6 +246,7 @@ class DictionaryController: RouteCollection {
                 \(forceHorizontalText ? horizontalTextCSS : "")
                 body {
                     color: \(forceDarkCSS ? "white" : "black") !important;
+                    margin: 0 !important;
                 }
             </style>
             <script>
@@ -355,8 +356,9 @@ class DictionaryController: RouteCollection {
                     let rangeString = req.headers.first(name: .range) ?? ""
                     let response = Response(status: .ok)
                     response.headers.contentType = type
-                    response.headers.contentDisposition = .init(.attachment, filename: fileURL.pathComponents.last!)
-
+                    if response.headers.contentType != .html {
+                        response.headers.contentDisposition = .init(.attachment, filename: fileURL.pathComponents.last!)
+                    }
                     let fileData = try Data(contentsOf: fileURL)
                     if rangeString.count > 0 {
                         let range = try Range.parse(tokenizer: .init(input: rangeString))
@@ -374,6 +376,8 @@ class DictionaryController: RouteCollection {
         dictionary.get("file", ":id", "**") { (req: Request) -> EventLoopFuture<Response> in
             let id = try req.parameters.require("id", as: UUID.self)
             let aliasPath = req.parameters.getCatchall().joined(separator: "/")
+            let forceHorizontalText = (try? req.query.get(Bool.self, at: "forceHorizontalText")) ?? false
+            let forceDarkCSS = (try? req.query.get(Bool.self, at: "forceDarkCSS")) ?? false
             return DictionaryReference.query(on: req.db)
                 .filter(\.$dictionary.$id == id)
                 .group(.or) {
@@ -399,9 +403,9 @@ class DictionaryController: RouteCollection {
                                 .first()
                                 .throwingFlatMap {
                                     guard let element = $0 else {
-                                        return req.eventLoop.future(req.redirect(to: "/api/dictionary/entry/\(id.uuidString)/\(entryIndex)", type: .normal))
+                                        return req.eventLoop.future(req.redirect(to: "/api/dictionary/entry/\(id.uuidString)/\(entryIndex)?forceHorizontalText=\(forceHorizontalText ? "true" : "false")&forceDarkCSS=\(forceDarkCSS ? "true" : "false")", type: .normal))
                                     }
-                                    return try outputEntry(text: element.content, dictionary: element.dictionary, forceHorizontalText: true, forceDarkCSS: false)
+                                    return try outputEntry(text: element.content, dictionary: element.dictionary, forceHorizontalText: forceHorizontalText, forceDarkCSS: forceDarkCSS)
                                         .encodeResponse(for: req)
                                         .map { response in
                                             response.headers.contentType = .html

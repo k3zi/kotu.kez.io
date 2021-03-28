@@ -57,6 +57,11 @@ class SettingsModal extends React.Component {
                 d.order = i;
             }
             this.setState({ dictionaries });
+
+            if (!this.state.dictionary.didError && this.state.dictionary.message && dictionaries.filter(d => d.insertJob).length === 0) {
+                this.state.dictionary.message = null;
+                this.setState({ dictionary: this.state.dictionary });
+            }
         }
     }
 

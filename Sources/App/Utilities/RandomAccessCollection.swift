@@ -27,4 +27,9 @@ extension RandomAccessCollection {
             }
         }
     }
+
+    func concurrentFlatMap<SegmentOfResult>(_ transform: (Element) -> SegmentOfResult) -> [SegmentOfResult.Element] where SegmentOfResult : Sequence {
+        concurrentMap(transform).flatMap { $0 }
+    }
+
 }
