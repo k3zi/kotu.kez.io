@@ -126,7 +126,7 @@ class Reader extends React.Component {
                 const session = this.state.session;
                 if (!session) { return; }
                 session.annotatedContent = annotatedContent.innerHTML;
-                this.setState({ isLoading: false, html: annotatedContent.innerHTML, session });
+                this.setState({ isLoading: false, html: annotatedContent.innerHTML, session, sentences });
                 this.updateSession();
             }
         } else {
@@ -282,11 +282,37 @@ class Reader extends React.Component {
     }
 
     setMedia(media) {
-        const session = this.state.session;
+        let session = this.state.session;
         if (!session) { return; }
         session.media = media;
         this.setState({ session });
         this.updateSession();
+
+        if (!this.state.sentences) { return; }
+
+        const sessionResponse = await fetch(`/api/media/reader/session/${session.id}?includeMediaSubtitles=true`);
+        session = sessionResponse.ok ? (await sessionResponse.json()) : session;
+        if (session && session.media) {
+            this.setState({ isLoading: true, html: session.annotatedContent, session, text: session.url || session.textContent });
+
+            const requestID = this.currentRequestID + 1;
+            this.currentRequestID = requestID;
+            const sentences = this.state.sentences;
+            const subtitles = session.media ? session.media.subtitles : [];
+            const annotatedContent = await Helpers.generateVisualSentenceElementFromSentences(sentences, session.content, {
+                subtitles
+            }, () => {
+                return requestID != this.currentRequestID;
+            });
+
+            if (annotatedContent) {
+                const session = this.state.session;
+                if (!session) { return; }
+                session.annotatedContent = annotatedContent.innerHTML;
+                this.setState({ isLoading: false, html: annotatedContent.innerHTML, session });
+                this.updateSession();
+            }
+        }
     }
 
     async updateSession() {
@@ -403,8 +429,8 @@ class Reader extends React.Component {
                             <hr className='mb-1' />
                         </div>
                         <h4 className='text-center mb-0'><i data-bs-toggle="collapse" data-bs-target="#readerOptions" aria-expanded="false" aria-controls="readerOptions" class={`bi bi-chevron-compact-auto cursor-pointer text-muted`}></i></h4>
-                        {this.state.html && this.state.session && <div className={`px-3 overflow-auto visual-type-${this.state.session.visualType} ruby-type-${this.state.session.rubyType}`} onScroll={(e) => this.onScroll(e.target)} ref={(r) => this.onScroll(r)} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                         {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+                        {this.state.html && this.state.session && <div className={`px-3 overflow-auto visual-type-${this.state.session.visualType} ruby-type-${this.state.session.rubyType}`} onScroll={(e) => this.onScroll(e.target)} ref={(r) => this.onScroll(r)} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                     </Col>
 
                     {user.settings.reader.showCreateNoteForm && <Col xs={12} md={5}>
