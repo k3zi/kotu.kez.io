@@ -281,12 +281,12 @@ class Reader extends React.Component {
         this.updateSession();
     }
 
-    setMedia(media) {
+    async setMedia(media) {
         let session = this.state.session;
         if (!session) { return; }
         session.media = media;
         this.setState({ session });
-        this.updateSession();
+        await this.updateSession();
 
         if (!this.state.sentences) { return; }
 
@@ -310,7 +310,6 @@ class Reader extends React.Component {
                 if (!session) { return; }
                 session.annotatedContent = annotatedContent.innerHTML;
                 this.setState({ isLoading: false, html: annotatedContent.innerHTML, session });
-                this.updateSession();
             }
         }
     }
