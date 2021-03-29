@@ -198,7 +198,7 @@ struct Sentence: Content {
         return tokenizer.nodes
             .filter { !$0.isBosEos }
             .splitKeepingSeparator(whereSeparator: {
-                $0.partOfSpeech == "補助記号" && $0.partOfSpeechSubType == "句点"
+                $0.partOfSpeech == "補助記号" && ["句点", "括弧閉"].contains($0.partOfSpeechSubType)
             })
             .concurrentMap { nodes -> [Sentence] in
                 var sentences = [Sentence]()

@@ -366,11 +366,15 @@ class TranscriptionController: RouteCollection {
                         Array(word.text).map { SubtitleCharacter(character: $0, time: word.time)}
                     }
                     let alignment = try NeedlemanWunsch.align(input1: Array(originalText), input2: individualCharacters.concurrentMap { $0.character })
-                    let originalAlignedCharacters = alignment.output1.enumerated().splitKeepingSeparator(whereSeparator: {
+                    let originalAlignedCharacters = alignment.output1.enumerated().splitSeparator(separatorDecision: {
                         if case let .indexAndValue(_, char) = $0.element {
-                            return ["\n", "。", ".", "？", "?"].contains(char)
+                            switch char {
+                            case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
+                            case "。", ".", "？", "?": return .keepLeft
+                            default: return .notSeparator
+                            }
                         }
-                        return false
+                        return .notSeparator
                     })
                     .filter { !$0.isEmpty }
 

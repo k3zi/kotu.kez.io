@@ -10,10 +10,11 @@ module.exports = {
                 use: ["babel-loader"]
             },
             {
-                test: /\.s[ac]ss$/i,
+                test: /\.(css|sass|scss)$/,
                 use: [
                     MiniCssExtractPlugin.loader,
                     "css-loader",
+                    'postcss-loader',
                     "sass-loader",
                 ],
             },

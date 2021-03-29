@@ -50,13 +50,13 @@ enum NeedlemanWunsch {
             offset2: offset2 + seq2Halves[0].count - overlap
         )
         let zipped = Array(zip(middle.output1, middle.output2))
-        let firstOverlapOptionalIndex = zipped.firstSeries(length: 5, where: {
+        let firstOverlapOptionalIndex = zipped.firstSeries(length: 10, where: {
             if case let .indexAndValue(_, first) = $0.0, case let .indexAndValue(_, second) = $0.1 {
                 return first == second
             }
             return false
         })
-        let lastOverlapOptionalIndex = zipped.lastSeries(length: 5, where: {
+        let lastOverlapOptionalIndex = zipped.lastSeries(length: 10, where: {
             if case let .indexAndValue(_, first) = $0.0, case let .indexAndValue(_, second) = $0.1 {
                 return first == second
             }

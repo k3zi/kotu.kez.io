@@ -371,7 +371,7 @@ class Reader extends React.Component {
                             {this.state.session && <>
                                 <InputGroup className="mt-3">
                                     <Form.Control value={this.state.session.media ? this.state.session.media.title : '(None)'} readOnly />
-                                    <DropdownButton variant="outline-primary" title="Media" id="readerMedia">
+                                    <DropdownButton variant="outline-secondary" title="Read Along Media" id="readerMedia">
                                         <div className='d-flex'>
                                             <Form.Control autoComplete='off' className={`flex-fill text-center w-auto mx-2${this.state.medias.length === 0 ? '' : ' mb-2'}`} type="text" onChange={(e) => this.mediaSearch(e.target.value)} placeholder="Search" value={this.state.mediaSearchQuery} />
                                         </div>

@@ -195,7 +195,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
         return;
     }
 
-    return await this.generateVisualSentenceElementFromSentences(sentences, content, {}, isCancelled);
+    return await helpers.generateVisualSentenceElementFromSentences(sentences, content, {}, isCancelled);
 };
 
 helpers.generateVisualSentenceElementFromSentences = async (sentences, content, options, isCancelled) => {
@@ -210,7 +210,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
     let phrases = sentences.shift() || [];
     const subtitles = (options.subtitles || []).sort((a, b) => a.startTime - b.startTime);
     subtitles.forEach(s => {
-        s.noSpaceText = s.text.replace(/\s/g,'');
+        s.cleanText = s.text.replace(/[\s「」]/g,'');
     });
     let subtitle = subtitles.shift();
     let buildUpSubtitle = '';
@@ -232,15 +232,27 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
         let phrase = phrases[phraseIndex];
         let index = text.indexOf(phrase.surface.charAt(0), startIndex);
         while (index != -1) {
-            if (!subtitle || (subtitle && (startIndex > 0 || phrase.surface.trim().length !== 0))) {
+            const skipPost = false;
+            const cleanSurface = phrase.surface.replace(/[\s「」]/g,'');
+            if (!subtitle || ((buildUpSubtitle.replace(/\s/g,'').length > 0 || phrase.surface.replace(/\s/g,'').length > 0) && (subtitle && (startIndex > 0 || phrase.surface.trim().length !== 0)))) {
                 if (subtitle && buildUpSubtitle.length === 0) {
-                    if (!subtitle.text.startsWith(phrase.surface.replace(/\s/g,''))) {
-                        while (subtitle && !subtitle.text.startsWith(phrase.surface)) {
-                            subtitle = subtitles.shift();
+                    if (cleanSurface.length === 0) {
+                        skipPost = true;
+                    } else if (!subtitle.text.includes(cleanSurface)) {
+                        if (phrases.slice(phraseIndex).some(p => subtitle.text.startsWith(p.surface.replace(/\s/g,'')))) {
+                            skipPost = true;
+                        } else {
+                            if (subtitles.slice(0, 5).some(s => s.text.startsWith(phrase.surface))) {
+                                while (subtitle && !subtitle.text.startsWith(phrase.surface)) {
+                                    subtitle = subtitles.shift();
+                                }
+                            } else {
+                                skipPost = true;
+                            }
                         }
                     }
 
-                    if (subtitle) {
+                    if (!skipPost && subtitle) {
                         newText += `<cue data-url='/api/media/external/audio/${subtitle.externalFile.id}'><i class="bi bi-play-circle"></i></cue>`;
                     }
                 }
@@ -252,10 +264,10 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                     }).join('')}</phrase>`;
                 }
 
-                if (subtitle) {
-                    buildUpSubtitle += phrase.surface;
+                if (!skipPost && subtitle) {
+                    buildUpSubtitle += cleanSurface;
 
-                    if (buildUpSubtitle.replace(/\s/g,'') === subtitle.noSpaceText) {
+                    if (buildUpSubtitle.replace(/\s/g,'') === subtitle.cleanText) {
                         subtitle = subtitles.shift();
                         buildUpSubtitle = '';
                     }
