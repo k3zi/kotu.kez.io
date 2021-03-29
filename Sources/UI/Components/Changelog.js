@@ -6,6 +6,13 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/3/28
+- **[reader]:** allow reading with media
+- **[transcribe]:** allow auto-syncing text
+- **[all]:** add showing word status as an experimental setting
+- **[dictionaries]:** allow sorting dictionaries
+- **[tests]:** add pitch accent test for counters
+---
 #### 2021/3/15
 - **[tests]:** add pitch accent test for names
 ---

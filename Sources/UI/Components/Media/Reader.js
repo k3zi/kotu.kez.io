@@ -3,6 +3,7 @@ import React from 'react';
 import { withRouter } from 'react-router';
 import { Readability } from '@mozilla/readability';
 import { LinkContainer } from 'react-router-bootstrap';
+import FadeIn from 'react-fade-in';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -34,8 +35,12 @@ class Reader extends React.Component {
             html: null,
             session: null,
             text: '',
+            sentences: [],
+            mediaSearchQuery: '',
+            medias: [],
             didInitialScroll: false,
-            isScrolling: false
+            isScrolling: false,
+            displayOptions: true
         };
         this.currentRequestID = 0;
         const self = this;
@@ -102,14 +107,18 @@ class Reader extends React.Component {
         }
         this.loadingSessionID = id;
         if (!id) { return; }
-        let sessionResponse = await fetch(`/api/media/reader/session/${id}`);
+        let sessionResponse = await fetch(`/api/media/reader/session/${id}?includeMediaSubtitles=true`);
         let session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         if (session) {
             this.setState({ isLoading: true, html: session.annotatedContent, session, text: session.url || session.textContent });
 
             const requestID = this.currentRequestID + 1;
             this.currentRequestID = requestID;
-            const annotatedContent = await Helpers.generateVisualSentenceElement(session.content, session.textContent, () => {
+            const sentences = await Helpers.parseSentences(session.textContent);
+            const subtitles = session.media ? session.media.subtitles : [];
+            const annotatedContent = await Helpers.generateVisualSentenceElementFromSentences(sentences, session.content, {
+                subtitles
+            }, () => {
                 return requestID != this.currentRequestID;
             });
 
@@ -272,6 +281,14 @@ class Reader extends React.Component {
         this.updateSession();
     }
 
+    setMedia(media) {
+        const session = this.state.session;
+        if (!session) { return; }
+        session.media = media;
+        this.setState({ session });
+        this.updateSession();
+    }
+
     async updateSession() {
         const session = this.state.session;
         if (!session) { return; }
@@ -280,12 +297,24 @@ class Reader extends React.Component {
             body: JSON.stringify({
                 visualType: session.visualType,
                 rubyType: session.rubyType,
-                scrollPhraseIndex: session.scrollPhraseIndex || 0
+                scrollPhraseIndex: session.scrollPhraseIndex || 0,
+                mediaID: session.media && session.media.id
             }),
             headers: {
                 'Content-Type': 'application/json'
             }
         });
+    }
+
+    async mediaSearch(text) {
+        this.setState({ mediaSearchQuery: text });
+        const response = await fetch(`/api/media/anki/media/search?q=${encodeURIComponent(text)}`);
+        if (response.ok) {
+            const medias = await response.json();
+            this.setState({ medias });
+        } else {
+            this.setState({ medias: [] });
+        }
     }
 
     onScroll(element) {
@@ -312,9 +341,20 @@ class Reader extends React.Component {
             <UserContext.Consumer>{user => (
                 <Row className='h-100'>
                     <Col className='h-100 d-flex flex-column' xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
-                        <div>
+                        <div id='readerOptions' className='collapse show'>
                             <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.load(e)} placeholder="Text / Article URL" value={this.state.text} />
                             {this.state.session && <>
+                                <InputGroup className="mt-3">
+                                    <Form.Control value={this.state.session.media ? this.state.session.media.title : '(None)'} readOnly />
+                                    <DropdownButton variant="outline-primary" title="Media" id="readerMedia">
+                                        <div className='d-flex'>
+                                            <Form.Control autoComplete='off' className={`flex-fill text-center w-auto mx-2${this.state.medias.length === 0 ? '' : ' mb-2'}`} type="text" onChange={(e) => this.mediaSearch(e.target.value)} placeholder="Search" value={this.state.mediaSearchQuery} />
+                                        </div>
+                                        {this.state.medias.map((media, i) => {
+                                            return <Dropdown.Item key={i} active={this.state.session.media && this.state.session.media.id === media.id} onSelect={(e) => this.setMedia(media)}>{media.title}</Dropdown.Item>;
+                                        })}
+                                    </DropdownButton>
+                                </InputGroup>
                                 <InputGroup className="mt-3">
                                     <Form.Control value={this.furiganaFrequencyOptions().filter(f => f.value === this.state.session.rubyType)[0].name} readOnly />
                                     <DropdownButton variant="outline-secondary" title="Furigana Minimum Frequency" id="readerRubyType">
@@ -338,6 +378,7 @@ class Reader extends React.Component {
                                         </ToggleButton>
                                     ))}
                                 </ButtonGroup>
+
                                 {this.state.session.visualType === 'showFrequency' && <>
                                     {this.frequencyOptions().map(item => (
                                         <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
@@ -359,8 +400,9 @@ class Reader extends React.Component {
                                     <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
                                 </>}
                             </>}
+                            <hr className='mb-1' />
                         </div>
-                        <hr />
+                        <h4 className='text-center mb-0'><i data-bs-toggle="collapse" data-bs-target="#readerOptions" aria-expanded="false" aria-controls="readerOptions" class={`bi bi-chevron-compact-auto cursor-pointer text-muted`}></i></h4>
                         {this.state.html && this.state.session && <div className={`px-3 overflow-auto visual-type-${this.state.session.visualType} ruby-type-${this.state.session.rubyType}`} onScroll={(e) => this.onScroll(e.target)} ref={(r) => this.onScroll(r)} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                         {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
                     </Col>

@@ -36,6 +36,9 @@ final class ReaderSession: Model, Content {
     @OptionalField(key: "title")
     var title: String?
 
+    @OptionalParent(key: "media_id")
+    var media: AnkiDeckVideo?
+
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
 
@@ -143,6 +146,22 @@ extension ReaderSession {
         }
     }
 
+    struct Migration5: Fluent.Migration {
+        var name: String { "AddReaderSessionMedia" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("media_id", .uuid, .references("anki_deck_videos", "id"))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("media_id")
+                .update()
+        }
+    }
+
 }
 
 extension ReaderSession {
@@ -164,6 +183,7 @@ extension ReaderSession {
         let rubyType: String
         let visualType: String
         let url: String?
+        let mediaID: UUID?
         let scrollPhraseIndex: Int
     }
 

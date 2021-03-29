@@ -178,7 +178,7 @@ helpers.generateManualPitchElement = (rawText) => {
     return `<span class='visual-type-showPitchAccentDrops'>${result}</span>`;
 }
 
-helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
+helpers.parseSentences = async (textContent) => {
     const sentenceResponse = await fetch(`/api/dictionary/parse`, {
         method: 'POST',
         body: await gzip(textContent),
@@ -186,17 +186,38 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
             'Content-Encoding': 'gzip'
         }
     });
-    let sentences = await sentenceResponse.json();
-    const phrases = _.flatten(sentences.map(s => s.accentPhrases));
+    return await sentenceResponse.json();
+};
+
+helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
+    let sentences = await helpers.parseSentences(content, textContent);
     if (isCancelled && isCancelled()) {
         return;
     }
 
+    return await this.generateVisualSentenceElementFromSentences(sentences, content, {}, isCancelled);
+};
+
+helpers.generateVisualSentenceElementFromSentences = async (sentences, content, options, isCancelled) => {
     const contentElement = document.createElement('div');
     contentElement.innerHTML = content;
 
+    if (!sentences || sentences.length === 0) {
+        return contentElement;
+    }
+
+    sentences = sentences.map(s => s.accentPhrases);
+    let phrases = sentences.shift() || [];
+    const subtitles = (options.subtitles || []).sort((a, b) => a.startTime - b.startTime);
+    subtitles.forEach(s => {
+        s.noSpaceText = s.text.replace(/\s/g,'');
+    });
+    let subtitle = subtitles.shift();
+    let buildUpSubtitle = '';
+
     const walker = document.createTreeWalker(contentElement, NodeFilter.SHOW_TEXT);
     let phraseIndex = 0;
+
     let didRemoveNode = false;
     do {
         didRemoveNode = false;
@@ -211,15 +232,41 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
         let phrase = phrases[phraseIndex];
         let index = text.indexOf(phrase.surface.charAt(0), startIndex);
         while (index != -1) {
-            if (phrase.isBasic) {
-                newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
-            } else {
-                newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
-                        return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
-                }).join('')}</phrase>`;
+            if (!subtitle || (subtitle && (startIndex > 0 || phrase.surface.trim().length !== 0))) {
+                if (subtitle && buildUpSubtitle.length === 0) {
+                    if (!subtitle.text.startsWith(phrase.surface.replace(/\s/g,''))) {
+                        while (subtitle && !subtitle.text.startsWith(phrase.surface)) {
+                            subtitle = subtitles.shift();
+                        }
+                    }
+
+                    if (subtitle) {
+                        newText += `<cue data-url='/api/media/external/audio/${subtitle.externalFile.id}'><i class="bi bi-play-circle"></i></cue>`;
+                    }
+                }
+                if (phrase.isBasic) {
+                    newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
+                } else {
+                    newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
+                            return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
+                    }).join('')}</phrase>`;
+                }
+
+                if (subtitle) {
+                    buildUpSubtitle += phrase.surface;
+
+                    if (buildUpSubtitle.replace(/\s/g,'') === subtitle.noSpaceText) {
+                        subtitle = subtitles.shift();
+                        buildUpSubtitle = '';
+                    }
+                }
             }
 
             phraseIndex += 1;
+            if (phraseIndex >= phrases.length) {
+                phrases = sentences.shift() || [];
+                phraseIndex = 0;
+            }
             phrase = phrases[phraseIndex];
             if (phrase) {
                 index = text.indexOf(phrase.surface.charAt(0), startIndex);
@@ -238,7 +285,7 @@ helpers.generateVisualSentenceElement = async (content, textContent, isCancelled
             element.remove();
             didRemoveNode = true;
         }
-    } while ((didRemoveNode || walker.nextNode()) && phraseIndex < phrases.length);
+    } while ((didRemoveNode || walker.nextNode()) && sentences.length !== 0);
     return contentElement;
 };
 

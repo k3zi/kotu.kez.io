@@ -1,5 +1,6 @@
 @import "~bootstrap/scss/bootstrap";
 @import "./katex.min.css";
+@import "./bi/bootstrap-icons.css";
 
 p {
     margin-bottom: 0;
@@ -430,6 +431,13 @@ hr {
 .page visual {
     padding-left: 6px;
     padding-right: 6px;
+}
+
+.page cue {
+    @extend .pe-1;
+    @extend .text-muted;
+    display: inline;
+    cursor: pointer;
 }
 
 component {
@@ -926,6 +934,10 @@ blockquote {
     @extend .ps-2;
 }
 
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
 .input-group:not(.has-validation)>:not(:last-child):not(.dropdown-toggle):not(.dropdown-menu) input, .input-group:not(.has-validation)>.dropdown-toggle:nth-last-child(n+3) input {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -935,4 +947,12 @@ blockquote {
     margin-left: -1px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+}
+
+.bi-chevron-compact-auto::before {
+    content: "\f27c";
+}
+
+.bi-chevron-compact-auto.collapsed::before {
+    content: "\f279";
 }

@@ -169,6 +169,25 @@ class MediaController: RouteCollection {
                 .paginate(for: req)
         }
 
+        anki.get("media", "search") { req -> EventLoopFuture<[AnkiDeckVideo]> in
+            let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            return AnkiDeckVideo
+                .query(on: req.db)
+                .filter(\.$title ~~ q)
+                .limit(15)
+                .all()
+        }
+
+//        anki.get("subtitles", ":id", "all") { req -> EventLoopFuture<AnkiDeckVideo> in
+//            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+//            return AnkiDeckVideo.query(on: req.db)
+//                .filter(\.$id == id)
+//                .with(\.$subtitles)
+//                .first()
+//                .unwrap(or: Abort(.notFound))
+//        }
+
         let youtube = guardedMedia.grouped("youtube")
 
         youtube.post("capture") { req -> EventLoopFuture<File> in
@@ -590,10 +609,20 @@ class MediaController: RouteCollection {
         sessionID.get() { (req: Request) -> EventLoopFuture<ReaderSession> in
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
-            return user.$readerSessions
+            let includeMediaSubtitles = (try? req.query.get(Bool.self, at: "includeMediaSubtitles")) ?? false
+            var query = user.$readerSessions
                 .query(on: req.db)
                 .filter(\.$id == id)
-                .first()
+
+            if includeMediaSubtitles {
+                query = query.with(\.$media) {
+                    $0.with(\.$subtitles)
+                }
+            } else {
+                query = query.with(\.$media)
+            }
+
+            return query.first()
                 .unwrap(or: Abort(.notFound))
         }
 
@@ -617,6 +646,7 @@ class MediaController: RouteCollection {
                     if let content = object.content {
                         session.content = content
                     }
+                    session.$media.id = object.mediaID
                     session.rubyType = object.rubyType
                     session.visualType = object.visualType
                     session.scrollPhraseIndex = object.scrollPhraseIndex

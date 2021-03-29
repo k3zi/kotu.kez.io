@@ -146,6 +146,11 @@ class App extends React.Component {
             });
         });
 
+        Helpers.addLiveEventListeners('cue', 'click', (e, target) => {
+            const url = target.dataset.url;
+            this.playAudio(url);
+        });
+
         Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
             e.preventDefault();
             if (e.clipboardData && e.clipboardData.getData) {
@@ -320,7 +325,7 @@ class App extends React.Component {
             this.audio.pause();
         }
 
-        const audio = new Audio(url)
+        const audio = new Audio(url);
         audio.play();
         this.audio = audio;
     }
