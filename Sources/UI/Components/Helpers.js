@@ -238,12 +238,12 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                 if (subtitle && buildUpSubtitle.length === 0) {
                     if (cleanSurface.length === 0) {
                         skipPost = true;
-                    } else if (!subtitle.text.includes(cleanSurface)) {
-                        if (phrases.slice(phraseIndex).some(p => subtitle.text.startsWith(p.surface.replace(/\s/g,'')))) {
+                    } else if (!subtitle.cleanText.startsWith(cleanSurface)) {
+                        if (phrases.slice(phraseIndex).some(p => subtitle.cleanText.startsWith(p.surface.replace(/\s/g,'')))) {
                             skipPost = true;
                         } else {
-                            if (subtitles.slice(0, 5).some(s => s.text.startsWith(phrase.surface))) {
-                                while (subtitle && !subtitle.text.startsWith(phrase.surface)) {
+                            if (subtitles.slice(0, 5).some(s => s.cleanText.startsWith(phrase.surface))) {
+                                while (subtitle && !subtitle.cleanText.startsWith(phrase.surface)) {
                                     subtitle = subtitles.shift();
                                 }
                             } else {
