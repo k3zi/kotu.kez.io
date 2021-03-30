@@ -30,8 +30,8 @@ final class ReaderSession: Model, Content {
     @OptionalField(key: "url")
     var url: String?
 
-    @OptionalField(key: "sentences")
-    var sentences: [SimpleSentence]?
+    @OptionalField(key: "cached_sentence_response")
+    var cachedSentenceResponse: Data?
 
     @Field(key: "scroll_phrase_index")
     var scrollPhraseIndex: Int
@@ -58,6 +58,25 @@ final class ReaderSession: Model, Content {
         self.url = url
         self.scrollPhraseIndex = 0
         self.title = title
+    }
+
+}
+
+extension ReaderSession {
+
+    struct Response: Content {
+        let id: UUID
+        let annotatedContent: String
+        let textContent: String
+        let content: String
+        let rubyType: String
+        let visualType: String
+        let url: String?
+        let sentences: [SimpleSentence]?
+        let scrollPhraseIndex: Int
+        let title: String?
+        let media: AnkiDeckVideo?
+        let updatedAt: Date?
     }
 
 }
@@ -195,6 +214,24 @@ extension ReaderSession {
             database.schema(schema)
                 .deleteField("sentences")
                 .field("sentences", .json)
+                .update()
+        }
+    }
+
+    struct Migration8: Fluent.Migration {
+        var name: String { "AddReaderSessionSentences3" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("sentences")
+                .field("cached_sentence_response", .data)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("cached_sentence_response")
+                .field("sentences", .array(of: .json))
                 .update()
         }
     }

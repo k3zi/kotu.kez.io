@@ -606,7 +606,7 @@ class MediaController: RouteCollection {
                 }
         }
 
-        sessionID.get() { (req: Request) -> EventLoopFuture<ReaderSession> in
+        sessionID.get() { (req: Request) -> EventLoopFuture<ReaderSession.Response> in
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             let includeMediaSubtitles = (try? req.query.get(Bool.self, at: "includeMediaSubtitles")) ?? false
@@ -624,6 +624,22 @@ class MediaController: RouteCollection {
 
             return query.first()
                 .unwrap(or: Abort(.notFound))
+                .flatMapThrowing {
+                    ReaderSession.Response(
+                        id: try $0.requireID(),
+                        annotatedContent: $0.annotatedContent,
+                        textContent: $0.textContent,
+                        content: $0.content,
+                        rubyType: $0.rubyType,
+                        visualType: $0.visualType,
+                        url: $0.url,
+                        sentences: $0.cachedSentenceResponse.flatMap { try? JSONDecoder().decode([SimpleSentence].self, from: $0)},
+                        scrollPhraseIndex: $0.scrollPhraseIndex,
+                        title: $0.title,
+                        media: $0.media,
+                        updatedAt: $0.updatedAt
+                    )
+                }
         }
 
         sessionID.put() { (req: Request) -> EventLoopFuture<Response> in
@@ -636,7 +652,7 @@ class MediaController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(or: Abort(.notFound))
-                .flatMap { session in
+                .throwingFlatMap { session in
                     if let annotatedContent = object.annotatedContent {
                         session.annotatedContent = annotatedContent
                     }
@@ -647,7 +663,7 @@ class MediaController: RouteCollection {
                         session.content = content
                     }
                     if let sentences = object.sentences {
-                        session.sentences = sentences
+                        session.cachedSentenceResponse = try JSONEncoder().encode(sentences)
                     }
                     session.$media.id = object.mediaID
                     session.rubyType = object.rubyType
