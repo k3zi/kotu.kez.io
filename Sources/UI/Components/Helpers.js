@@ -208,10 +208,11 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
 
     sentences = sentences.map(s => s.accentPhrases);
     let phrases = sentences.shift() || [];
-    const subtitles = (options.subtitles || []).sort((a, b) => a.startTime - b.startTime);
+    let subtitles = (options.subtitles || []).sort((a, b) => a.startTime - b.startTime);
     subtitles.forEach(s => {
-        s.cleanText = s.text.replace(/[\s「」]/g,'');
+        s.cleanText = s.text.replace(/[\s「」\.,]/g,'');
     });
+    subtitles = subtitles.filter(s => s.cleanText.length > 0);
     let subtitle = subtitles.shift();
     let buildUpSubtitle = '';
 
@@ -233,7 +234,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
         let index = text.indexOf(phrase.surface.charAt(0), startIndex);
         while (index != -1) {
             const skipPost = false;
-            const cleanSurface = phrase.surface.replace(/[\s「」]/g,'');
+            const cleanSurface = phrase.surface.replace(/[\s「」\.,]/g,'');
             if (!subtitle || ((buildUpSubtitle.replace(/\s/g,'').length > 0 || phrase.surface.replace(/\s/g,'').length > 0) && (subtitle && (startIndex > 0 || phrase.surface.trim().length !== 0)))) {
                 if (subtitle && buildUpSubtitle.length === 0) {
                     if (cleanSurface.length === 0) {
