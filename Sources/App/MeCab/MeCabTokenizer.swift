@@ -192,7 +192,11 @@ extension String {
 
 }
 
-struct Sentence: Content {
+struct SimpleSentence: Content {
+    var accentPhrases: [SimpleAccentPhrase]
+}
+
+struct Sentence {
 
     static func parseMultiple(tokenizer: MeCabTokenizer) throws -> [Sentence] {
         return tokenizer.nodes
@@ -221,9 +225,41 @@ struct Sentence: Content {
 
     var accentPhrases: [AccentPhrase]
 
+    var simplified: SimpleSentence {
+        .init(accentPhrases: accentPhrases.map { SimpleAccentPhrase(
+            components: $0.components.map {
+                SimpleAccentPhraseComponent(
+                    pitchAccents: $0.pitchAccents,
+                    surface: $0.surface,
+                    original: $0.original,
+                    pronunciation: $0.pronunciation,
+                    ruby: $0.ruby,
+                    frequency: $0.frequency,
+                    frequencySurface: $0.frequencySurface,
+                    isCompound: $0.isCompound,
+                    isBasic: $0.isBasic
+                )
+            },
+            pitchAccent: $0.pitchAccent,
+            surface: $0.surface,
+            pronunciation: $0.pronunciation,
+            isBasic: $0.isBasic
+        )})
+    }
+
 }
 
-struct AccentPhrase: Content {
+struct SimpleAccentPhrase: Content {
+
+    var components: [SimpleAccentPhraseComponent]
+    let pitchAccent: PitchAccent
+    let surface: String
+    let pronunciation: String
+    let isBasic: Bool
+
+}
+
+struct AccentPhrase {
 
     static func parseMultiple(tokenizer: MeCabTokenizer, until: @escaping (Node) -> Bool) throws -> [AccentPhrase] {
         var words = [AccentPhrase]()
@@ -265,7 +301,22 @@ struct AccentPhrase: Content {
 
 }
 
-struct AccentPhraseComponent: Content {
+struct SimpleAccentPhraseComponent: Content {
+
+    let pitchAccents: [PitchAccent]
+    let surface: String
+    let original: String
+    let pronunciation: String
+    let ruby: String
+    let frequency: Frequency
+    let frequencySurface: String?
+    let isCompound: Bool
+    let isBasic: Bool
+    var status: Word.Status = .unknown
+
+}
+
+struct AccentPhraseComponent {
 
     static func parse(from morphemes: [Morpheme]) -> AccentPhraseComponent {
         let surface = morphemes.map { $0.surface }.joined()

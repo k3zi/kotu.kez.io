@@ -646,6 +646,9 @@ class MediaController: RouteCollection {
                     if let content = object.content {
                         session.content = content
                     }
+                    if let sentences = object.sentences {
+                        session.sentences = sentences
+                    }
                     session.$media.id = object.mediaID
                     session.rubyType = object.rubyType
                     session.visualType = object.visualType

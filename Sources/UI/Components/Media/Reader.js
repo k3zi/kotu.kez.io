@@ -3,7 +3,7 @@ import React from 'react';
 import { withRouter } from 'react-router';
 import { Readability } from '@mozilla/readability';
 import { LinkContainer } from 'react-router-bootstrap';
-import FadeIn from 'react-fade-in';
+import { gzip } from 'pako';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -112,9 +112,21 @@ class Reader extends React.Component {
         if (session) {
             this.setState({ isLoading: true, html: session.annotatedContent, session, text: session.url || session.textContent });
 
-            const requestID = this.currentRequestID + 1;
-            this.currentRequestID = requestID;
-            const sentences = await Helpers.parseSentences(session.textContent);
+            let sentences = session.sentences;
+            if (!sentences || sentences.length === 0) {
+                const requestID = this.currentRequestID + 1;
+                this.currentRequestID = requestID;
+                sentences = await Helpers.parseSentences(session.textContent);
+                if (requestID !== this.currentRequestID) {
+                    return;
+                }
+            }
+
+            this.state.sentences = sentences;
+            if (sentences != session.sentences || sentences.length !== session.sentences.length) {
+                this.state.session = session;
+                await this.updateSession();
+            }
             const subtitles = session.media ? session.media.subtitles : [];
             const annotatedContent = await Helpers.generateVisualSentenceElementFromSentences(sentences, session.content, {
                 subtitles
@@ -319,16 +331,19 @@ class Reader extends React.Component {
         if (!session) { return; }
         await fetch(`/api/media/reader/session/${session.id}`, {
             method: 'PUT',
-            body: JSON.stringify({
+            body: await gzip(JSON.stringify({
                 visualType: session.visualType,
                 rubyType: session.rubyType,
                 scrollPhraseIndex: session.scrollPhraseIndex || 0,
-                mediaID: session.media && session.media.id
-            }),
+                mediaID: session.media && session.media.id,
+                sentences: this.state.sentences != session.sentences ? this.state.sentences : null
+            })),
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Content-Encoding': 'gzip'
             }
         });
+        session.sentences = this.state.sentences;
     }
 
     async mediaSearch(text) {

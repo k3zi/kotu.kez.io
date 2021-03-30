@@ -30,6 +30,9 @@ final class ReaderSession: Model, Content {
     @OptionalField(key: "url")
     var url: String?
 
+    @OptionalField(key: "sentences")
+    var sentences: [SimpleSentence]?
+
     @Field(key: "scroll_phrase_index")
     var scrollPhraseIndex: Int
 
@@ -162,6 +165,40 @@ extension ReaderSession {
         }
     }
 
+    struct Migration6: Fluent.Migration {
+        var name: String { "AddReaderSessionSentences" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("sentences", .json)
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("sentences")
+                .update()
+        }
+    }
+
+    struct Migration7: Fluent.Migration {
+        var name: String { "AddReaderSessionSentences2" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("sentences")
+                .field("sentences", .array(of: .json))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("sentences")
+                .field("sentences", .json)
+                .update()
+        }
+    }
+
 }
 
 extension ReaderSession {
@@ -185,6 +222,7 @@ extension ReaderSession {
         let url: String?
         let mediaID: UUID?
         let scrollPhraseIndex: Int
+        let sentences: [SimpleSentence]?
     }
 
 }

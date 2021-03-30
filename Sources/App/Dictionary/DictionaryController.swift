@@ -431,7 +431,7 @@ class DictionaryController: RouteCollection {
             return user.save(on: req.db).map { Response(status: .ok) }
         }
 
-        dictionary.post("parse") { (req: Request) -> EventLoopFuture<[Sentence]> in
+        dictionary.post("parse") { (req: Request) -> EventLoopFuture<[SimpleSentence]> in
             struct Offset {
                 let accentPhraseComponent: AccentPhraseComponent
                 let accentPhraseComponentOffset: Int
@@ -488,10 +488,10 @@ class DictionaryController: RouteCollection {
             // Headwords are required for the list words so it doesn't make sense
             // going past this point.
             if !includeHeadwords {
-                return req.eventLoop.future(sentences)
+                return req.eventLoop.future(sentences.concurrentMap { $0.simplified })
             }
             return listWordsFuture
-                .flatMap { listWords -> EventLoopFuture<[Sentence]> in
+                .flatMap { listWords -> EventLoopFuture<[SimpleSentence]> in
                     let offsets = sentences.enumerated().flatMap { (sentenceOffset, sentence) in
                         sentence.accentPhrases.enumerated().flatMap { (accentPhraseOffset, accentPhrase) in
                             accentPhrase.components.enumerated().map { (componentOffset, component) in
@@ -527,7 +527,7 @@ class DictionaryController: RouteCollection {
                                     sentences[offset.sentenceOffset].accentPhrases[offset.accentPhraseOffset].components[offset.accentPhraseComponentOffset].listWords = listWords.filter { listWord in headwords.contains { $0.headline == listWord.value } }
                                 }
                             }
-                            return sentences
+                            return sentences.concurrentMap { $0.simplified }
                         }
                 }
         }

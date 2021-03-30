@@ -16,7 +16,7 @@ public func configure(_ app: Application) throws {
 
     app.routes.defaultMaxBodySize = "1gb"
     app.http.server.configuration.responseCompression = .enabled
-    app.http.server.configuration.requestDecompression = .enabled
+    app.http.server.configuration.requestDecompression = .enabled(limit: .none)
     app.http.server.configuration.supportPipelining = true
     app.http.server.configuration.serverName = "kotu"
 
@@ -84,6 +84,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(DictionaryInsertJob.Migration1(), ExternalFile.Migration2(), DictionaryRemoveJob.Migration1())
     app.migrations.add(DictionaryInsertJob.Migration2(), DictionaryReference.Migration())
     app.migrations.add(ReaderSession.Migration5())
+    app.migrations.add(ReaderSession.Migration6())
+    app.migrations.add(ReaderSession.Migration7())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
@@ -91,8 +93,9 @@ public func configure(_ app: Application) throws {
     PitchAccentManager.configure(app: app)
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let directoryName = "SANSEIDO-SANKOKU7"
-//    let dictionaryName = "三省堂国語辞典"
+//    let directoryName = "SGK_REIKOKU"
+//    let dictionaryName = "例解学習国語辞典"
+//    let dictionaryVersion = "3"
 //    let dictionaryType = "ja"
 //    let dictionaryURL = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)")
 ////
@@ -107,10 +110,22 @@ public func configure(_ app: Application) throws {
 //
 //
 //// For saving dictionary headlines to JSON.
+//
+//    var files = [String: Data]()
+//    var references = [String: Any]()
+//    var lists = [String: [Any]]()
+//
 //    let contentsDirectory = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents")
 //    let fileContainer = try CompressedFileContainer(withDirectory: contentsDirectory)
 //    let contentIndexData = try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/contents/contents.idx"))
 //    let contentIndex = try ContentIndex.parse(tokenizer: .init(data: contentIndexData))
+//
+//    for (key, value) in contentIndex.indexMapping {
+//        guard key != value else { continue }
+//        references[String(key)] = value
+//    }
+//
+//
 ////    let exportedFolder = contentsDirectory.appendingPathComponent("exported", isDirectory: true)
 ////    try FileManager.default.createDirectory(at: exportedFolder, withIntermediateDirectories: true)
 ////    for (i, file) in fileContainer.files.enumerated() {
@@ -158,16 +173,41 @@ public func configure(_ app: Application) throws {
 //
 //    let headlinesDict = Swift.Dictionary(grouping: headlineStore.headlines, by: { $0.index })
 //    let shortHeadlinesDict = shortHeadlineStore.flatMap { Swift.Dictionary(grouping: $0.headlines, by: { $0.index }) }
-//    print("total: \(headWordKeyStore.pairs.count)")
-//    let headwords = headWordKeyStore.pairs.enumerated()
-//        .flatMap { (i, headword) in
-//            headword.matches.map { match -> [Any] in
-//                let headline = headlinesDict[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
-//                let shortHeadline = shortHeadlinesDict?[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
-//                return [headword.value, headline?.text ?? "", shortHeadline?.text ?? "", contentIndex.indexMapping[Int(match.entryIndex)]!, Int(match.subentryIndex)]
+//    let headwords = headWordKeyStore.pairs.concurrentFlatMap { headword in
+//        headword.matches.map { match -> [Any] in
+//            let headline = headlinesDict[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
+//            let shortHeadline = shortHeadlinesDict?[match.entryIndex]?.first { $0.subindex == match.subentryIndex }
+//            return [headword.value, headline?.text ?? "", shortHeadline?.text ?? "", contentIndex.indexMapping[Int(match.entryIndex)]!, Int(match.subentryIndex)]
+//        }
+//    }
+//    let entries = fileContainer.files.map { $0.text }
+//
+//    let audioDirectory = dictionaryURL.appendingPathComponent("audio")
+//    let audioContainer = try? CompressedDataFileContainer(withDirectory: audioDirectory)
+//    for file in audioContainer?.files ?? [] {
+//        files["\(file.filename).aac"] = file.data
+//    }
+//
+//    if let enumerator = FileManager.default.enumerator(at: dictionaryURL, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
+//        let dictionaryAbsolutePath = (try? dictionaryURL.resourceValues(forKeys: [.canonicalPathKey]))?.canonicalPath ?? dictionaryURL.path
+//        for case let fileURL as URL in enumerator {
+//            let filename = fileURL.path.suffix(from: dictionaryAbsolutePath.endIndex).dropFirst()
+//            guard !["icon.png", "style.css", "dark_style.css"].contains(filename) else { continue }
+//            if ["png", "svg", "html", "css"].contains(fileURL.pathExtension) {
+//                let fileAttributes = try fileURL.resourceValues(forKeys:[.isRegularFileKey])
+//                if fileAttributes.isRegularFile! {
+//                    files[String(filename)] = try Data(contentsOf: fileURL)
+//                }
+//            } else if fileURL.pathExtension == "entries" {
+//                let listIndex = try ListIndex.parse(tokenizer: DataTokenizer(data: Data(contentsOf: fileURL)))
+//                lists[String(filename)] = listIndex.items.concurrentMap { item in
+//                    let headline = headlinesDict[UInt(item.entryIndex)]?.first { $0.subindex == item.subentryIndex } ?? headlinesDict[UInt(item.entryIndex)]?.first { $0.subindex == 0 }
+//                    let shortHeadline = shortHeadlinesDict?[UInt(item.entryIndex)]?.first { $0.subindex == item.subentryIndex } ?? shortHeadlinesDict?[UInt(item.entryIndex)]?.first { $0.subindex == 0 }
+//                    return [headline?.text ?? "", shortHeadline?.text ?? "", contentIndex.indexMapping[Int(item.entryIndex)]!, Int(item.subentryIndex)]
+//                }
 //            }
 //        }
-//    let entries = fileContainer.files.map { $0.text }
+//    }
 //
 //    let cssData = try! Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/style.css"))
 //    let css = String(data: cssData, encoding: .utf8)!
@@ -175,15 +215,18 @@ public func configure(_ app: Application) throws {
 //    let darkCSS = darkCSSData.flatMap { String(data: $0, encoding: .utf8) } ?? ""
 //
 //    let output: [String: Any] = [
-//        "directoryName": directoryName,
 //        "dictionaryName": dictionaryName,
+//        "version": dictionaryVersion,
+//        "type": dictionaryType,
 //        "css": css,
 //        "darkCSS": darkCSS,
 //        "icon":
 //            (try Data(contentsOf: directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)/icon.png"))).base64EncodedString(),
 //        "headwords": headwords,
 //        "entries": entries,
-//        "type": dictionaryType
+//        "files": files.map { [$0.key, $0.value.base64EncodedString()] },
+//        "references": references.map { [$0.key, $0.value] },
+//        "lists": lists.map { [$0.key, $0.value] }
 //    ]
 ////
 ////    try headwords
