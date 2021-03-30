@@ -957,6 +957,11 @@ blockquote {
     content: "\f279";
 }
 
-// .form-select {
-//     -webkit-appearance: none;
-// }
+#dropdownNav .nav-link, #dropdownNav .nav-item {
+    @extend .justify-content-center;
+    @extend .col-6;
+}
+
+#dropdownNav .nav-item {
+    @extend .d-flex;
+}
