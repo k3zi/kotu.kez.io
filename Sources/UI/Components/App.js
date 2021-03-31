@@ -23,6 +23,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Spinner from 'react-bootstrap/Spinner';
+import Toast from 'react-bootstrap/Toast';
 
 import Changelog from './Changelog';
 import Help from './Help';
@@ -89,6 +90,8 @@ class App extends React.Component {
             user: null,
             isReady: false,
             numberOfReviews: 0,
+            subtitleIndex: undefined,
+            willAutoplay: false,
 
             query: '',
             results: [],
@@ -149,7 +152,9 @@ class App extends React.Component {
 
         Helpers.addLiveEventListeners('cue', 'click', (e, target) => {
             const url = target.dataset.url;
-            this.playAudio(url);
+            const subtitleIndex = target.dataset.subtitleIndex;
+            this.setState({ subtitleIndex });
+            this.playAudio(url, typeof subtitleIndex !== 'undefined' ? `[data-subtitle-index='${subtitleIndex}']` : '');
         });
 
         Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
@@ -321,14 +326,63 @@ class App extends React.Component {
         return <h1>Login / Register to access this page.</h1>;
     }
 
-    playAudio(url) {
+    playAudio(url, selector) {
         if (this.audio) {
+            if (this.audio.onended) {
+                this.audio.onended(null);
+                this.audio.onended = undefined;
+            }
             this.audio.pause();
         }
 
         const audio = new Audio(url);
         audio.play();
         this.audio = audio;
+        if (selector && selector.length > 0) {
+            document.querySelectorAll(selector).forEach(element => {
+                element.classList.add('active');
+            });
+            this.audio.onended = (e) => {
+                const wasNaturalStop = !!e;
+                document.querySelectorAll(selector).forEach(element => {
+                    element.classList.remove('active');
+                });
+                if (wasNaturalStop) {
+                    const subtitleIndex = this.state.subtitleIndex;
+                    this.setState({ willAutoplay: true });
+                    setTimeout(() => {
+                        if (subtitleIndex !== this.state.subtitleIndex) {
+                            return;
+                        }
+                        this.playNextSubtitle();
+                    }, 2000);
+                }
+            };
+        }
+    }
+
+    playNextSubtitle() {
+        if (typeof this.state.subtitleIndex === 'undefined') return;
+        const lastSubtitleIndex = parseInt(this.state.subtitleIndex);
+        if (typeof lastSubtitleIndex === 'undefined' || lastSubtitleIndex === null) return;
+        if (!this.state.willAutoplay) {
+            this.setState({ subtitleIndex: undefined });
+            return;
+        }
+        this.setState({ willAutoplay: false });
+        const subtitleIndex = lastSubtitleIndex + 1;
+        const nextCue = document.querySelector(`cue[data-subtitle-index='${subtitleIndex}']`);
+        if (!nextCue) {
+            this.setState({ subtitleIndex: undefined });
+            return;
+        }
+        const url = nextCue.dataset.url;
+        this.setState({ subtitleIndex });
+        this.playAudio(url, typeof subtitleIndex !== 'undefined' ? `[data-subtitle-index='${subtitleIndex}']` : '');
+    }
+
+    stopSubtitleAutoplay() {
+        this.setState({ subtitleIndex: undefined, willAutoplay: false });
     }
 
     menu(type) {
@@ -572,6 +626,20 @@ class App extends React.Component {
                             {this.menu('bar')}
                             {this.menu('canvas')}
                         </Navbar>
+
+                        <div className='p-4' style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 1050 }}>
+                            <Toast show={this.state.willAutoplay}>
+                                <Toast.Header closeButton={false}>
+                                    <i class="bi bi-play-circle-fill me-2"></i>
+                                    <strong className="me-auto">Autoplay</strong>
+                                    <small>just now</small>
+                                </Toast.Header>
+                                <Toast.Body>
+                                    <span className='fs-6'>Will autoplay next sentence...</span>
+                                    <Button className='d-block col-12 mt-2' variant='danger' onClick={() => this.stopSubtitleAutoplay()}>Stop</Button>
+                                </Toast.Body>
+                            </Toast>
+                      </div>
 
                         <Container id='app-container' className='p-4'>
                             {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}

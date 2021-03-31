@@ -438,6 +438,10 @@ hr {
     @extend .text-muted;
     display: inline;
     cursor: pointer;
+
+    &.active {
+        @extend .text-primary;
+    }
 }
 
 component {
@@ -447,6 +451,10 @@ component {
 
 phrase {
     display: inline;
+
+    &.active {
+        background-color: $gray-200;
+    }
 }
 
 space {
@@ -739,7 +747,7 @@ rt .underline {
     }
 
     .container {
-        background-color: #272727 !important;
+        background-color: $gray-900 !important;
         color: #fff !important;
     }
 
@@ -832,6 +840,12 @@ rt .underline {
 
     silenced {
         border-color: white;
+    }
+
+    phrase {
+        &.active {
+            background-color: $gray-800;
+        }
     }
 
 }

@@ -218,6 +218,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
 
     const walker = document.createTreeWalker(contentElement, NodeFilter.SHOW_TEXT);
     let phraseIndex = 0;
+    let subtitleIndex = 0;
 
     let didRemoveNode = false;
     do {
@@ -254,13 +255,13 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                     }
 
                     if (!skipPost && subtitle) {
-                        newText += `<cue data-url='/api/media/external/audio/${subtitle.externalFile.id}'><i class="bi bi-play-circle"></i></cue>`;
+                        newText += `<cue data-subtitle-index='${subtitleIndex}' data-url='/api/media/external/audio/${subtitle.externalFile.id}'><i class="bi bi-play-circle"></i></cue>`;
                     }
                 }
                 if (phrase.isBasic) {
-                    newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
+                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
                 } else {
-                    newText += `<phrase data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
+                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
                             return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
                     }).join('')}</phrase>`;
                 }
@@ -271,6 +272,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                     if (buildUpSubtitle.replace(/\s/g,'') === subtitle.cleanText) {
                         subtitle = subtitles.shift();
                         buildUpSubtitle = '';
+                        subtitleIndex += 1;
                     }
                 }
             }
