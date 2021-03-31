@@ -228,17 +228,28 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
 
+                    <Form.Group className='mb-3' controlId="settingsReaderAutoplay">
+                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplay} onChange={(e) => this.save(e, (s) => s.reader.autoplay = e.target.checked)} type="checkbox" label="Enable Autoplay" />
+                    </Form.Group>
+
                     <Form.Group controlId="settingsReaderAutoplayDelay" className='mb-3'>
                         <Form.Label>Autoplay Delay</Form.Label>
                         <InputGroup>
-                            <Form.Control value={this.props.user.settings.reader.autoplayDelay.toFixed(1)} readOnly />
-                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.max((s.reader.autoplayDelay || 0) - 0.5, 0.5))}>
+                            <Form.Control value={`${this.props.user.settings.reader.autoplayDelay.toFixed(1)} seconds`} readOnly />
+                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.max((s.reader.autoplayDelay || 0) - 0.5, 0))}>
                                 -
                             </Button>
-                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.min((s.reader.autoplayDelay || 0) + 0.5, 10)) }>
+                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.min((s.reader.autoplayDelay || 0) + 0.5, 60)) }>
                                 +
                             </Button>
                         </InputGroup>
+                    </Form.Group>
+
+                    <Form.Group className='mb-3' controlId="settingsReaderAutoplayScroll">
+                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplayScroll} onChange={(e) => this.save(e, (s) => s.reader.autoplayScroll = e.target.checked)} type="checkbox" label="Scroll After Autoplay" />
+                        <Form.Text className="text-muted">
+                            Scrolls to the next line after the autoplay delay.
+                        </Form.Text>
                     </Form.Group>
 
                     <hr />

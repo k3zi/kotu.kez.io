@@ -326,36 +326,54 @@ class App extends React.Component {
         return <h1>Login / Register to access this page.</h1>;
     }
 
-    playAudio(url, selector) {
-        if (this.audio) {
-            if (this.audio.onended) {
-                this.audio.onended(null);
-                this.audio.onended = undefined;
+    stopAudio() {
+        if (this.state.audio) {
+            if (this.state.audio.onended) {
+                this.state.audio.onended(null);
+                this.state.audio.onended = undefined;
             }
-            this.audio.pause();
+            this.state.audio.pause();
+            this.setState({ audio: null });
         }
+    }
+
+    playAudio(url, selector) {
+        this.stopAudio();
 
         const audio = new Audio(url);
         audio.play();
-        this.audio = audio;
+        this.setState({ audio });
         if (selector && selector.length > 0) {
             document.querySelectorAll(selector).forEach(element => {
                 element.classList.add('active');
             });
-            this.audio.onended = (e) => {
+            audio.onended = (e) => {
                 const wasNaturalStop = !!e;
                 document.querySelectorAll(selector).forEach(element => {
                     element.classList.remove('active');
                 });
-                if (wasNaturalStop) {
+                if (wasNaturalStop && this.state.user.settings.reader.autoplay) {
                     const subtitleIndex = this.state.subtitleIndex;
-                    this.setState({ willAutoplay: true });
-                    setTimeout(() => {
-                        if (subtitleIndex !== this.state.subtitleIndex) {
-                            return;
-                        }
+                    if (this.state.user.settings.reader.autoplayDelay < 0.5) {
+                        this.state.willAutoplay = true;
+                        this.state.audio = null;
                         this.playNextSubtitle();
-                    }, this.state.user.settings.reader.autoplayDelay * 1000);
+                    } else {
+                        this.setState({ willAutoplay: true, audio: null });
+                        setTimeout(() => {
+                            if (subtitleIndex !== this.state.subtitleIndex) {
+                                return;
+                            }
+                            this.playNextSubtitle();
+                        }, this.state.user.settings.reader.autoplayDelay * 1000);
+                    }
+                }
+            };
+        } else {
+            audio.onended = (e) => {
+                const wasNaturalStop = !!e;
+                if (wasNaturalStop) {
+                    this.setState({ audio: null });
                 }
             };
         }
@@ -375,6 +393,9 @@ class App extends React.Component {
         if (!nextCue) {
             this.setState({ subtitleIndex: undefined });
             return;
+        }
+        if (this.state.user.settings.reader.autoplayScroll) {
+            nextCue.scrollIntoView({ behavior: 'smooth' });
         }
         const url = nextCue.dataset.url;
         this.setState({ subtitleIndex });
@@ -627,19 +648,19 @@ class App extends React.Component {
                             {this.menu('canvas')}
                         </Navbar>
 
-                        <div className='p-4' style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 1050 }}>
-                            <Toast show={this.state.willAutoplay}>
+                        <div className='p-4' style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 1050 }}>
+                            <Toast show={!!this.state.audio || this.state.willAutoplay}>
                                 <Toast.Header closeButton={false}>
                                     <i class="bi bi-play-circle-fill me-2"></i>
-                                    <strong className="me-auto">Autoplay</strong>
-                                    <small>just now</small>
+                                    <strong className="me-auto">{this.state.willAutoplay ? 'Autoplay' : 'Playing'}</strong>
+                                    {this.state.willAutoplay && <small>just now</small>}
                                 </Toast.Header>
                                 <Toast.Body>
-                                    <span className='fs-6'>Will autoplay next sentence...</span>
-                                    <Button className='d-block col-12 mt-2' variant='danger' onClick={() => this.stopSubtitleAutoplay()}>Stop</Button>
+                                    {this.state.willAutoplay && <span className='fs-6'>Will autoplay next sentence...</span>}
+                                    <Button className='d-block col-12 mt-2' variant='danger' onClick={() => this.state.willAutoplay ? this.stopSubtitleAutoplay() : this.stopAudio()}>Stop</Button>
                                 </Toast.Body>
                             </Toast>
-                      </div>
+                        </div>
 
                         <Container id='app-container' className='p-4'>
                             {!this.state.isReady && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}

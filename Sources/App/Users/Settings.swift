@@ -25,18 +25,24 @@ struct Settings: Content {
 
     struct Reader: Content {
         enum CodingKeys: String, CodingKey {
+            case autoplay
             case autoplayDelay
+            case autoplayScroll
             case showCreateNoteForm
         }
 
+        var autoplay: Bool = true
         var autoplayDelay: Float = 2
+        var autoplayScroll: Bool = true
         var showCreateNoteForm: Bool = true
 
         init() { }
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
+            autoplay = (try? container.decodeIfPresent(Bool.self, forKey: .autoplay)) ?? true
             autoplayDelay = (try? container.decodeIfPresent(Float.self, forKey: .autoplayDelay)) ?? 2
+            autoplayScroll = (try? container.decodeIfPresent(Bool.self, forKey: .autoplayScroll)) ?? true
             showCreateNoteForm = (try? container.decodeIfPresent(Bool.self, forKey: .showCreateNoteForm)) ?? true
         }
     }
