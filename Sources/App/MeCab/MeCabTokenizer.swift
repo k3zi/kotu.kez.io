@@ -529,11 +529,9 @@ indirect enum PitchAccentConnectionKind: Content {
                     }
                     self = .particleSecondHalfAccentDominantMultiple(m: m, l: l)
                 default:
-                    print(" v \(string)")
                     self = .unknown
                 }
             } else {
-                print("unknown pitch kind: \(string)")
                 self = .unknown
             }
         }
@@ -646,7 +644,6 @@ indirect enum PitchAccentModificationKind: Content {
             let parts = string.split(separator: "%")
             let atParts = string.split(separator: "@")
             if parts.count == 2 {
-                print("unknown pitch kind: \(string)")
                 self = .unknown
             } else if atParts.count == 2 {
                 switch atParts[0] {
@@ -657,11 +654,9 @@ indirect enum PitchAccentModificationKind: Content {
                 case "M4":
                     self = .heibanHeadSameElseAccent(m: Int(String(atParts[1].split(separator: ",")[0]))!)
                 default:
-                    print("unknown pitch kind: \(string)")
                     self = .unknown
                 }
             } else {
-                print("unknown pitch kind: \(string)")
                 self = .unknown
             }
         }

@@ -355,7 +355,7 @@ class App extends React.Component {
                             return;
                         }
                         this.playNextSubtitle();
-                    }, 2000);
+                    }, this.state.user.settings.reader.autoplayDelay * 1000);
                 }
             };
         }

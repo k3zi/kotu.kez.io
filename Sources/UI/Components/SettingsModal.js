@@ -228,6 +228,19 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
 
+                    <Form.Group controlId="settingsReaderAutoplayDelay" className='mb-3'>
+                        <Form.Label>Autoplay Delay</Form.Label>
+                        <InputGroup>
+                            <Form.Control value={this.props.user.settings.reader.autoplayDelay.toFixed(1)} readOnly />
+                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.max((s.reader.autoplayDelay || 0) - 0.5, 0.5))}>
+                                -
+                            </Button>
+                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.min((s.reader.autoplayDelay || 0) + 0.5, 10)) }>
+                                +
+                            </Button>
+                        </InputGroup>
+                    </Form.Group>
+
                     <hr />
 
                     <h5>Tests</h5>
