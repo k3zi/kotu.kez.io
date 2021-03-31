@@ -30,9 +30,6 @@ final class ReaderSession: Model, Content {
     @OptionalField(key: "url")
     var url: String?
 
-    @OptionalField(key: "cached_sentence_response")
-    var cachedSentenceResponse: Data?
-
     @Field(key: "scroll_phrase_index")
     var scrollPhraseIndex: Int
 
@@ -232,6 +229,22 @@ extension ReaderSession {
             database.schema(schema)
                 .deleteField("cached_sentence_response")
                 .field("sentences", .array(of: .json))
+                .update()
+        }
+    }
+
+    struct Migration9: Fluent.Migration {
+        var name: String { "RemoveReaderSessionSentences" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("cached_sentence_response")
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("cached_sentence_response", .data)
                 .update()
         }
     }

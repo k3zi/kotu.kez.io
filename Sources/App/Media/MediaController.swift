@@ -625,7 +625,9 @@ class MediaController: RouteCollection {
             return query.first()
                 .unwrap(or: Abort(.notFound))
                 .flatMapThrowing {
-                    ReaderSession.Response(
+                    let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent("Sessions").appendingPathComponent("\(try $0.requireID()).sentences")
+                    let sentencesData = try? Data(contentsOf: fileURL)
+                    return ReaderSession.Response(
                         id: try $0.requireID(),
                         annotatedContent: $0.annotatedContent,
                         textContent: $0.textContent,
@@ -633,7 +635,7 @@ class MediaController: RouteCollection {
                         rubyType: $0.rubyType,
                         visualType: $0.visualType,
                         url: $0.url,
-                        sentences: $0.cachedSentenceResponse.flatMap { try? JSONDecoder().decode([SimpleSentence].self, from: $0)},
+                        sentences: sentencesData.flatMap { try? JSONDecoder().decode([SimpleSentence].self, from: $0)},
                         scrollPhraseIndex: $0.scrollPhraseIndex,
                         title: $0.title,
                         media: $0.media,
@@ -663,7 +665,11 @@ class MediaController: RouteCollection {
                         session.content = content
                     }
                     if let sentences = object.sentences {
-                        session.cachedSentenceResponse = try JSONEncoder().encode(sentences)
+                        let sessionsURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent("Sessions")
+                        let fileURL = sessionsURL.appendingPathComponent("\(try session.requireID()).sentences")
+                        try FileManager.default.createDirectory(at: sessionsURL, withIntermediateDirectories: true, attributes: nil)
+                        let data = try JSONEncoder().encode(sentences)
+                        try data.write(to: fileURL)
                     }
                     session.$media.id = object.mediaID
                     session.rubyType = object.rubyType
