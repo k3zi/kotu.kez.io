@@ -52,7 +52,7 @@ class Deck extends React.Component {
 
     async load() {
         const id = this.props.match.params.id;
-        const response = await fetch(`/api/flashcard/deck/${id}`);
+        const response = await fetch(`/api/flashcard/deck/${id}?includeSM=true`);
         if (response.ok) {
             const deck = await response.json();
             this.setState({ deck });
@@ -165,6 +165,7 @@ class Deck extends React.Component {
         await fetch(`/api/flashcard/card/${this.state.nextCard.id}/grade/${grade}`, {
             method: 'POST'
         });
+        document.body.dispatchEvent(new Event('ankiChange', { bubbles: true }));
         await this.load();
     }
 

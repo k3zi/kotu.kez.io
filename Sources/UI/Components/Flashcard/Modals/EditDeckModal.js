@@ -31,6 +31,17 @@ class EditDeckModal extends React.Component {
     componentDidUpdate(prevProps) {
         if (this.props.deck != prevProps.deck) {
             this.setState({ requestedFI: null, scheduleOrder: null, newOrder: null, reviewOrder: null });
+            this.load();
+        }
+    }
+
+    async load() {
+        if (!this.props.deck) return;
+        const id = this.props.deck.id;
+        const response = await fetch(`/api/flashcard/deck/${id}?includeSM=true`);
+        if (response.ok) {
+            const deck = await response.json();
+            this.setState({ deck });
         }
     }
 
@@ -43,33 +54,39 @@ class EditDeckModal extends React.Component {
 
         const data = Object.fromEntries(new FormData(event.target));
         data.requestedFI = parseInt(data.requestedFI);
-        const response = await fetch(`/api/flashcard/deck/${this.props.deck.id}`, {
+        const response = await fetch(`/api/flashcard/deck/${this.state.deck.id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json'
             }
         });
-        const result = await response.json();
-        const success = !result.error;
         this.setState({
             isSubmitting: false,
-            didError: result.error,
-            message: result.error ? result.reason : null,
-            success
+            success: response.ok
         });
 
-        if (success) {
+        if (response.ok) {
             this.props.onSuccess();
+            this.setState({
+                didError: false,
+                message: null
+            });
+        } else {
+            const result = await response.json();
+            this.setState({
+                didError: result.error,
+                message: result.error ? result.reason : null
+            });
         }
     }
 
     requestedFI() {
-        return this.state.requestedFI || this.props.deck.sm.requestedFI;
+        return this.state.requestedFI || this.state.deck.sm.requestedFI;
     }
 
     scheduleOrder() {
-        return this.state.scheduleOrder || this.props.deck.scheduleOrder;
+        return this.state.scheduleOrder || this.state.deck.scheduleOrder;
     }
 
     displayForScheduleOrder(o) {
@@ -82,7 +99,7 @@ class EditDeckModal extends React.Component {
     }
 
     newOrder() {
-        return this.state.newOrder || this.props.deck.newOrder;
+        return this.state.newOrder || this.state.deck.newOrder;
     }
 
     displayForNewOrder(o) {
@@ -94,7 +111,7 @@ class EditDeckModal extends React.Component {
     }
 
     reviewOrder() {
-        return this.state.reviewOrder || this.props.deck.reviewOrder;
+        return this.state.reviewOrder || this.state.deck.reviewOrder;
     }
 
     displayForReviewOrder(o) {
@@ -114,11 +131,11 @@ class EditDeckModal extends React.Component {
                     </Modal.Title>
                 </Modal.Header>
 
-                {this.props.deck && <Modal.Body>
+                {this.state.deck && <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
                         <Form.Group controlId="editDeckModalName" className='mb-3'>
                             <Form.Label>Name</Form.Label>
-                            <Form.Control defaultValue={this.props.deck.name} autoComplete="off" type="text" name="name" placeholder="Enter the name of the deck" />
+                            <Form.Control defaultValue={this.state.deck.name} autoComplete="off" type="text" name="name" placeholder="Enter the name of the deck" />
                         </Form.Group>
                         <Form.Group controlId="editDeckModalRequestedFI" className='mb-3'>
                             <Form.Label>Forgetting Index</Form.Label>

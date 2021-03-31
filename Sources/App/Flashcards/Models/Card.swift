@@ -20,16 +20,24 @@ final class Card: Model, Content {
     @Parent(key: "card_type_id")
     var cardType: CardType
 
+    @Field(key: "due_date")
+    var dueDate: Date
+
+    @Field(key: "repetition")
+    var repetition: Int
+
     @OptionalField(key: "cloze_deletion_index")
     var clozeDeletionIndex: Int?
 
     init() { }
 
-    init(id: UUID? = nil, deckID: UUID, noteID: UUID, cardTypeID: UUID, clozeDeletionIndex: Int? = nil) {
+    init(id: UUID? = nil, deckID: UUID, noteID: UUID, cardTypeID: UUID, dueDate: Date, clozeDeletionIndex: Int? = nil) {
         self.id = id
         self.$deck.id = deckID
         self.$note.id = noteID
         self.$cardType.id = cardTypeID
+        self.dueDate = dueDate
+        self.repetition = -1
         self.clozeDeletionIndex = clozeDeletionIndex
     }
 
@@ -66,6 +74,76 @@ extension Card {
         func revert(on database: Database) -> EventLoopFuture<Void> {
             database.schema(schema)
                 .deleteField("cloze_deletion_index")
+                .update()
+        }
+    }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "FlashcardCardDueDate" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("due_date", .datetime)
+                .update()
+                .flatMap {
+                    Deck.query(on: database)
+                        .all()
+                        .flatMap { (decks: [Deck]) in
+                            let cardUpdates = decks.flatMap { (deck: Deck) in
+                                deck.sm.queue.map { (item: SweetMemo.Item) in
+                                    Card.query(on: database)
+                                        .filter(\.$id == item.card)
+                                        .set(\.$dueDate, to: item.dueDate)
+                                        .update()
+                                }
+                            }
+
+                            let chunks = cardUpdates.chunked(into: 127).map { chunk -> EventLoopFuture<Void> in
+                                return EventLoopFuture.whenAllSucceed(chunk, on: database.eventLoop).map { _ in () }
+                            }
+                            return EventLoopFuture.reduce((), chunks, on: database.eventLoop) { _,_  in () }
+                        }
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("due_date")
+                .update()
+        }
+    }
+
+    struct Migration3: Fluent.Migration {
+        var name: String { "FlashcardCardRepetition" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("repetition", .int)
+                .update()
+                .flatMap {
+                    Deck.query(on: database)
+                        .all()
+                        .flatMap { (decks: [Deck]) in
+                            let cardUpdates = decks.flatMap { (deck: Deck) in
+                                deck.sm.queue.map { (item: SweetMemo.Item) in
+                                    Card.query(on: database)
+                                        .filter(\.$id == item.card)
+                                        .set(\.$repetition, to: item.repetition)
+                                        .update()
+                                }
+                            }
+
+                            let chunks = cardUpdates.chunked(into: 127).map { chunk -> EventLoopFuture<Void> in
+                                return EventLoopFuture.whenAllSucceed(chunk, on: database.eventLoop).map { _ in () }
+                            }
+                            return EventLoopFuture.reduce((), chunks, on: database.eventLoop) { _,_  in () }
+                        }
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("repetition")
                 .update()
         }
     }

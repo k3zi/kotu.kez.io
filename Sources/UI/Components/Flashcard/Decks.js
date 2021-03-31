@@ -23,25 +23,35 @@ class Decks extends React.Component {
             showImportDeckModal: false,
             decks: []
         };
+
+        this.load = this.load.bind(this);
     }
 
     componentDidMount() {
         this.load();
+
+        document.addEventListener('ankiChange', this.load);
+        console.log('added listener');
+    }
+
+    componentWillUnmount() {
+        document.removeEventListener('ankiChange', this.load);
+        console.log('removed listener');
     }
 
     async load() {
+        console.log('will load');
         const response = await fetch('/api/flashcard/decks');
         if (response.ok) {
             const decks = await response.json();
             const formatter = new Intl.RelativeTimeFormat({ numeric: 'always', style: 'long' });
             for (let deck of decks) {
-                const newCardsCount = deck.sm.queue.filter(i => i.repetition === -1 && (new Date(i.dueDate) < new Date())).length;
-                const reviewCardsCount = deck.sm.queue.filter(i => i.repetition > -1 && (new Date(i.dueDate) < new Date())).length;
-                const nextCard = deck.sm.queue[0];
-                let nextCardDueData = 'N/A';
-                if (nextCard) {
-                    const seconds = (new Date(nextCard.dueDate) - new Date()) / 1000;
-                    nextCardDueData = 'Now';
+                const newCardsCount = deck.newCardsCount;
+                const reviewCardsCount = deck.reviewCardsCount;
+                let nextCardDueDate = 'N/A';
+                if (deck.nextCardDueDate) {
+                    const seconds = (new Date(deck.nextCardDueDate) - new Date()) / 1000;
+                    nextCardDueDate = 'Now';
                     if (seconds > 0) {
                         const absSeconds = Math.abs(seconds);
                         const durationLookup = [
@@ -61,12 +71,10 @@ class Decks extends React.Component {
                                 break;
                             }
                         }
-                        nextCardDueData = formatter.format(Math.round(seconds / matchingLookup[0]), matchingLookup[1]);
+                        nextCardDueDate = formatter.format(Math.round(seconds / matchingLookup[0]), matchingLookup[1]);
                     }
                 }
-                deck.newCardsCount = newCardsCount;
-                deck.reviewCardsCount = reviewCardsCount;
-                deck.nextCardDueData = nextCardDueData;
+                deck.readableNextCardDueDate = nextCardDueDate;
             }
             this.setState({ decks });
         }
@@ -121,7 +129,7 @@ class Decks extends React.Component {
                                 <td className="align-middle expand">{deck.name}</td>
                                 <td className="align-middle text-center text-success shrink">{deck.newCardsCount}</td>
                                 <td className="align-middle text-center text-primary shrink">{deck.reviewCardsCount}</td>
-                                <td className="align-middle text-center text-primary shrink">{deck.nextCardDueData}</td>
+                                <td className="align-middle text-center text-primary shrink">{deck.readableNextCardDueDate}</td>
                                 <td className="align-middle text-center expand">
                                     <LinkContainer to={`/flashcard/deck/${deck.id}`}>
                                         <Button variant="primary"><i className='bi bi-play-fill'></i></Button>

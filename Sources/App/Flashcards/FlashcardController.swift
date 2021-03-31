@@ -13,11 +13,20 @@ class FlashcardController: RouteCollection {
 
         guardedFlashcards.get("numberOfReviews") { req -> EventLoopFuture<Int> in
             let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
             let now = Date()
-            return user.$decks
-                .query(on: req.db)
-                .all()
-                .map { $0.map { $0.sm.queue.filter { $0.dueDate <= now }.count }.reduce(0, +) }
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLFunction("count", args: SQLLiteral.all))
+                .from(Card.schema)
+                .join(Deck.schema, on: "\(Deck.schema).id=\(Card.schema).deck_id AND \(Deck.schema).owner_id='\(userID.uuidString)'")
+                .where(.init("due_date"), .lessThanOrEqual, now)
+                .first()
+                .flatMapThrowing {
+                    try $0?.decode(column: "count") ?? 0
+                }
         }
 
         struct GroupedLogs: Content {
@@ -81,39 +90,18 @@ class FlashcardController: RouteCollection {
             guard let id = req.parameters.get("cardID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             return Card
                 .query(on: req.db)
-                .with(\.$deck) {
-                    $0.with(\.$owner)
-                }
                 .with(\.$note) {
                     $0.with(\.$fieldValues) {
                         $0.with(\.$field)
                     }
                 }
                 .with(\.$cardType)
+                .join(parent: \.$deck)
+                .join(from: Deck.self, parent: \.$owner)
                 .filter(\.$id == id)
+                .filter(User.self, \.$id, .equal, userID)
                 .first()
-                .flatMap { card -> EventLoopFuture<Card> in
-                    if let card = card {
-                        return req.eventLoop.future(card)
-                    }
-
-                    return user.$decks
-                        .query(on: req.db)
-                        .all()
-                        .flatMap { decks in
-                            for deck in decks {
-                                let sm = deck.sm
-                                sm.queue.removeAll(where: { $0.card == id })
-                                deck.sm = sm
-                            }
-                            let save = decks.map { $0.save(on: req.db) }
-                            return EventLoopFuture.whenAllComplete(save, on: req.eventLoop)
-                                .throwingFlatMap { _ in
-                                    throw Abort(.notFound)
-                                }
-                        }
-                }
-                .guard({ $0.deck.owner.id == userID }, else: Abort(.unauthorized))
+                .unwrap(or: Abort(.notFound))
         }
 
         guardedCardID.post("grade", ":grade") { req -> EventLoopFuture<String> in
@@ -137,11 +125,16 @@ class FlashcardController: RouteCollection {
                         throw Abort(.badRequest)
                     }
                     sm.answer(grade: grade, item: &nextItem)
+                    card.dueDate = nextItem.dueDate
+                    card.repetition = nextItem.repetition
                     deck.sm = sm
                     return deck.save(on: req.db)
                         .throwingFlatMap {
                             try ReviewLog(card: card, grade: grade)
                                 .save(on: req.db)
+                        }
+                        .flatMap {
+                            card.save(on: req.db)
                         }
                 }
                 .map { "Updated grade." }
@@ -226,14 +219,15 @@ class FlashcardController: RouteCollection {
                 }
                 .throwingFlatMap {
                     let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
+                    let now = Date()
                     let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
                     let cards = try noteType.cardTypes.flatMap { cardType  -> [Card] in
                         if clozeIndexes.isEmpty {
-                            return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                            return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), dueDate: now)]
                         }
 
                         return try clozeIndexes.map {
-                            Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
+                            Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), dueDate: now, clozeDeletionIndex: $0)
                         }
                     }
                     return note.$cards.create(cards, on: req.db).throwingFlatMap {
@@ -394,11 +388,12 @@ class FlashcardController: RouteCollection {
                             let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
                             let clozeIndexes = Array(Set(allFieldsValue.match("\\{\\{c(\\d)::.*?\\}\\}").compactMap { Int($0[1]) }))
                             let createClozeIndexes = clozeIndexes.filter { !previousClozeIndexes.contains($0) }
+                            let now = Date()
                             let cards = try noteType.cardTypes.flatMap { cardType -> [Card] in
                                 if !previousClozeIndexes.isEmpty && clozeIndexes.isEmpty {
                                     // Removed all cloze cards
                                     // Create a regular card
-                                    return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID())]
+                                    return [Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), dueDate: now)]
                                 }
                                 if previousClozeIndexes.isEmpty && clozeIndexes.isEmpty {
                                     // There were never any cloze cards
@@ -406,7 +401,7 @@ class FlashcardController: RouteCollection {
                                 }
 
                                 return try createClozeIndexes.map {
-                                    Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), clozeDeletionIndex: $0)
+                                    Card(deckID: try deck.requireID(), noteID: try note.requireID(), cardTypeID: try cardType.requireID(), dueDate: now, clozeDeletionIndex: $0)
                                 }
                             }
 
@@ -452,14 +447,22 @@ class FlashcardController: RouteCollection {
         guardedDeckID.get { req -> EventLoopFuture<Deck> in
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
-            return user.$decks
+            let includeSM = (try? req.query.get(Bool.self, at: "includeSM")) ?? false
+            var query = user.$decks
                 .query(on: req.db)
                 .filter(\.$id == id)
-                .first()
+                .field(\.$id).field(\.$name).field(\.$newOrder).field(\.$reviewOrder).field(\.$scheduleOrder)
+                .field(\.$owner.$id)
+
+            if includeSM {
+                query = query.field(\.$sm)
+            }
+
+            return query.first()
                 .unwrap(orError: Abort(.notFound))
         }
 
-        guardedDeckID.put { req -> EventLoopFuture<Deck> in
+        guardedDeckID.put { req -> EventLoopFuture<Response> in
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             try Deck.Update.validate(content: req)
@@ -480,16 +483,36 @@ class FlashcardController: RouteCollection {
                     deck.name = object.name
                     deck.sm = sm
                     return deck.save(on: req.db)
-                        .map { deck }
+                        .map { Response(status: .ok) }
                 }
         }
 
-        guardedDecks.get { req -> EventLoopFuture<[Deck]> in
+        guardedDecks.get { req -> EventLoopFuture<[Deck.Response]> in
             let user = try req.auth.require(User.self)
-            return user.$decks
-                .query(on: req.db)
+            let userID = try user.requireID()
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLColumn("id", table: Deck.schema))
+                .column("name").column("new_order").column("review_order").column("schedule_order")
+                .column(SQLRaw("SUM(CASE WHEN \"repetition\" = -1 THEN 1 ELSE 0 END) AS new_cards_count"))
+                .column(SQLRaw("SUM(CASE WHEN \"repetition\" > -1 THEN 1 ELSE 0 END) AS review_cards_count"))
+                .column(SQLRaw("MIN(\"due_date\") AS next_card_due_date"))
+                .from(Deck.schema)
+                .join(Card.schema, method: .left, on: "\(Card.schema).deck_id=\(Deck.schema).id AND \(Card.schema).due_date <= '\(Date().addingTimeInterval(1).postgresData!.string!)'")
+                .where(.init("owner_id"), .equal, userID)
+                .groupBy(SQLColumn("id", table: Deck.schema))
+                .groupBy(SQLColumn("name", table: Deck.schema))
+                .groupBy(SQLColumn("new_order", table: Deck.schema))
+                .groupBy(SQLColumn("review_order", table: Deck.schema))
+                .groupBy(SQLColumn("schedule_order", table: Deck.schema))
                 .all()
-                .map { $0.sorted(by: { $0.name > $1.name }) }
+                .flatMapThrowing {
+                    try $0.map {
+                        try $0.decode(model: Deck.Response.self, keyDecodingStrategy: .convertFromSnakeCase)
+                    }.sorted(by: { $0.name > $1.name })
+                }
         }
 
         guardedDeck.post("create") { req -> EventLoopFuture<Deck> in

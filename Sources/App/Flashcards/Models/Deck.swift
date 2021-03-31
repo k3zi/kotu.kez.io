@@ -59,6 +59,21 @@ final class Deck: Model, Content {
 
 extension Deck {
 
+    struct Response: Content {
+        let id: UUID
+        let name: String
+        let scheduleOrder: ScheduleOrder
+        let newOrder: NewOrder
+        let reviewOrder: ReviewOrder
+        let newCardsCount: Int
+        let reviewCardsCount: Int
+        let nextCardDueDate: Date?
+    }
+
+}
+
+extension Deck {
+
     struct Migration: Fluent.Migration {
         var name: String { "CreateFlashcardDeck" }
 

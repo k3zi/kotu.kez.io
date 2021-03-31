@@ -150,6 +150,12 @@ class App extends React.Component {
             });
         });
 
+        const self = this;
+
+        document.addEventListener('ankiChange', function (e) {
+            self.loadNumberOfReviews();
+        });
+
         Helpers.addLiveEventListeners('cue', 'click', (e, target) => {
             const url = target.dataset.url;
             const subtitleIndex = target.dataset.subtitleIndex;
@@ -212,8 +218,8 @@ class App extends React.Component {
 
     async loadUser() {
         const response = await fetch('/api/me');
-        const user = await response.json();
-        if (!user.error) {
+        if (response.ok) {
+            const user = await response.json();
             if (user.settings.ui.prefersColorContrast) {
                 document.body.classList.add('prefers-color-contrast');
             } else {
@@ -233,15 +239,21 @@ class App extends React.Component {
             }
             this.setState({ user });
             this.updateColorScheme(user);
+        } else {
+            this.setState({ user: null });
         }
         this.setState({ isReady: true });
     }
 
-    async update() {
+    async loadNumberOfReviews() {
         const response = await fetch('/api/flashcard/numberOfReviews');
         const numberOfReviews = response.ok ? (parseInt(await response.text()) || 0) : 0;
         this.setState({ numberOfReviews });
-        await this.loadUser();
+    }
+
+    update() {
+        this.loadNumberOfReviews();
+        this.loadUser();
     }
 
     toggleFeedbackModal(show) {
@@ -340,7 +352,13 @@ class App extends React.Component {
     playAudio(url, selector) {
         this.stopAudio();
 
-        const audio = new Audio(url);
+        let audio = this.audio;
+        if (!audio) {
+            audio = new Audio(url);
+            this.audio = audio;
+        } else {
+            audio.src = url;
+        }
         audio.play();
         this.setState({ audio });
         if (selector && selector.length > 0) {
@@ -406,154 +424,119 @@ class App extends React.Component {
         this.setState({ subtitleIndex: undefined, willAutoplay: false });
     }
 
-    menu(type) {
-        if (type === 'bar') {
-            return (<>
-                <div className="col-12 d-block d-sm-none"></div>
-                <div className="navbar-expand align-items-center order-0 d-none d-sm-flex">
-                    <LinkContainer to="/" className='d-none d-sm-block'>
-                        <Navbar.Brand>コツ</Navbar.Brand>
+    renderMenu() {
+        return (<>
+            <div className="col-12 d-block d-md-none"></div>
+            <div className="navbar-expand align-items-center order-0 d-none d-md-flex">
+                <LinkContainer to="/" className='d-none d-md-block'>
+                    <Navbar.Brand>コツ</Navbar.Brand>
+                </LinkContainer>
+                {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
+                    <LinkContainer exact to="/transcription">
+                        <Nav.Link active={false}>Transcribe</Nav.Link>
                     </LinkContainer>
-                    {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
-                        <LinkContainer exact to="/transcription">
-                            <Nav.Link active={false}>Transcribe</Nav.Link>
+
+                    <NavDropdown title={<>Anki{this.state.numberOfReviews > 0 && <Badge className="ms-2 bg-secondary">{this.state.numberOfReviews}</Badge>}</>}>
+                        <LinkContainer to="/flashcard/decks">
+                            <NavDropdown.Item active={false}>Decks</NavDropdown.Item>
                         </LinkContainer>
-
-                        <NavDropdown title={<>Anki{this.state.numberOfReviews > 0 && <Badge className="ms-2 bg-secondary">{this.state.numberOfReviews}</Badge>}</>}>
-                            <LinkContainer to="/flashcard/decks">
-                                <NavDropdown.Item active={false}>Decks</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/flashcard/types">
-                                <NavDropdown.Item active={false}>Note Types</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/flashcard/notes">
-                                <NavDropdown.Item active={false}>Notes</NavDropdown.Item>
-                            </LinkContainer>
-                            <NavDropdown.Divider />
-                            <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
-                        </NavDropdown>
-
-                        <NavDropdown title='Lists'>
-                            <LinkContainer to="/lists/words">
-                                <NavDropdown.Item active={false}>Words</NavDropdown.Item>
-                            </LinkContainer>
-                        </NavDropdown>
-
-                        <NavDropdown title='Media'>
-                            <LinkContainer to="/media/youtube">
-                                <NavDropdown.Item active={false}>YouTube</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/media/plex">
-                                <NavDropdown.Item active={false}>Plex</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/media/reader">
-                                <NavDropdown.Item active={false}>Reader</NavDropdown.Item>
-                            </LinkContainer>
-                        </NavDropdown>
-
-                        <NavDropdown title='Tests'>
-                            <NavDropdown.Header>Pitch Accent</NavDropdown.Header>
-                            <LinkContainer to="/tests/pitchAccent/minimalPairs">
-                                <NavDropdown.Item active={false}>Minimal Pairs (Perception)</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/tests/pitchAccent/names">
-                                <NavDropdown.Item active={false}>Names (Recall)</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/tests/pitchAccent/counters">
-                                <NavDropdown.Item active={false}>Counters (Recall)</NavDropdown.Item>
-                            </LinkContainer>
-                        </NavDropdown>
-
-                        <LinkContainer exact to="/articles">
-                            <Nav.Link active={false}>Articles</Nav.Link>
+                        <LinkContainer to="/flashcard/types">
+                            <NavDropdown.Item active={false}>Note Types</NavDropdown.Item>
                         </LinkContainer>
+                        <LinkContainer to="/flashcard/notes">
+                            <NavDropdown.Item active={false}>Notes</NavDropdown.Item>
+                        </LinkContainer>
+                        <NavDropdown.Divider />
+                        <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
+                    </NavDropdown>
 
-                        {this.state.user.permissions.includes('admin') && <>
-                            <NavDropdown title='Admin'>
-                                <LinkContainer to="/admin/users">
-                                    <NavDropdown.Item active={false}>Users</NavDropdown.Item>
-                                </LinkContainer>
-                                <LinkContainer to="/admin/feedback">
-                                    <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
-                                </LinkContainer>
-                                <LinkContainer to="/admin/otherVideos">
-                                    <NavDropdown.Item active={false}>Other Videos</NavDropdown.Item>
-                                </LinkContainer>
-                            </NavDropdown>
-                        </>}
-                    </Nav>}
-                </div>
-                {this.state.user && <Form as="div" className="mr-auto col-12 mt-1 mt-xl-0 col-xl-4 order-3 order-xl-1 d-none d-sm-inline">
-                    <Dropdown>
-                        <InputGroup className="mr-sm-2">
-                            <div className='position-relative flex-fill'>
-                                <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
-                                {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-2px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
-                            </div>
-                            <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
-                                <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
-                                    <i class="bi bi-search"></i>
-                                </Button>
-                            </LinkContainer>
-                            <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
-                                {['Words', 'Examples'].map((option, i) => {
-                                    return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
-                                })}
-                            </DropdownButton>
-                        </InputGroup>
-                        <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
-                            {this.state.searchNavSelectedOption == 'Words' && this.state.results.length == 0 && !this.state.hasDictionaries && <Dropdown.Item　disabled>
-                                No dictionaries. Add a dictionary in Settings.
-                            </Dropdown.Item>}
-                            {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
-                                return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
-                                    <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
-                                    {r.headline}
-                                </Dropdown.Item>;
-                            })}
+                    <NavDropdown title='Lists'>
+                        <LinkContainer to="/lists/words">
+                            <NavDropdown.Item active={false}>Words</NavDropdown.Item>
+                        </LinkContainer>
+                    </NavDropdown>
 
-                            {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
-                                if (s.youtubeVideo) {
-                                    return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
-                                        <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                            <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
-                                            {s.text}
-                                        </Dropdown.Item>
-                                    </LinkContainer>;
-                                } else {
-                                    return <Dropdown.Item key={i} onClick={() => this.playAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                        {s.text}
-                                    </Dropdown.Item>;
-                                }
-                            })}
-                        </Dropdown.Menu>
-                    </Dropdown>
-                </Form>}
-                <div className="col-12 d-block d-xl-none order-2 order-xl-4"></div>
-                {!this.state.user && <Nav className="order-2 order-xl-4 d-none d-sm-block">
+                    <NavDropdown title='Media'>
+                        <LinkContainer to="/media/youtube">
+                            <NavDropdown.Item active={false}>YouTube</NavDropdown.Item>
+                        </LinkContainer>
+                        <LinkContainer to="/media/plex">
+                            <NavDropdown.Item active={false}>Plex</NavDropdown.Item>
+                        </LinkContainer>
+                        <LinkContainer to="/media/reader">
+                            <NavDropdown.Item active={false}>Reader</NavDropdown.Item>
+                        </LinkContainer>
+                    </NavDropdown>
+
+                    <NavDropdown title='Tests'>
+                        <NavDropdown.Header>Pitch Accent</NavDropdown.Header>
+                        <LinkContainer to="/tests/pitchAccent/minimalPairs">
+                            <NavDropdown.Item active={false}>Minimal Pairs (Perception)</NavDropdown.Item>
+                        </LinkContainer>
+                        <LinkContainer to="/tests/pitchAccent/names">
+                            <NavDropdown.Item active={false}>Names (Recall)</NavDropdown.Item>
+                        </LinkContainer>
+                        <LinkContainer to="/tests/pitchAccent/counters">
+                            <NavDropdown.Item active={false}>Counters (Recall)</NavDropdown.Item>
+                        </LinkContainer>
+                    </NavDropdown>
+
                     <LinkContainer exact to="/articles">
                         <Nav.Link active={false}>Articles</Nav.Link>
                     </LinkContainer>
-                    <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
-                    <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
-                </Nav>}
 
-                {this.state.user && <Nav className="order-1 order-xl-3 d-none d-sm-block">
-                    <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
-                        <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
-                        <NavDropdown.Divider />
-                        <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
-                        <NavDropdown.Divider />
-                        <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
-                    </NavDropdown>
+                    {this.state.user.permissions.includes('admin') && <>
+                        <NavDropdown title='Admin'>
+                            <LinkContainer to="/admin/users">
+                                <NavDropdown.Item active={false}>Users</NavDropdown.Item>
+                            </LinkContainer>
+                            <LinkContainer to="/admin/feedback">
+                                <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
+                            </LinkContainer>
+                            <LinkContainer to="/admin/otherVideos">
+                                <NavDropdown.Item active={false}>Other Videos</NavDropdown.Item>
+                            </LinkContainer>
+                        </NavDropdown>
+                    </>}
                 </Nav>}
-            </>);
-        }
-        if (type === 'canvas') {
-            return ( <>
-                <div className="col-12 d-block d-sm-none"></div>
-                <div className='collapse' id="dropdownNav">
-                    {this.state.user && <Nav className="mr-auto flex-row flex-wrap d-sm-none" activeKey={window.location.pathname}>
+            </div>
+            {this.renderSearch('main')}
+            <div className="col-12 d-block d-md-none order-2 order-xl-4"></div>
+            {!this.state.user && <Nav className="order-2 order-xl-4 d-none d-md-flex">
+                <LinkContainer exact to="/articles">
+                    <Nav.Link active={false}>Articles</Nav.Link>
+                </LinkContainer>
+                <Nav.Link href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
+                <Nav.Link href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
+            </Nav>}
+
+            {this.state.user && <Nav className="order-1 order-xl-3 d-none d-md-block">
+                <Nav.Link className='fs-5 d-inline-block' variant='dark' onClick={() => this.toggleCreateNoteModal(true)}><i className="bi bi-card-text"></i></Nav.Link>
+                <NavDropdown className='dropdown-menu-end d-inline-block' title={<i class="bi bi-person-circle"></i>}>
+                    <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
+                    <NavDropdown.Divider />
+                    <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
+                    <NavDropdown.Divider />
+                    <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
+                </NavDropdown>
+            </Nav>}
+        </>);
+    }
+
+    renderCollapseMenu() {
+        return (<>
+            <div className="col-12 d-block d-md-none"></div>
+            <div className='collapse col-12 d-md-none' id="dropdownNav">
+                <Nav className="mr-auto flex-row flex-wrap d-md-none justify-content-center" activeKey={window.location.pathname}>
+                    {!this.state.user && <>
+                        <LinkContainer exact to="/articles">
+                            <Nav.Link className='col-6 justify-content-center' active={false}>Articles</Nav.Link>
+                        </LinkContainer>
+                        <div class="col-12"></div>
+                        <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
+                        <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
+                    </>}
+                    {this.state.user && <>
                         <LinkContainer exact to="/transcription">
                             <Nav.Link className='col-6 justify-content-center' active={false}>Transcribe</Nav.Link>
                         </LinkContainer>
@@ -621,17 +604,67 @@ class App extends React.Component {
                             </NavDropdown>
                         </>}
 
-                        {this.state.user && <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
+                        <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
                             <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
-                        </NavDropdown>}
-                    </Nav>}
-                </div>
-            </>);
-        }
+                        </NavDropdown>
+                    </>}
+                </Nav>
+            </div>
+            {this.renderSearch('collapse')}
+        </>);
+    }
+
+    renderSearch(place) {
+        return (this.state.user && <Form as="div" className={`mr-auto col-12 mt-1 mt-xl-0 col-xl-4 order-3 order-xl-1 ${place === 'main' ? 'd-none d-md-inline' : 'd-md-none'}`}>
+                <Dropdown>
+                    <InputGroup className="mr-md-2">
+                        <div className='position-relative flex-fill'>
+                            <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
+                            {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-2px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
+                        </div>
+                        <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
+                            <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
+                                <i class="bi bi-search"></i>
+                            </Button>
+                        </LinkContainer>
+                        <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
+                            {['Words', 'Examples'].map((option, i) => {
+                                return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
+                            })}
+                        </DropdownButton>
+                    </InputGroup>
+                    <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
+                        {this.state.searchNavSelectedOption == 'Words' && this.state.results.length == 0 && !this.state.hasDictionaries && <Dropdown.Item　disabled>
+                            No dictionaries. Add a dictionary in Settings.
+                        </Dropdown.Item>}
+                        {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
+                            return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
+                                <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
+                                {r.headline}
+                            </Dropdown.Item>;
+                        })}
+
+                        {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
+                            if (s.youtubeVideo) {
+                                return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
+                                    <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                        <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
+                                        {s.text}
+                                    </Dropdown.Item>
+                                </LinkContainer>;
+                            } else {
+                                return <Dropdown.Item key={i} onClick={() => this.playAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                    {s.text}
+                                </Dropdown.Item>;
+                            }
+                        })}
+                    </Dropdown.Menu>
+                </Dropdown>
+        </Form>);
     }
 
     render() {
@@ -640,12 +673,15 @@ class App extends React.Component {
                 <ColorSchemeContext.Provider value={this.state.colorScheme}>
                     <Router>
                         <Navbar bg="dark" variant="dark" className="justify-content-between px-xl-5 px-2">
-                            <LinkContainer to="/" className='d-block d-sm-none'>
+                            <LinkContainer to="/" className='d-block d-md-none'>
                                 <Navbar.Brand>コツ</Navbar.Brand>
                             </LinkContainer>
-                            <Button data-bs-toggle="collapse" data-bs-target="#dropdownNav" variant='dark' className='navbar-toggler-icon d-block d-sm-none'></Button>
-                            {this.menu('bar')}
-                            {this.menu('canvas')}
+                            <div className='d-block d-md-none'>
+                                {this.state.user && <Button className='fs-5' variant='dark' onClick={() => this.toggleCreateNoteModal(true)}><i className="bi bi-card-text"></i></Button>}
+                                <Button data-bs-toggle="collapse" data-bs-target="#dropdownNav" variant='dark' className='navbar-toggler-icon'></Button>
+                            </div>
+                            {this.renderMenu()}
+                            {this.renderCollapseMenu()}
                         </Navbar>
 
                         <div className='p-4' style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 1050 }}>

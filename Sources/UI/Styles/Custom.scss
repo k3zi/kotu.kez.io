@@ -363,7 +363,6 @@ body.fit-content {
     align-items: center;
 }
 
-
 hr {
     border: 1px solid #dee2e6 !important;
     height: 0 !important;
@@ -978,4 +977,12 @@ blockquote {
 
 #dropdownNav .nav-item {
     @extend .d-flex;
+}
+
+.navbar-dark button {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.navbar-dark button:hover, .navbar-dark button:focus {
+    color: rgba(255, 255, 255, 0.75);
 }

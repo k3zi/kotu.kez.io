@@ -119,6 +119,8 @@ class CreateNoteForm extends React.Component {
                     };
                 })
             });
+
+            document.body.dispatchEvent(new Event('ankiChange', { bubbles: true }));
         }
     }
 
