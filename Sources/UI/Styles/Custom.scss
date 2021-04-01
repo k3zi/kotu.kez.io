@@ -244,6 +244,7 @@ body.fit-content {
     }
 
     #app-container {
+        @extend .d-flex;
         overflow-y: auto;
     }
 }

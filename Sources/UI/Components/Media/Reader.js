@@ -50,10 +50,7 @@ class Reader extends React.Component {
     }
 
     componentWillMount() {
-        // FIXME: For some reason fit-content breaks in other browsers...
-        if (navigator.appVersion.indexOf('Chrome/') != -1) {
-            document.body.classList.add('fit-content');
-        }
+        document.body.classList.add('fit-content');
 
         if (this.state.session && (!this.props.match.params.id || this.props.match.params.id.length === 0)) {
             this.setState({ session: null });
@@ -73,7 +70,7 @@ class Reader extends React.Component {
             this.loadSession(this.props.match.params.id);
         }
 
-        if (!this.state.didInitialScroll && this.state.session && !this.state.isScrolling) {
+        if (!this.state.didInitialScroll && this.state.sentences && this.state.sentences.length > 0 && this.state.session && !this.state.isScrolling) {
             this.setState({ isScrolling: true });
             if (this.state.session.scrollPhraseIndex && this.state.session.scrollPhraseIndex > 0) {
                 const phrase = document.querySelector(`[data-phrase-index='${this.state.session.scrollPhraseIndex}']`);
@@ -329,6 +326,7 @@ class Reader extends React.Component {
     async updateSession() {
         const session = this.state.session;
         if (!session) { return; }
+        console.log(session.scrollPhraseIndex);
         await fetch(`/api/media/reader/session/${session.id}`, {
             method: 'PUT',
             body: await gzip(JSON.stringify({
@@ -379,7 +377,7 @@ class Reader extends React.Component {
     render() {
         return (
             <UserContext.Consumer>{user => (
-                <Row className='h-100'>
+                <Row className='flex-fill'>
                     <Col className='h-100 d-flex flex-column' xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
                         <div id='readerOptions' className='collapse show'>
                             <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.load(e)} placeholder="Text / Article URL" value={this.state.text} />

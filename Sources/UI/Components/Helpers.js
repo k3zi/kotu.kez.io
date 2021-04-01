@@ -218,6 +218,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
 
     const walker = document.createTreeWalker(contentElement, NodeFilter.SHOW_TEXT);
     let phraseIndex = 0;
+    let globalPhraseIndex = 0;
     let subtitleIndex = 0;
 
     let didRemoveNode = false;
@@ -259,9 +260,9 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                     }
                 }
                 if (phrase.isBasic) {
-                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${phraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
+                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${globalPhraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
                 } else {
-                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${phraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
+                    newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${globalPhraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
                             return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
                     }).join('')}</phrase>`;
                 }
@@ -278,6 +279,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
             }
 
             phraseIndex += 1;
+            globalPhraseIndex += 1;
             if (phraseIndex >= phrases.length) {
                 phrases = sentences.shift() || [];
                 phraseIndex = 0;
