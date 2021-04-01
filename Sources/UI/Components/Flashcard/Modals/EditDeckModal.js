@@ -82,7 +82,7 @@ class EditDeckModal extends React.Component {
     }
 
     requestedFI() {
-        return this.state.requestedFI || this.state.deck.sm.requestedFI;
+        return this.state.requestedFI || this.state.deck.requestedFI;
     }
 
     scheduleOrder() {

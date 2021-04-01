@@ -89,6 +89,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(ReaderSession.Migration8())
     app.migrations.add(ReaderSession.Migration9())
     app.migrations.add(Card.Migration2(), Card.Migration3())
+    app.migrations.add(Deck.Migration3())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()

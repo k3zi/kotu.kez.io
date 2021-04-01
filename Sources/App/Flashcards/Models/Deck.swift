@@ -43,6 +43,9 @@ final class Deck: Model, Content {
     @Field(key: "sweet_memo")
     var sm: SweetMemo
 
+    @Field(key: "requested_fi")
+    var requestedFI: Double
+
     @Children(for: \.$deck)
     var cards: [Card]
 
@@ -53,6 +56,7 @@ final class Deck: Model, Content {
         self.$owner.id = ownerID
         self.name = name
         self.sm = sm
+        self.requestedFI = sm.requestedFI
     }
 
 }
@@ -62,6 +66,7 @@ extension Deck {
     struct Response: Content {
         let id: UUID
         let name: String
+        let requestedFI: Double
         let scheduleOrder: ScheduleOrder
         let newOrder: NewOrder
         let reviewOrder: ReviewOrder
@@ -142,6 +147,32 @@ extension Deck {
                     }
                     return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
                 }
+        }
+    }
+
+    struct Migration3: Fluent.Migration {
+        var name: String { "FlashcardDeckRequestedFI" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("requested_fi", .double, .required, .sql(.default(8)))
+                .update()
+                .flatMap {
+                    Deck.query(on: database)
+                        .all()
+                        .flatMap { decks in
+                            for deck in decks {
+                                deck.requestedFI = deck.sm.requestedFI
+                            }
+                            return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
+                        }
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("requested_fi")
+                .update()
         }
     }
 

@@ -52,58 +52,13 @@ class Deck extends React.Component {
 
     async load() {
         const id = this.props.match.params.id;
-        const response = await fetch(`/api/flashcard/deck/${id}?includeSM=true`);
-        if (response.ok) {
-            const deck = await response.json();
-            this.setState({ deck });
-            await this.loadNextCard();
-        }
-    }
-
-    async loadNextCard() {
-        const allItems = this.state.deck.sm.queue.filter(i => new Date(i.dueDate) < new Date());
-        const newItems = allItems.filter(i => i.repetition === -1);
-        const reviewItems = allItems.filter(i => i.repetition !== -1);
-
-        let items = allItems;
-        let shouldRandomize = false;
-        const scheduleOrder = this.state.deck.scheduleOrder;
-        const newOrder = this.state.deck.newOrder;
-        const reviewOrder = this.state.deck.reviewOrder;
-        if (scheduleOrder === 'newAfterReview') {
-            if (reviewItems.length > 0) {
-                items = reviewItems;
-                if (reviewOrder === 'random') {
-                    items = _.shuffle(items);
-                }
-            } else if (newOrder === 'random') {
-                // all new cards
-                items = _.shuffle(items);
-            }
-        } else if (scheduleOrder === 'newBeforeReview' && newItems.length > 0) {
-            if (newItems.length > 0) {
-                items = newItems;
-                if (newOrder === 'random') {
-                    items = _.shuffle(items);
-                }
-            } else if (reviewOrder === 'random') {
-                // all review cards
-                items = _.shuffle(items);
-            }
-        } else if (reviewOrder == 'random' && newOrder == 'random') {
-            items = _.shuffle(items);
-        }
-
-        const item = items[0];
-        if (!item) {
-            this.props.history.push('/flashcard/decks');
-            return;
-        }
-        const response = await fetch(`/api/flashcard/card/${item.card}`);
+        const response = await fetch(`/api/flashcard/deck/${id}/nextCard`);
         if (response.ok) {
             const nextCard = await response.json();
             this.setState({ nextCard, loadedHTML: null, showGradeButtons: false });
             await this.loadFront();
+        } else {
+            return this.props.history.push('/flashcard/decks');
         }
     }
 
