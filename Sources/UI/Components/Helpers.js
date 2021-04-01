@@ -300,7 +300,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
             element.remove();
             didRemoveNode = true;
         }
-    } while ((didRemoveNode || walker.nextNode()) && sentences.length !== 0);
+    } while ((didRemoveNode || walker.nextNode()) && (sentences.length !== 0 || phraseIndex < phrases.length));
     return contentElement;
 };
 
