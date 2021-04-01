@@ -38,6 +38,7 @@ class DeleteDeckModal extends React.Component {
         });
 
         if (success) {
+            document.body.dispatchEvent(new Event('ankiChange', { bubbles: true }));
             this.props.didDelete();
         } else {
             const result = await response.json();
@@ -76,6 +77,7 @@ class DeleteDeckModal extends React.Component {
             </Modal>
         );
     }
+
 }
 
 export default DeleteDeckModal;

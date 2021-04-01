@@ -190,7 +190,7 @@ helpers.parseSentences = async (textContent) => {
 };
 
 helpers.generateVisualSentenceElement = async (content, textContent, isCancelled) => {
-    let sentences = await helpers.parseSentences(content, textContent);
+    let sentences = await helpers.parseSentences(textContent);
     if (isCancelled && isCancelled()) {
         return;
     }
