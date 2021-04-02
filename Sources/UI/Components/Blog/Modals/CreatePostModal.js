@@ -30,7 +30,7 @@ class CreatePostModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
-        const response = await fetch(`/api/blog`, {
+        const response = await fetch('/api/blog', {
             method: 'POST',
             body: JSON.stringify(data),
             headers: {

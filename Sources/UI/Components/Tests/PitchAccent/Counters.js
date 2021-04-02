@@ -53,7 +53,7 @@ class Counters extends React.Component {
     }
 
     async preload() {
-        const response = await fetch(`/api/tests/pitchAccent/counters/all`);
+        const response = await fetch('/api/tests/pitchAccent/counters/all');
         if (response.ok) {
             const allCounters = await response.json();
             this.setState({ allCounters, selectedCounters: allCounters });
@@ -79,7 +79,7 @@ class Counters extends React.Component {
 
     async load() {
         const data = this.state.selectedCounters.map(c => c.id);
-        const response = await fetch(`/api/tests/pitchAccent/counters/random`, {
+        const response = await fetch('/api/tests/pitchAccent/counters/random', {
             method: 'POST',
             body: JSON.stringify(data),
             headers: {
@@ -169,14 +169,14 @@ class Counters extends React.Component {
                             {this.state.number && this.state.number.usage && <h6 className='text-center text-muted'>{this.state.number.usage}</h6>}
                             {this.state.answer && <div>
                                 <hr />
-                                <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: this.state.answer.html}}></span>
+                                <span className={'fs-5 visual-type-showPitchAccentDrops text-center'} dangerouslySetInnerHTML={{__html: this.state.answer.html}}></span>
                                 <audio controls autoPlay>
                                     <source src={`/api/media/nhk/audio/${this.state.answer.soundFile}`} type='audio/mpeg' />
                                 </audio>
 
                                 {this.state.otherAnswers.length > 0 && <h4 className='mt-1'>Other Answers:</h4>}
                                 {this.state.otherAnswers.map(answer => <div className='d-flex justify-content-between mx-4 mb-1'>
-                                    <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: answer.html}}></span>
+                                    <span className={'fs-5 visual-type-showPitchAccentDrops text-center'} dangerouslySetInnerHTML={{__html: answer.html}}></span>
                                     <audio controls>
                                         <source src={`/api/media/nhk/audio/${answer.soundFile}`} type='audio/mpeg' />
                                     </audio>

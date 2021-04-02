@@ -50,7 +50,7 @@ class Component extends React.Component {
     }
 
     async loadReviewLogs() {
-        const response = await fetch(`/api/flashcard/groupedLogs`);
+        const response = await fetch('/api/flashcard/groupedLogs');
         if (response.ok) {
             const result = await response.json();
             const reviewLogs = result.map(r => {
@@ -67,7 +67,7 @@ class Component extends React.Component {
     }
 
     async loadReviewCountByGrade() {
-        const response = await fetch(`/api/flashcard/numberOfReviewsGroupedByGrade`);
+        const response = await fetch('/api/flashcard/numberOfReviewsGroupedByGrade');
         if (response.ok) {
             const reviewsGroupedByGrade = await response.json();
             this.setState({ reviewsGroupedByGrade });

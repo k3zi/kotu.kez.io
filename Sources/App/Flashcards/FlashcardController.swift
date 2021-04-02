@@ -476,12 +476,79 @@ class FlashcardController: RouteCollection {
         }
 
         struct SimpleDeck: Decodable {
+            let id: UUID
             let scheduleOrder: Deck.ScheduleOrder
             let newOrder: Deck.NewOrder
             let reviewOrder: Deck.ReviewOrder
             let newCardsCount: Int
             let reviewCardsCount: Int
             let nextCardDueDate: Date?
+        }
+
+        func nextCard(for database: Database, user: User, from deck: SimpleDeck) throws -> EventLoopFuture<Card> {
+            var query = Card.query(on: database)
+                .with(\.$note) {
+                    $0.with(\.$fieldValues) {
+                        $0.with(\.$field)
+                    }
+                }
+                .with(\.$cardType)
+                .join(parent: \.$deck)
+                .join(from: Deck.self, parent: \.$owner)
+                .join(parent: \.$note)
+                .filter(Deck.self, \.$id, .equal, deck.id)
+                .filter(User.self, \.$id, .equal, try user.requireID())
+                .filter(\.$dueDate <= Date())
+
+            var scheduleOrder: Deck.ScheduleOrder
+            if deck.scheduleOrder == .mixNewAndReview {
+                if deck.reviewCardsCount == .zero {
+                    scheduleOrder = .newBeforeReview
+                } else if deck.newCardsCount == .zero {
+                    scheduleOrder = .newAfterReview
+                } else {
+                    let chanceOfNew = Float(deck.newCardsCount) / Float(deck.newCardsCount + deck.reviewCardsCount)
+                    if chanceOfNew <= Float.random(in: 0...1) {
+                        scheduleOrder = .newBeforeReview
+                    } else {
+                        scheduleOrder = .newAfterReview
+                    }
+                }
+            } else {
+                scheduleOrder = deck.scheduleOrder
+            }
+
+            var newOrderSQL: String
+            switch deck.newOrder {
+            case .added:
+                newOrderSQL = "CASE WHEN \"repetition\" = -1 THEN \"\(Note.schema)\".\"created_at\" ELSE '\(Date().addingTimeInterval(60).postgresData!.string!)' END"
+            case .random:
+                newOrderSQL = "CASE WHEN \"repetition\" = -1 THEN RANDOM() ELSE 2 END"
+            }
+
+            var reviewOrderSQL: String
+            switch deck.reviewOrder {
+            case .due:
+                reviewOrderSQL = "CASE WHEN \"repetition\" > -1 THEN \"\(Card.schema)\".\"due_date\" ELSE '\(Date().addingTimeInterval(60).postgresData!.string!)' END"
+            case .random:
+                reviewOrderSQL = "CASE WHEN \"repetition\" > -1 THEN RANDOM() ELSE 2 END"
+            }
+
+            switch scheduleOrder {
+            case .mixNewAndReview: break
+            case .newAfterReview:
+                query = query
+                    .sort(DatabaseQuery.Sort.sql(raw: reviewOrderSQL))
+                    .sort(DatabaseQuery.Sort.sql(raw: newOrderSQL))
+            case .newBeforeReview:
+                query = query
+                    .sort(DatabaseQuery.Sort.sql(raw: newOrderSQL))
+                    .sort(DatabaseQuery.Sort.sql(raw: reviewOrderSQL))
+            }
+
+            return query
+                .first()
+                .unwrap(or: Abort(.notFound))
         }
 
         guardedDeckID.get("nextCard") { req -> EventLoopFuture<Card> in
@@ -492,7 +559,7 @@ class FlashcardController: RouteCollection {
                 throw Abort(.internalServerError)
             }
             return db.select()
-                .column("new_order").column("review_order").column("schedule_order")
+                .column(SQLColumn("id", table: Deck.schema)).column("new_order").column("review_order").column("schedule_order")
                 .column(SQLRaw("SUM(CASE WHEN \"repetition\" = -1 THEN 1 ELSE 0 END) AS new_cards_count"))
                 .column(SQLRaw("SUM(CASE WHEN \"repetition\" > -1 THEN 1 ELSE 0 END) AS review_cards_count"))
                 .column(SQLRaw("MIN(\"due_date\") AS next_card_due_date"))
@@ -510,69 +577,7 @@ class FlashcardController: RouteCollection {
                         throw Abort(.notFound)
                     }
 
-                    var query = Card.query(on: req.db)
-                        .with(\.$note) {
-                            $0.with(\.$fieldValues) {
-                                $0.with(\.$field)
-                            }
-                        }
-                        .with(\.$cardType)
-                        .join(parent: \.$deck)
-                        .join(from: Deck.self, parent: \.$owner)
-                        .join(parent: \.$note)
-                        .filter(Deck.self, \.$id, .equal, id)
-                        .filter(User.self, \.$id, .equal, userID)
-                        .filter(\.$dueDate <= Date())
-
-                    var scheduleOrder: Deck.ScheduleOrder
-                    if deck.scheduleOrder == .mixNewAndReview {
-                        if deck.reviewCardsCount == .zero {
-                            scheduleOrder = .newBeforeReview
-                        } else if deck.newCardsCount == .zero {
-                            scheduleOrder = .newAfterReview
-                        } else {
-                            let chanceOfNew = Float(deck.newCardsCount) / Float(deck.newCardsCount + deck.reviewCardsCount)
-                            if chanceOfNew <= Float.random(in: 0...1) {
-                                scheduleOrder = .newBeforeReview
-                            } else {
-                                scheduleOrder = .newAfterReview
-                            }
-                        }
-                    } else {
-                        scheduleOrder = deck.scheduleOrder
-                    }
-
-                    var newOrderSQL: String
-                    switch deck.newOrder {
-                    case .added:
-                        newOrderSQL = "\"\(Note.schema)\".\"created_at\" ASC"
-                    case .random:
-                        newOrderSQL = "RANDOM()"
-                    }
-
-                    var reviewOrderSQL: String
-                    switch deck.reviewOrder {
-                    case .due:
-                        reviewOrderSQL = "\"\(Card.schema)\".\"due_date\" ASC"
-                    case .random:
-                        reviewOrderSQL = "RANDOM()"
-                    }
-
-                    switch scheduleOrder {
-                    case .mixNewAndReview: break
-                    case .newAfterReview:
-                        query = query
-                            .sort(DatabaseQuery.Sort.sql(raw: reviewOrderSQL))
-                            .sort(DatabaseQuery.Sort.sql(raw: newOrderSQL))
-                    case .newBeforeReview:
-                        query = query
-                            .sort(DatabaseQuery.Sort.sql(raw: newOrderSQL))
-                            .sort(DatabaseQuery.Sort.sql(raw: reviewOrderSQL))
-                    }
-
-                    return query
-                        .first()
-                        .unwrap(or: Abort(.notFound))
+                    return try nextCard(for: req.db, user: user, from: deck)
                 }
         }
 
@@ -629,6 +634,37 @@ class FlashcardController: RouteCollection {
                     try $0.map {
                         try $0.decode(model: Deck.Response.self, keyDecodingStrategy: .convertFromSnakeCase)
                     }.sorted(by: { $0.name > $1.name })
+                }
+        }
+
+        guardedDecks.get("nextCard") { req -> EventLoopFuture<Card> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            return db.select()
+                .column(SQLColumn("id", table: Deck.schema)).column("new_order").column("review_order").column("schedule_order")
+                .column(SQLRaw("SUM(CASE WHEN \"repetition\" = -1 THEN 1 ELSE 0 END) AS new_cards_count"))
+                .column(SQLRaw("SUM(CASE WHEN \"repetition\" > -1 THEN 1 ELSE 0 END) AS review_cards_count"))
+                .column(SQLRaw("MIN(\"due_date\") AS next_card_due_date"))
+                .from(Deck.schema)
+                .join(Card.schema, method: .left, on: "\(Card.schema).deck_id=\(Deck.schema).id AND \(Card.schema).due_date <= '\(Date().postgresData!.string!)'")
+                .where(.init("owner_id"), .equal, userID)
+                .having(SQLRaw("SUM(CASE WHEN \"repetition\" = -1 THEN 1 ELSE 0 END)"), .greaterThan, SQLLiteral.numeric("0"))
+                .orHaving(SQLRaw("SUM(CASE WHEN \"repetition\" > -1 THEN 1 ELSE 0 END)"), .greaterThan, SQLLiteral.numeric("0"))
+                .groupBy(SQLColumn("id", table: Deck.schema))
+                .groupBy(SQLColumn("new_order", table: Deck.schema))
+                .groupBy(SQLColumn("review_order", table: Deck.schema))
+                .groupBy(SQLColumn("schedule_order", table: Deck.schema))
+                .orderBy(SQLFunction("RANDOM"))
+                .first()
+                .throwingFlatMap { (response: SQLRow?) -> EventLoopFuture<Card> in
+                    guard let deck = try response?.decode(model: SimpleDeck.self, keyDecodingStrategy: .convertFromSnakeCase) else {
+                        throw Abort(.notFound)
+                    }
+
+                    return try nextCard(for: req.db, user: user, from: deck)
                 }
         }
 

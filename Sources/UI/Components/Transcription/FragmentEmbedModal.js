@@ -30,7 +30,7 @@ class FragmentEmbedModal extends React.Component {
         this.setState({ embed: null });
         const fragment = this.props.fragment;
         const project = this.props.project;
-        const response = await fetch(`/api/media/youtube/capture`, {
+        const response = await fetch('/api/media/youtube/capture', {
             method: 'POST',
             body: JSON.stringify({
                 startTime: fragment.startTime,

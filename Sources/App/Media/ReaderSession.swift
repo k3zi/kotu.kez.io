@@ -33,6 +33,9 @@ final class ReaderSession: Model, Content {
     @Field(key: "scroll_phrase_index")
     var scrollPhraseIndex: Int
 
+    @Field(key: "show_reader_options")
+    var showReaderOptions: Bool
+
     @OptionalField(key: "title")
     var title: String?
 
@@ -54,6 +57,7 @@ final class ReaderSession: Model, Content {
         self.visualType = visualType
         self.url = url
         self.scrollPhraseIndex = 0
+        self.showReaderOptions = true
         self.title = title
     }
 
@@ -71,6 +75,7 @@ extension ReaderSession {
         let url: String?
         let sentences: [SimpleSentence]?
         let scrollPhraseIndex: Int
+        let showReaderOptions: Bool
         let title: String?
         let media: AnkiDeckVideo?
         let updatedAt: Date?
@@ -249,6 +254,22 @@ extension ReaderSession {
         }
     }
 
+    struct Migration10: Fluent.Migration {
+        var name: String { "ReaderSessionShowReaderOptions" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("show_reader_options", .bool, .required, .sql(.default(true)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("show_reader_options")
+                .update()
+        }
+    }
+
 }
 
 extension ReaderSession {
@@ -272,6 +293,7 @@ extension ReaderSession {
         let url: String?
         let mediaID: UUID?
         let scrollPhraseIndex: Int
+        let showReaderOptions: Bool
         let sentences: [SimpleSentence]?
     }
 
@@ -295,6 +317,7 @@ extension ReaderSession.Update: Validatable {
         validations.add("rubyType", as: String.self)
         validations.add("visualType", as: String.self)
         validations.add("scrollPhraseIndex", as: Int.self)
+        validations.add("showReaderOptions", as: Bool.self)
     }
 
 }

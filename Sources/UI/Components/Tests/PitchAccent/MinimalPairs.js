@@ -41,7 +41,7 @@ class MinimalPairs extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/tests/pitchAccent/minimalPairs/random`);
+        const response = await fetch('/api/tests/pitchAccent/minimalPairs/random');
         if (response.ok) {
             const minimalPair = await response.json();
             this.setState({ minimalPair, pairIndex: Math.floor(Math.random() * minimalPair.pairs.length) });
@@ -65,7 +65,7 @@ class MinimalPairs extends React.Component {
             }
 
             if (mora === accent) {
-                output += "＼"
+                output += '＼';
             }
         }
 

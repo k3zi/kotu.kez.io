@@ -582,7 +582,7 @@ class MediaController: RouteCollection {
             let user = try req.auth.require(User.self)
             return user.$readerSessions
                 .query(on: req.db)
-                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url).field(\.$visualType).field(\.$rubyType).field(\.$owner.$id).field(\.$scrollPhraseIndex)
+                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url).field(\.$visualType).field(\.$rubyType).field(\.$owner.$id).field(\.$scrollPhraseIndex).field(\.$showReaderOptions)
                 .sort(\.$updatedAt, .descending)
                 .paginate(for: req).map {
                     let page = $0
@@ -637,6 +637,7 @@ class MediaController: RouteCollection {
                         url: $0.url,
                         sentences: sentencesData.flatMap { try? JSONDecoder().decode([SimpleSentence].self, from: $0)},
                         scrollPhraseIndex: $0.scrollPhraseIndex,
+                        showReaderOptions: $0.showReaderOptions,
                         title: $0.title,
                         media: $0.media,
                         updatedAt: $0.updatedAt
@@ -675,6 +676,7 @@ class MediaController: RouteCollection {
                     session.rubyType = object.rubyType
                     session.visualType = object.visualType
                     session.scrollPhraseIndex = object.scrollPhraseIndex
+                    session.showReaderOptions = object.showReaderOptions
                     return session.update(on: req.db)
                         .map { Response(status: .ok) }
                 }

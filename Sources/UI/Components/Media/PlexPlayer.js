@@ -130,7 +130,7 @@ class PlexPlayer extends React.Component {
                 timelineURL: m.timelineURL,
                 duration: m.duration,
                 sessionID: m.sessionID
-            }
+            };
         });
         const result = await Promise.all(promises);
         return result.filter(m => m.src);
@@ -203,7 +203,7 @@ class PlexPlayer extends React.Component {
                     <ConfigurePlexServer show={this.state.showConfigureServer} onHide={() => this.toggleConfigureServer(false)} onSuccess={() => this.toggleConfigureServer(false)} />
                 </Row>
             )
-        }</UserContext.Consumer>);
+            }</UserContext.Consumer>);
     }
 }
 

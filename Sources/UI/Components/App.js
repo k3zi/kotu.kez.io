@@ -166,10 +166,10 @@ class App extends React.Component {
         Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
             e.preventDefault();
             if (e.clipboardData && e.clipboardData.getData) {
-                const text = e.clipboardData.getData("text/plain");
-                document.execCommand("insertText", false, text);
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
             } else if (window.clipboardData && window.clipboardData.getData) {
-                const text = window.clipboardData.getData("Text");
+                const text = window.clipboardData.getData('Text');
                 insertTextAtCursor(text);
             }
         });
@@ -297,7 +297,7 @@ class App extends React.Component {
         if (response.ok) {
             const results = (await response.json()).items;
             if (results.length === 0) {
-                const response1 = await fetch(`/api/dictionary/all`);
+                const response1 = await fetch('/api/dictionary/all');
                 if (response1.ok) {
                     const dictionaries = await response1.json();
                     this.setState({ hasDictionaries: dictionaries.length > 0 });
@@ -512,7 +512,7 @@ class App extends React.Component {
 
             {this.state.user && <Nav className="order-1 order-xl-3 d-none d-md-block">
                 <Nav.Link className='fs-5 d-inline-block' variant='dark' onClick={() => this.toggleCreateNoteModal(true)}><i className="bi bi-card-text"></i></Nav.Link>
-                <NavDropdown className='dropdown-menu-end d-inline-block' title={<i class="bi bi-person-circle"></i>}>
+                <NavDropdown className='dropdown-menu-end d-inline-block' title={<i className="bi bi-person-circle"></i>}>
                     <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
                     <NavDropdown.Divider />
                     <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
@@ -532,7 +532,7 @@ class App extends React.Component {
                         <LinkContainer exact to="/articles">
                             <Nav.Link className='col-6 justify-content-center' active={false}>Articles</Nav.Link>
                         </LinkContainer>
-                        <div class="col-12"></div>
+                        <div className="col-12"></div>
                         <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                         <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                     </>}
@@ -604,7 +604,7 @@ class App extends React.Component {
                             </NavDropdown>
                         </>}
 
-                        <NavDropdown className='dropdown-menu-end' title={<i class="bi bi-person-circle"></i>}>
+                        <NavDropdown className='dropdown-menu-end' title={<i className="bi bi-person-circle"></i>}>
                             <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
@@ -620,50 +620,50 @@ class App extends React.Component {
 
     renderSearch(place) {
         return (this.state.user && <Form as="div" className={`mr-auto col-12 mt-1 mt-xl-0 col-xl-4 order-3 order-xl-1 ${place === 'main' ? 'd-none d-md-inline' : 'd-md-none'}`}>
-                <Dropdown>
-                    <InputGroup className="mr-md-2">
-                        <div className='position-relative flex-fill'>
-                            <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
-                            {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-2px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i class="bi bi-x"></i></span>}
-                        </div>
-                        <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
-                            <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
-                                <i class="bi bi-search"></i>
-                            </Button>
-                        </LinkContainer>
-                        <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
-                            {['Words', 'Examples'].map((option, i) => {
-                                return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
-                            })}
-                        </DropdownButton>
-                    </InputGroup>
-                    <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
-                        {this.state.searchNavSelectedOption == 'Words' && this.state.results.length == 0 && !this.state.hasDictionaries && <Dropdown.Item　disabled>
+            <Dropdown>
+                <InputGroup className="mr-md-2">
+                    <div className='position-relative flex-fill'>
+                        <Form.Control className="text-center" type="text" placeholder="Search" onChange={(e) => this.search(e.target.value)} value={this.state.query} onFocus={() => this.setState({ isFocused: true })} />
+                        {this.state.query.length > 0 && <span onClick={() => this.search('')} className='position-absolute text-muted' style={{ top: '-2px', right: '4px', 'font-size': '1.75rem', cursor: 'pointer' }}><i className="bi bi-x"></i></span>}
+                    </div>
+                    <LinkContainer onClick={() => this.setState({ isFocused: false })} to={`/search/${encodeURIComponent(this.state.query)}`}>
+                        <Button variant="outline-secondary" disabled={this.state.query.length === 0}>
+                            <i className="bi bi-search"></i>
+                        </Button>
+                    </LinkContainer>
+                    <DropdownButton variant="outline-secondary" title={this.state.searchNavSelectedOption} onMouseDown={() => this.setState({ isFocused: false })} id="appSearchSelectedOption">
+                        {['Words', 'Examples'].map((option, i) => {
+                            return <Dropdown.Item key={i} active={this.state.searchNavSelectedOption == option} onSelect={() => this.setState({ searchNavSelectedOption: option, isFocused: true })}>{option}</Dropdown.Item>;
+                        })}
+                    </DropdownButton>
+                </InputGroup>
+                <Dropdown.Menu show className="dropdown-menu-start" style={{ 'display': (!this.state.selectedResult && this.state.query.length > 0 && this.state.isFocused) ? 'block' : 'none'}}>
+                    {this.state.searchNavSelectedOption == 'Words' && this.state.results.length == 0 && !this.state.hasDictionaries && <Dropdown.Item　disabled>
                             No dictionaries. Add a dictionary in Settings.
-                        </Dropdown.Item>}
-                        {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
-                            return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
-                                <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
-                                {r.headline}
-                            </Dropdown.Item>;
-                        })}
+                    </Dropdown.Item>}
+                    {this.state.searchNavSelectedOption == 'Words' && this.state.results.map((r, i) => {
+                        return <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" onClick={() => this.loadResult(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
+                            <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
+                            {r.headline}
+                        </Dropdown.Item>;
+                    })}
 
-                        {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
-                            if (s.youtubeVideo) {
-                                return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
-                                    <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                        <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
-                                        {s.text}
-                                    </Dropdown.Item>
-                                </LinkContainer>;
-                            } else {
-                                return <Dropdown.Item key={i} onClick={() => this.playAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                    {this.state.searchNavSelectedOption == 'Examples' && this.state.subtitles.map((s, i) => {
+                        if (s.youtubeVideo) {
+                            return <LinkContainer key={i} to={`/media/youtube/${s.youtubeVideo.youtubeID}/${s.startTime}`}>
+                                <Dropdown.Item className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                    <img className='me-2' height='40px' src={s.youtubeVideo.thumbnailURL} />
                                     {s.text}
-                                </Dropdown.Item>;
-                            }
-                        })}
-                    </Dropdown.Menu>
-                </Dropdown>
+                                </Dropdown.Item>
+                            </LinkContainer>;
+                        } else {
+                            return <Dropdown.Item key={i} onClick={() => this.playAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='d-flex align-items-center text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
+                                {s.text}
+                            </Dropdown.Item>;
+                        }
+                    })}
+                </Dropdown.Menu>
+            </Dropdown>
         </Form>);
     }
 
@@ -687,7 +687,7 @@ class App extends React.Component {
                         <div className='p-4' style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 1050 }}>
                             <Toast show={!!this.state.audio || this.state.willAutoplay}>
                                 <Toast.Header closeButton={false}>
-                                    <i class="bi bi-play-circle-fill me-2"></i>
+                                    <i className="bi bi-play-circle-fill me-2"></i>
                                     <strong className="me-auto">{this.state.willAutoplay ? 'Autoplay' : 'Playing'}</strong>
                                     {this.state.willAutoplay && <small>just now</small>}
                                 </Toast.Header>
@@ -730,8 +730,11 @@ class App extends React.Component {
                                     <TranscriptionProject />
                                 </Route>
 
-                                <Route path="/flashcard/decks">
+                                <Route exact path="/flashcard/decks">
                                     {this.loginProtect(<FlashcardDecks />)}
+                                </Route>
+                                <Route exact path="/flashcard/decks/shuffle">
+                                    {this.loginProtect(<FlashcardDeck />)}
                                 </Route>
                                 <Route path="/flashcard/deck/:id">
                                     {this.loginProtect(<FlashcardDeck />)}
@@ -816,7 +819,7 @@ class App extends React.Component {
                                 ・
                                 <a style={{cursor:'pointer'}} className='text-white' onClick={() => this.toggleFeedbackModal(true)}>Feedback</a>
                                 ・
-                                <a className='text-white' href='https://github.com/k3zi/kotu.kez.io' target='_blank'>Github</a>
+                                <a className='text-white' href='https://github.com/k3zi/kotu.kez.io' target='_blank' rel="noreferrer">Github</a>
                             </p>
                         </footer>
 

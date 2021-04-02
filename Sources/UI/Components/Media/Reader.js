@@ -89,6 +89,12 @@ class Reader extends React.Component {
 
     load(e) {
         const text = e.target.value;
+        if (!text || text.length === 0) {
+            this.setState({ article: null, isLoading: false, html: null, text });
+            this.props.history.push('/media/reader');
+            return;
+        }
+
         this.setState({ article: null, isLoading: true, html: null, text });
         if (/(https?:\/\/[^\s]+)/.test(text)) {
             const url = text;
@@ -104,6 +110,7 @@ class Reader extends React.Component {
         }
         this.loadingSessionID = id;
         if (!id) { return; }
+        this.setState({ isLoading: true });
         let sessionResponse = await fetch(`/api/media/reader/session/${id}?includeMediaSubtitles=true`);
         let session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         if (session) {
@@ -139,7 +146,8 @@ class Reader extends React.Component {
                 this.updateSession();
             }
         } else {
-            this.props.history.push(`/media/reader`);
+            this.setState({ isLoading: false });
+            this.props.history.push('/media/reader');
         }
     }
 
@@ -177,7 +185,7 @@ class Reader extends React.Component {
         const self = this;
 
         const sessionData = {
-            annotatedContent: "",
+            annotatedContent: '',
             textContent: article.textContent,
             content: article.content,
             url: url,
@@ -198,7 +206,7 @@ class Reader extends React.Component {
             this.props.history.push(`/media/reader/${session.id}`);
         } else {
             this.setState({ isLoading: false, html: '', session: null });
-            this.props.history.push(`/media/reader`);
+            this.props.history.push('/media/reader');
         }
     }
 
@@ -207,35 +215,36 @@ class Reader extends React.Component {
         if (session && session.url) {
             session = null;
         }
-        const requestID = this.currentRequestID + 1;
-        this.currentRequestID = requestID;
         const self = this;
         const textContent = text;
         const content = `<div class='page'><span>${text}</span></div>`;
-        const annotatedContentNode = await Helpers.generateVisualSentenceElement(content, textContent, () => {
-            return requestID != self.currentRequestID;
-        });
-        if (!annotatedContentNode) {
-            return;
-        }
-        const annotatedContent = annotatedContentNode.innerHTML;
 
         if (session) {
+            const sentences = await Helpers.parseSentences(textContent);
+            const requestID = this.currentRequestID + 1;
+            this.currentRequestID = requestID;
+            const annotatedContent = await Helpers.generateVisualSentenceElementFromSentences(sentences, content, { }, () => {
+                return requestID != this.currentRequestID;
+            });
+
             // Update
-            session.annotatedContent = annotatedContent;
             session.textContent = textContent;
             session.content = content;
+            session.sentences = sentences;
+
             await fetch(`/api/media/reader/session/${session.id}`, {
                 method: 'PUT',
-                body: JSON.stringify(session),
+                body: await gzip(JSON.stringify(session)),
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip'
                 }
             });
+            this.setState({ html: annotatedContent.innerHTML, sentences });
         } else {
             // Create New
             const sessionData = {
-                annotatedContent: annotatedContent,
+                annotatedContent: '', // this property can probably be deleted since the sentences get cached
                 textContent: textContent,
                 content: content,
                 url: null,
@@ -244,18 +253,19 @@ class Reader extends React.Component {
             };
             const sessionResponse = await fetch('/api/media/reader/session', {
                 method: 'POST',
-                body: JSON.stringify(sessionData),
+                body: await gzip(JSON.stringify(sessionData)),
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip'
                 }
             });
             session = sessionResponse.ok ? (await sessionResponse.json()) : null;
         }
-        this.setState({ isLoading: false, html: annotatedContent, session });
+        this.setState({ isLoading: false });
         if (session) {
             this.props.history.push(`/media/reader/${session.id}`);
         } else {
-            this.props.history.push(`/media/reader`);
+            this.props.history.push('/media/reader');
         }
     }
 
@@ -288,6 +298,17 @@ class Reader extends React.Component {
         session.visualType = item.value;
         this.setState({ session });
         this.updateSession();
+    }
+
+    toggleShowReaderOptions() {
+        const session = this.state.session;
+        if (!session) { return; }
+        session.showReaderOptions = !session.showReaderOptions;
+        this.updateSession();
+    }
+
+    showReaderOptions() {
+        return (!this.state.session && !this.state.isLoading) || (this.state.session && this.state.session.showReaderOptions);
     }
 
     async setMedia(media) {
@@ -326,7 +347,6 @@ class Reader extends React.Component {
     async updateSession() {
         const session = this.state.session;
         if (!session) { return; }
-        console.log(session.scrollPhraseIndex);
         await fetch(`/api/media/reader/session/${session.id}`, {
             method: 'PUT',
             body: await gzip(JSON.stringify({
@@ -334,7 +354,8 @@ class Reader extends React.Component {
                 rubyType: session.rubyType,
                 scrollPhraseIndex: session.scrollPhraseIndex || 0,
                 mediaID: session.media && session.media.id,
-                sentences: this.state.sentences != session.sentences ? this.state.sentences : null
+                sentences: this.state.sentences != session.sentences ? this.state.sentences : null,
+                showReaderOptions: session.showReaderOptions
             })),
             headers: {
                 'Content-Type': 'application/json',
@@ -369,8 +390,8 @@ class Reader extends React.Component {
             }
         });
         if (phrase) {
-             this.state.session.scrollPhraseIndex = parseInt(phrase.dataset.phraseIndex) || 0;
-             this.throttledUpdateSession();
+            this.state.session.scrollPhraseIndex = parseInt(phrase.dataset.phraseIndex) || 0;
+            this.throttledUpdateSession();
         }
     }
 
@@ -379,8 +400,8 @@ class Reader extends React.Component {
             <UserContext.Consumer>{user => (
                 <Row className='flex-fill'>
                     <Col className='h-100 d-flex flex-column' xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
-                        <div id='readerOptions' className='collapse show'>
-                            <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.load(e)} placeholder="Text / Article URL" value={this.state.text} />
+                        <div id='readerOptions' className={`collapse${this.showReaderOptions() ? ' show' : ''}`}>
+                            <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.load(e)} placeholder="Enter Text / Article URL" value={this.state.text} />
                             {this.state.session && <>
                                 <InputGroup className="mt-3">
                                     <Form.Control value={this.state.session.media ? this.state.session.media.title : '(None)'} readOnly />
@@ -437,12 +458,12 @@ class Reader extends React.Component {
                                     <br />
                                     <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
                                 </>}
+                                <hr className='mb-1' />
                             </>}
-                            <hr className='mb-1' />
                         </div>
-                        <h4 className='text-center mb-0'><i data-bs-toggle="collapse" data-bs-target="#readerOptions" aria-expanded="false" aria-controls="readerOptions" class={`bi bi-chevron-compact-auto cursor-pointer text-muted`}></i></h4>
+                        {this.state.session && <h4 className='text-center mb-0'><i onClick={() => this.toggleShowReaderOptions()} data-bs-toggle="collapse" data-bs-target="#readerOptions" aria-expanded="false" aria-controls="readerOptions" className={`bi bi-chevron-compact-auto cursor-pointer text-muted${this.showReaderOptions() ? '' : ' collapsed'}`}></i></h4>}
                         {this.state.isLoading && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
-                        {this.state.html && this.state.session && <div className={`px-3 overflow-auto visual-type-${this.state.session.visualType} ruby-type-${this.state.session.rubyType}`} onScroll={(e) => this.onScroll(e.target)} ref={(r) => this.onScroll(r)} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
+                        {!this.state.isLoading && this.state.html && this.state.session && <div className={`px-3 overflow-auto visual-type-${this.state.session.visualType} ruby-type-${this.state.session.rubyType}`} onScroll={(e) => this.onScroll(e.target)} ref={(r) => this.onScroll(r)} dangerouslySetInnerHTML={{__html: this.state.html }}></div>}
                     </Col>
 
                     {user.settings.reader.showCreateNoteForm && <Col xs={12} md={5}>
@@ -450,7 +471,7 @@ class Reader extends React.Component {
                     </Col>}
                 </Row>
             )
-        }</UserContext.Consumer>);
+            }</UserContext.Consumer>);
     }
 }
 

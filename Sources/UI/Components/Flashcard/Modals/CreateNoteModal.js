@@ -18,10 +18,10 @@ class CreateNoteModal extends React.Component {
 
     render() {
         return (
-            <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
+            <Modal {...this.props} size='lg' centered>
                 <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
-                        Create Note
+                    <Modal.Title>
+                        Add Note
                     </Modal.Title>
                 </Modal.Header>
 

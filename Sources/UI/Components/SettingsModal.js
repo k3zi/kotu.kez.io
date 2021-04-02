@@ -50,7 +50,7 @@ class SettingsModal extends React.Component {
     }
 
     async loadDictionaries() {
-        const response = await fetch(`/api/dictionary/all`);
+        const response = await fetch('/api/dictionary/all');
         if (response.ok) {
             const dictionaries = await response.json();
             for (const [i, d] of dictionaries.entries()) {
@@ -114,7 +114,7 @@ class SettingsModal extends React.Component {
     async save(e, change) {
         const data = this.props.user.settings;
         change(data);
-        await fetch(`/api/me/settings`, {
+        await fetch('/api/me/settings', {
             method: 'PUT',
             body: JSON.stringify(data),
             headers: {
@@ -130,7 +130,7 @@ class SettingsModal extends React.Component {
         e.preventDefault();
         this.setState({ dictionary: { isSubmitting: true, didError: false, message: null }});
 
-        const response = await fetch(`/api/dictionary/upload`, {
+        const response = await fetch('/api/dictionary/upload', {
             method: 'POST',
             body: new FormData(e.target)
         });
@@ -147,7 +147,7 @@ class SettingsModal extends React.Component {
     }
 
     async updateDictionaries() {
-        await fetch(`/api/dictionary/all`, {
+        await fetch('/api/dictionary/all', {
             method: 'PUT',
             body: JSON.stringify(this.state.dictionaries),
             headers: {
@@ -194,7 +194,7 @@ class SettingsModal extends React.Component {
                                         </div>
                                         <span className='px-3'>{dictionary.name}{dictionary.insertJob && dictionary.insertJob.errorMessage && dictionary.insertJob.errorMessage.length && `(${dictionary.insertJob.errorMessage})`}</span>
                                     </div>
-                                    <span class='float-end text-danger d-flex align-items-center fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i class="bi bi-x"></i></span>
+                                    <span className='float-end text-danger d-flex align-items-center fs-3' style={{ cursor: 'pointer' }} onClick={() => this.removeDictionary(dictionary)}><i className="bi bi-x"></i></span>
                                 </div>
                                 {dictionary.insertJob && !dictionary.insertJob.isComplete && <ProgressBar animated now={Math.round(dictionary.insertJob.progress * 100)} /> }
                             </ListGroup.Item>;
@@ -212,10 +212,10 @@ class SettingsModal extends React.Component {
                             <Form.Text className="text-muted">
                                 Currently コツ only accepts .mkd files. Learn more about this format on the Help page.
                             </Form.Text>
-                            {this.state.dictionary.didError && <Alert variant="danger" className='mt-3' onClose={() => { this.state.dictionary.didError = false; this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary }) }} dismissible>
+                            {this.state.dictionary.didError && <Alert variant="danger" className='mt-3' onClose={() => { this.state.dictionary.didError = false; this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary }); }} dismissible>
                                 {this.state.dictionary.message}
                             </Alert>}
-                            {!this.state.dictionary.didError && this.state.dictionary.message && <Alert variant="info" className='mt-3' onClose={() => { this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary}) }} dismissible>
+                            {!this.state.dictionary.didError && this.state.dictionary.message && <Alert variant="info" className='mt-3' onClose={() => { this.state.dictionary.message = null; this.setState({ dictionary: this.state.dictionary}); }} dismissible>
                                 {this.state.dictionary.message}
                             </Alert>}
                         </Form.Group>

@@ -34,7 +34,6 @@ class Deck extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            deck: null,
             cardType: null,
             loadedHTML: null,
             showGradeButtons: false,
@@ -52,7 +51,7 @@ class Deck extends React.Component {
 
     async load() {
         const id = this.props.match.params.id;
-        const response = await fetch(`/api/flashcard/deck/${id}/nextCard`);
+        const response = await fetch(id ? `/api/flashcard/deck/${id}/nextCard` : `/api/flashcard/decks/nextCard`);
         if (response.ok) {
             const nextCard = await response.json();
             this.setState({ nextCard, loadedHTML: null, showGradeButtons: false });

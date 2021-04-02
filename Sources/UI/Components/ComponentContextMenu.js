@@ -1,4 +1,4 @@
-import * as clipboard from "clipboard-polyfill/text";
+import * as clipboard from 'clipboard-polyfill/text';
 import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
@@ -20,9 +20,9 @@ class ComponentContextMenu extends React.Component {
             method: 'POST'
         });
         if (response.ok) {
-            this.props.target.classList.remove(`status-unknown`);
-            this.props.target.classList.remove(`status-learning`);
-            this.props.target.classList.remove(`status-known`);
+            this.props.target.classList.remove('status-unknown');
+            this.props.target.classList.remove('status-learning');
+            this.props.target.classList.remove('status-known');
             this.props.target.classList.add(`status-${status}`);
         }
         this.props.onHide();
@@ -65,16 +65,16 @@ class ComponentContextMenu extends React.Component {
     render() {
         return (
             <>
-                <div className={`dropdown-menu ${!!this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed', width: 'auto' }}>
+                <div className={`dropdown-menu ${this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed', width: 'auto' }}>
                     <Dropdown.Header>Word Status</Dropdown.Header>
-                    <Dropdown.Item onClick={() => this.updateWordStatus('known')} disabled={!this.props.selection}><i class="bi bi-plus-circle text-success"> Known</i></Dropdown.Item>
-                    <Dropdown.Item onClick={() => this.updateWordStatus('learning')} disabled={!this.props.selection}><i class="bi bi-circle text-warning"> Learning</i></Dropdown.Item>
-                    <Dropdown.Item onClick={() => this.updateWordStatus('unknown')} disabled={!this.props.selection}><i class="bi bi-dash-circle text-danger"> Unknown</i></Dropdown.Item>
+                    <Dropdown.Item onClick={() => this.updateWordStatus('known')} disabled={!this.props.selection}><i className="bi bi-plus-circle text-success"> Known</i></Dropdown.Item>
+                    <Dropdown.Item onClick={() => this.updateWordStatus('learning')} disabled={!this.props.selection}><i className="bi bi-circle text-warning"> Learning</i></Dropdown.Item>
+                    <Dropdown.Item onClick={() => this.updateWordStatus('unknown')} disabled={!this.props.selection}><i className="bi bi-dash-circle text-danger"> Unknown</i></Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => this.copy()} disabled={!this.props.selection}>Copy</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.paste()}>Paste</Dropdown.Item>
                 </div>
-                <div onClick={() => this.props.onHide()} style={{ height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 2050, display: (!!this.props.target) ? 'block' : 'none' }}></div>
+                <div onClick={() => this.props.onHide()} style={{ height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 2050, display: (this.props.target) ? 'block' : 'none' }}></div>
             </>
         );
     }

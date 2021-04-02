@@ -31,16 +31,13 @@ class Decks extends React.Component {
         this.load();
 
         document.addEventListener('ankiChange', this.load);
-        console.log('added listener');
     }
 
     componentWillUnmount() {
         document.removeEventListener('ankiChange', this.load);
-        console.log('removed listener');
     }
 
     async load() {
-        console.log('will load');
         const response = await fetch('/api/flashcard/decks');
         if (response.ok) {
             const decks = await response.json();
@@ -113,6 +110,9 @@ class Decks extends React.Component {
             <div>
                 <h2>Anki <small className="text-muted">{this.state.decks.length} Deck(s)</small> <Button className='float-end mx-2' variant="primary" onClick={() => this.toggleCreateDeckModal(true)}>Create Deck</Button> <Button className='float-end mx-2' variant="primary" onClick={() => this.showImportDeckModal(true)}>Import .apkg</Button></h2>
                 <hr/>
+                <LinkContainer to='/flashcard/decks/shuffle'>
+                    <Button disabled={this.state.decks.every(d => d.newCardsCount === 0 && d.reviewCardsCount === 0)} className='mb-3 col-12' variant='primary'><i className='bi bi-shuffle'></i> Shuffle</Button>
+                </LinkContainer>
                 <Table striped bordered hover>
                     <thead>
                         <tr>
@@ -132,7 +132,7 @@ class Decks extends React.Component {
                                 <td className="align-middle text-center text-primary shrink">{deck.readableNextCardDueDate}</td>
                                 <td className="align-middle text-center expand">
                                     <LinkContainer to={`/flashcard/deck/${deck.id}`}>
-                                        <Button variant="primary"><i className='bi bi-play-fill'></i></Button>
+                                        <Button disabled={deck.newCardsCount === 0 && deck.reviewCardsCount === 0} variant="primary"><i className='bi bi-play-fill'></i></Button>
                                     </LinkContainer>
                                     <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditDeckModal(deck)}><i className="bi bi-pencil-square"></i></Button>

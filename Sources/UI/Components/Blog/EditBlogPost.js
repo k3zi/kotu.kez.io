@@ -31,7 +31,7 @@ class EditBlogPost extends React.Component {
             post: null
         };
         const self = this;
-        this.throttledSave = _.throttle(() => { self.save() }, 250);
+        this.throttledSave = _.throttle(() => { self.save(); }, 250);
     }
 
     componentDidMount() {
@@ -100,11 +100,11 @@ class EditBlogPost extends React.Component {
                     {this.state.post && <div>
                         <Form.Group controlId="createPostModalTitle">
                             <Form.Label>Title</Form.Label>
-                            <Form.Control autoComplete="off" type="text" defaultValue={this.state.post.title} onChange={(e) => { this.onChange('title', e.target.value)}} placeholder="Enter the name of the note field" />
+                            <Form.Control autoComplete="off" type="text" defaultValue={this.state.post.title} onChange={(e) => { this.onChange('title', e.target.value);}} placeholder="Enter the name of the note field" />
                         </Form.Group>
 
                         <Form.Group className='mt-3' controlId="createPostModalDraft">
-                            <Form.Check type="checkbox" label="Mark as Draft" onChange={(e) => { this.onChange('isDraft', e.target.checked)}} defaultChecked={this.state.post.isDraft} />
+                            <Form.Check type="checkbox" label="Mark as Draft" onChange={(e) => { this.onChange('isDraft', e.target.checked);}} defaultChecked={this.state.post.isDraft} />
                         </Form.Group>
 
                         <Form.Group controlId="createPostModalContent" className='mt-2'>
@@ -121,7 +121,7 @@ class EditBlogPost extends React.Component {
                     <DeletePostModal post={this.state.showDeletePostModal} didDelete={() => this.showDeletePostModal(null)} didCancel={() => this.showDeletePostModal(null)} onHide={() => this.showDeletePostModal(null)} />
                 </div>
             )
-        }</UserContext.Consumer>);
+            }</UserContext.Consumer>);
     }
 }
 

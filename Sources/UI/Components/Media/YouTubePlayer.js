@@ -64,7 +64,7 @@ class YouTubePlayer extends React.Component {
         if (id && id.length > 0) {
             this.props.history.push(`/media/youtube/${id}`);
         } else {
-            this.props.history.push(`/media/youtube`);
+            this.props.history.push('/media/youtube');
         }
     }
 
@@ -180,7 +180,7 @@ class YouTubePlayer extends React.Component {
     async capture(startTime, endTime, e) {
         this.setState({ isSubmitting: true });
         if (e) e.preventDefault();
-        const response = await fetch(`/api/media/youtube/capture`, {
+        const response = await fetch('/api/media/youtube/capture', {
             method: 'POST',
             body: JSON.stringify({
                 startTime,
@@ -256,7 +256,7 @@ class YouTubePlayer extends React.Component {
                         <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} onStateChange={(e) => this.onStateChange(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
                     </ResponsiveEmbed>}
                     {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
-                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i class="bi bi-arrow-left"></i></span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i className="bi bi-arrow-left"></i></span>
                         <span>
                             <Dropdown as='span' style={{cursor: 'pointer'}}>
                                 <Dropdown.Toggle as='span' className='pe-1'>
@@ -282,18 +282,18 @@ class YouTubePlayer extends React.Component {
                                 </Dropdown.Menu>
                             </Dropdown>
                         </span>
-                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i class="bi bi-arrow-right"></i></span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i className="bi bi-arrow-right"></i></span>
                     </div>}
                     {this.state.isLoadingSubtitles && <div className='bg-secondary text-light text-center p-3'>
                         <h1 className="text-center"><Spinner animation="border" variant="light" /></h1>
                     </div>}
                     {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
                         <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
-                            <i class="bi bi-clipboard"></i>
+                            <i className="bi bi-clipboard"></i>
                         </Button>
                         {this.state.subtitleHTML && <span className={`fs-5 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType} text-center`} dangerouslySetInnerHTML={{__html: this.state.subtitleHTML}}></span>}
                         <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} onTouchEnd={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} disabled={!this.state.subtitle || this.state.isSubmitting || !this.state.youtubeID} className='user-select-none mx-1' variant='danger'>
-                            <i class="bi bi-record2"></i>
+                            <i className="bi bi-record2"></i>
                         </Button>
                     </div>}
 

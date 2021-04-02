@@ -114,7 +114,7 @@ class SearchResultModal extends React.Component {
         const data = {
             value: this.state.headword.headline
         };
-        const response = await fetch(`/api/lists/word`, {
+        const response = await fetch('/api/lists/word', {
             method: 'POST',
             body: JSON.stringify(data),
             headers: {
@@ -164,7 +164,7 @@ class SearchResultModal extends React.Component {
 SearchResultModal.contextType = UserContext;
 export default props => ( <ColorSchemeContext.Consumer>
     {(colorScheme) => {
-       return <SearchResultModal {...props} colorScheme={colorScheme} />
+        return <SearchResultModal {...props} colorScheme={colorScheme} />;
     }}
-  </ColorSchemeContext.Consumer>
-)
+</ColorSchemeContext.Consumer>
+);

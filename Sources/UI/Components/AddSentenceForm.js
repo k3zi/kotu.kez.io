@@ -9,7 +9,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
-import ListGroup from 'react-bootstrap/ListGroup'
+import ListGroup from 'react-bootstrap/ListGroup';
 import Modal from 'react-bootstrap/Modal';
 import Row from 'react-bootstrap/Row';
 
@@ -31,7 +31,7 @@ class AddSentenceForm extends React.Component {
 
     async load(sentence) {
         this.currentSentence = sentence;
-        const response = await fetch(`/api/dictionary/parse?includeHeadwords=true`, {
+        const response = await fetch('/api/dictionary/parse?includeHeadwords=true', {
             method: 'POST',
             body: sentence
         });
@@ -109,18 +109,18 @@ class AddSentenceForm extends React.Component {
 
     readableFrequency(frequency) {
         switch (frequency) {
-            case 'veryCommon':
-                return 'Very Common';
-            case 'common':
-                return 'Common';
-            case 'uncommon':
-                return 'Uncommon';
-            case 'rare':
-                return 'Rare';
-            case 'veryRare':
-                return 'Very Rare';
-            default:
-                return 'Unknown';
+        case 'veryCommon':
+            return 'Very Common';
+        case 'common':
+            return 'Common';
+        case 'uncommon':
+            return 'Uncommon';
+        case 'rare':
+            return 'Rare';
+        case 'veryRare':
+            return 'Very Rare';
+        default:
+            return 'Unknown';
         }
     }
 
@@ -147,10 +147,10 @@ class AddSentenceForm extends React.Component {
                                     <Button variant="secondary">
                                         Add to List
                                     </Button>
-                                </ListGroup.Item>
+                                </ListGroup.Item>;
                             })}
                         </ListGroup>
-                    </Card>
+                    </Card>;
                 })}
             </div>
         );

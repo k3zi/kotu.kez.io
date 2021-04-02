@@ -25,7 +25,7 @@ const helpers = {};
 
 helpers.removeYouon = (text) => {
     return text.split('').filter(c => !smallHiragana.includes(c) && !smallrowKatakana.includes(c)).join('');
-}
+};
 
 helpers.digest = async (message) => {
     const msgUint8 = new TextEncoder().encode(message);
@@ -37,12 +37,12 @@ helpers.digest = async (message) => {
 
 helpers.randomString = (length) => {
     let text = '';
-    const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
     for (var i = 0; i < length; i++) {
         text += charset.charAt(Math.floor(Math.random() * charset.length));
     }
 
-  return text;
+    return text;
 };
 
 helpers.addLiveEventListeners = (selector, event, handler, useCapture, querySelector) => {
@@ -52,10 +52,10 @@ helpers.addLiveEventListeners = (selector, event, handler, useCapture, querySele
             var isMatch = target.matches(selector);
             if (isMatch) {
                 return handler(evt, target);
-           }
-           target = target.parentElement;
-       }
-   }, (typeof useCapture === 'undefined') ? true : useCapture);
+            }
+            target = target.parentElement;
+        }
+    }, (typeof useCapture === 'undefined') ? true : useCapture);
 };
 
 helpers.outputAccent = (word, accent) => {
@@ -69,16 +69,16 @@ helpers.outputAccent = (word, accent) => {
         if (accent > 0 && mora === accent) {
             if (accent > 2) {
                 // rise end
-                output += "</marking>";
+                output += '</marking>';
             }
             // drop start
-            output += "<marking class='drop'>";
+            output += '<marking class=\'drop\'>';
         }
         if (word.charAt(i) === '｀') {
             i++;
             silenced = true;
             if ((i+1) < word.length && (smallrowKatakana.includes(word.charAt(i+1)) || smallHiragana.includes(word.charAt(i+1)))) {
-                output += "<silenced class='wide'>";
+                output += '<silenced class=\'wide\'>';
             } else {
                 output += '<silenced>';
             }
@@ -98,19 +98,19 @@ helpers.outputAccent = (word, accent) => {
 
         // drop end
         if (accent > 0 && mora === accent) {
-            output += "</marking>";
+            output += '</marking>';
         }
 
         // heiban start
         if (accent === 0 && mora == 1 && i <= word.length) {
-            output += "<marking class='overline'>"
+            output += '<marking class=\'overline\'>';
         } else if (accent > 2 && mora === 1) {
             // rise start
-            output += "<marking class='overline'>";
+            output += '<marking class=\'overline\'>';
         }
 
         if (accent === 0 && i === word.length) {
-            output += "</marking>";
+            output += '</marking>';
         }
     }
 
@@ -134,7 +134,7 @@ helpers.outputAccentPlainText = (word, accent) => {
         }
 
         if (mora === accent) {
-            output += "＼"
+            output += '＼';
         }
     }
 
@@ -160,7 +160,7 @@ helpers.generateManualPitchElement = (rawText) => {
                 if (prev.length == 0) { continue; }
                 const lastChar = prev[prev.length - 1];
                 components[i - 1] = prev.slice(0, -1);
-                components[i] = `${lastChar}${components[i]}`
+                components[i] = `${lastChar}${components[i]}`;
             }
         }
         components = components.filter(c => c.length > 0);
@@ -176,10 +176,10 @@ helpers.generateManualPitchElement = (rawText) => {
     }
     result = result.replace(/<\/phrase><phrase/g, '</phrase><space></space><phrase');
     return `<span class='visual-type-showPitchAccentDrops'>${result}</span>`;
-}
+};
 
 helpers.parseSentences = async (textContent) => {
-    const sentenceResponse = await fetch(`/api/dictionary/parse`, {
+    const sentenceResponse = await fetch('/api/dictionary/parse', {
         method: 'POST',
         body: await gzip(textContent),
         headers: {
@@ -263,7 +263,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                     newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${globalPhraseIndex}'><visual>${phrase.pronunciation}</visual><component data-component-index='0'>${phrase.surface}</component></phrase>`;
                 } else {
                     newText += `<phrase ${!skipPost && subtitle ? `data-subtitle-index='${subtitleIndex}'`: ''} data-phrase-index='${globalPhraseIndex}'><visual>${helpers.outputAccent(phrase.pronunciation, phrase.pitchAccent.mora)}</visual>${phrase.components.map((c, i) => {
-                            return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
+                        return `<component data-component-index='${i}' data-original='${c.original}' data-surface='${c.surface}' data-frequency-surface='${c.frequencySurface || ''}' class='underline underline-pitch-${c.pitchAccents[0].descriptive} underline-${c.frequency} status-${c.status}'>${c.ruby}</component>`;
                     }).join('')}</phrase>`;
                 }
 
@@ -289,7 +289,7 @@ helpers.generateVisualSentenceElementFromSentences = async (sentences, content, 
                 index = text.indexOf(phrase.surface.charAt(0), startIndex);
                 startIndex += phrase.surface.length;
             } else {
-                index = -1
+                index = -1;
             }
         }
         if (newText.length > 0) {
@@ -310,7 +310,7 @@ helpers.textFromHTML = (html) => {
     const span = document.createElement('span');
     span.innerHTML = html;
     return span.textContent || span.innerText;
-}
+};
 
 helpers.htmlForFrequency = async (sentence) => {
     const html = `<span class='visual-type-showFrequency'><span>${sentence}</span></span>`;
@@ -354,7 +354,7 @@ helpers.parseMarkdown = (rawText) => {
     }
 
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    subst = `<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    subst = '<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>';
     text = text.replace(regex, subst);
     // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
@@ -384,7 +384,7 @@ helpers.parseMarkdown = (rawText) => {
         })
         .use(stringify)
         .processSync(text).contents;
-}
+};
 
 helpers.htmlForCard = async (baseHTML, options) => {
     const { fieldValues, autoPlay, answers, answersType, showClozeDeletion, clozeDeletionIndex } = options;
@@ -392,7 +392,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
 
     // Anki backards compatability
     let regex = /{{furigana:\s*(.*?)}}/gmi;
-    let subst = `[mfurigana: {{$1}}]`;
+    let subst = '[mfurigana: {{$1}}]';
     result = result.replace(regex, subst);
     const modifiedFieldValues = [...fieldValues];
     modifiedFieldValues.push({ field: { name: 'Tags' }, value: '' });
@@ -410,11 +410,11 @@ helpers.htmlForCard = async (baseHTML, options) => {
     }
 
     regex = /{{#(.*?)}}/gmi;
-    subst = ``;
+    subst = '';
     result = result.replace(regex, subst);
 
     regex = /{{\/(.*?)}}/gmi;
-    subst = ``;
+    subst = '';
     result = result.replace(regex, subst);
 
     // Handle media for front / back.
@@ -456,7 +456,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
             const answeredDigest = await helpers.digest(answered);
             const correct = answeredDigest === digest;
             const value = answersType === 'show' ? answer : answered;
-            html = `<span class="input-group"><span type='text' class='form-control d-flex justify-content-center align-items-center' disabled readonly>${value}</span><span class="input-group-text">${correct ? `<i class='bi bi-check fs-3 text-success'></i>` : `<i class='bi bi-x fs-3 text-danger'></i>`}</span></span>`;
+            html = `<span class="input-group"><span type='text' class='form-control d-flex justify-content-center align-items-center' disabled readonly>${value}</span><span class="input-group-text">${correct ? '<i class=\'bi bi-check fs-3 text-success\'></i>' : '<i class=\'bi bi-x fs-3 text-danger\'></i>'}</span></span>`;
         }
         result = result.substring(0, match.index) + html + result.substring(match.index + match[0].length);
     }
@@ -465,13 +465,13 @@ helpers.htmlForCard = async (baseHTML, options) => {
 
     if (clozeDeletionIndex && clozeDeletionIndex > 0) {
         if (showClozeDeletion) {
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)(::([^\}]*?))?\}\}`, 'g'), `<span class='cloze-deletion'>$1</span>`);
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)(::([^\}]*?))?\}\}`, 'g'), '<span class=\'cloze-deletion\'>$1</span>');
         } else {
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)::([^\}]*?)\}\}`, 'g'), `<span class='cloze-deletion'>[$2]</span>`);
-            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)\}\}`, 'g'), `<span class='cloze-deletion'>[...]</span>`);
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)::([^\}]*?)\}\}`, 'g'), '<span class=\'cloze-deletion\'>[$2]</span>');
+            result = result.replace(new RegExp(`\{\{c${clozeDeletionIndex}::([^\}]*?)\}\}`, 'g'), '<span class=\'cloze-deletion\'>[...]</span>');
         }
     }
-    result = result.replace(new RegExp(`\{\{c\\d::(.*?)(::.*?)?\}\}`, 'g'), '$1');
+    result = result.replace(new RegExp('\{\{c\\d::(.*?)(::.*?)?\}\}', 'g'), '$1');
     return result;
 };
 

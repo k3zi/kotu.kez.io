@@ -89,7 +89,7 @@ class ConfigurePlexServer extends React.Component {
                     </Form>}
                     {this.state.request && !this.state.linked && <>
                         <h3 className='text-center'>Your code is: <strong>{this.state.request.code}</strong></h3>
-                        <h4 className='text-center'>Visit <a target='_blank' href='https://www.plex.tv/link/'>Plex Link</a> to link your account.</h4>
+                        <h4 className='text-center'>Visit <a target='_blank' href='https://www.plex.tv/link/' rel="noreferrer">Plex Link</a> to link your account.</h4>
                     </>}
                     {this.state.linked && <h3 className='text-center'>Your account has been successfully linked!</h3>}
                 </Modal.Body>

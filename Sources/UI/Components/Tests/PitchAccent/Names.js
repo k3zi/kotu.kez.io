@@ -55,7 +55,7 @@ class Names extends React.Component {
         }
 
         if (!name) {
-            const response = await fetch(`/api/tests/pitchAccent/names/random`);
+            const response = await fetch('/api/tests/pitchAccent/names/random');
             if (response.ok) {
                 name = await response.json();
                 name.incorrectCount = 0;
@@ -118,7 +118,7 @@ class Names extends React.Component {
             }
 
             if (mora === accent) {
-                output += "＼"
+                output += '＼';
             }
         }
 
@@ -154,7 +154,7 @@ class Names extends React.Component {
                             {this.state.nameHTML && <h2 className='text-center' dangerouslySetInnerHTML={{__html: this.state.nameHTML}}></h2>}
                             {this.state.answerHTML && <div>
                                 <hr />
-                                <span className={`fs-5 visual-type-showPitchAccentDrops text-center`} dangerouslySetInnerHTML={{__html: this.state.answerHTML}}></span>
+                                <span className={'fs-5 visual-type-showPitchAccentDrops text-center'} dangerouslySetInnerHTML={{__html: this.state.answerHTML}}></span>
                                 <audio controls autoPlay>
                                     <source src={`/api/tests/pitchAccent/names/speech/${this.state.name.gender}/${this.state.name.firstNameIndex}/${this.state.name.lastNameIndex}`} type='audio/mpeg' />
                                 </audio>

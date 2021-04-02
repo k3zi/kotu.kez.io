@@ -53,7 +53,7 @@ class Decks extends React.Component {
     }
 
     async loadNumberOfUsersGroupedByDate() {
-        const response = await fetch(`/api/admin/numberOfUsersGroupedByDate`);
+        const response = await fetch('/api/admin/numberOfUsersGroupedByDate');
         if (response.ok) {
             const result = await response.json();
             const usersGroupedByDate = result.filter(r => r.createdAt).map(r => {
@@ -68,7 +68,7 @@ class Decks extends React.Component {
                 return {
                     x: r.x.toISOString().split('T')[0],
                     y: r.y
-                }
+                };
             });
             this.setState({ usersGroupedByDate });
         }
@@ -119,9 +119,9 @@ class Decks extends React.Component {
                         animate={true}
                         margin={{ top: 10, right: 20, bottom: 10, left: 20 }}
                         data={[{
-                                id: 'Users Per Day',
-                                data: this.state.usersGroupedByDate
-                            }
+                            id: 'Users Per Day',
+                            data: this.state.usersGroupedByDate
+                        }
                         ]}
                         xScale={{
                             type: 'time',

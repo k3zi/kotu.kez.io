@@ -1,4 +1,4 @@
-import * as clipboard from "clipboard-polyfill/text";
+import * as clipboard from 'clipboard-polyfill/text';
 import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
@@ -16,7 +16,7 @@ class ContextMenu extends React.Component {
 
     addClozeDeletion() {
         const fullText = this.props.target.innerText;
-        const regex = new RegExp(`\{\{c(\\d)::(.*?)(::.*?)?\}\}`, 'g');
+        const regex = new RegExp('\{\{c(\\d)::(.*?)(::.*?)?\}\}', 'g');
         let highestClozeIndex = 0;
         let match;
         while (match = regex.exec(fullText)) {
@@ -84,7 +84,7 @@ class ContextMenu extends React.Component {
     render() {
         return (
             <>
-                <div className={`dropdown-menu ${!!this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed', width: 'auto' }}>
+                <div className={`dropdown-menu ${this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed', width: 'auto' }}>
                     <Dropdown.Item onClick={() => this.addClozeDeletion()} disabled={!this.props.selection}>+ Cloze Deletion</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addAutoPitch()} disabled={!this.props.selection}>+ Auto Pitch</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.addManualPitch()} disabled={!this.props.selection}>+ Manual Pitch</Dropdown.Item>
@@ -96,7 +96,7 @@ class ContextMenu extends React.Component {
                     <Dropdown.Item onClick={() => this.copy()} disabled={!this.props.selection}>Copy</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.paste()}>Paste</Dropdown.Item>
                 </div>
-                <div onClick={() => this.props.onHide()} style={{ height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 2050, display: (!!this.props.target) ? 'block' : 'none' }}></div>
+                <div onClick={() => this.props.onHide()} style={{ height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 2050, display: (this.props.target) ? 'block' : 'none' }}></div>
             </>
         );
     }

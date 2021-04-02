@@ -20,34 +20,34 @@ const PageItem = ({
     shadow,
     size
 }) => (
-        <li className={`page-item ${className !== undefined && className !== false ? className : ''}`} >
-            <a
-                style={{
-                    ...getStyles({
-                        activeBgColor,
-                        activeBorderColor,
-                        disabledBgColor,
-                        disabledBorderColor,
-                        bgColor,
-                        borderColor,
-                        activeColor,
-                        color,
-                        disabledColor
-                    }, className),
-                    ...circleStyle(circle, size),
-                    ...shadowStyle(shadow, circle)
+    <li className={`page-item ${className !== undefined && className !== false ? className : ''}`} >
+        <a
+            style={{
+                ...getStyles({
+                    activeBgColor,
+                    activeBorderColor,
+                    disabledBgColor,
+                    disabledBorderColor,
+                    bgColor,
+                    borderColor,
+                    activeColor,
+                    color,
+                    disabledColor
+                }, className),
+                ...circleStyle(circle, size),
+                ...shadowStyle(shadow, circle)
 
-                }}
-                className={'page-link'}
-                onClick={() => onClick && onClick(page)}
-                {...onClick ? { href: '#' } : { href: href }} >
-                {text}
-            </a>
-        </li >
-    );
+            }}
+            className={'page-link'}
+            onClick={() => onClick && onClick(page)}
+            {...onClick ? { href: '#' } : { href: href }} >
+            {text}
+        </a>
+    </li >
+);
 
 const circleStyle = (isCircle, size) => {
-    if (!isCircle) return {}
+    if (!isCircle) return {};
     if (size === 'lg' || size === 'sm') {
         if (size === 'lg') {
             return {
@@ -57,7 +57,7 @@ const circleStyle = (isCircle, size) => {
                 width: '57px',
                 height: '57px',
                 padding: '.75rem 17px'
-            }
+            };
         }
         if (size === 'sm') {
             return {
@@ -67,7 +67,7 @@ const circleStyle = (isCircle, size) => {
                 width: '36px',
                 height: '36px',
                 padding: '7px'
-            }
+            };
         }
     } else {
         return {
@@ -77,17 +77,17 @@ const circleStyle = (isCircle, size) => {
             width: '45px',
             height: '45px',
             padding: '11px'
-        }
+        };
     }
-}
+};
 
 const shadowStyle = (showShadow, isCircle) => {
-    if (!showShadow) return {}
-    if (!isCircle) return {}
+    if (!showShadow) return {};
+    if (!isCircle) return {};
     return {
         WebkitBoxShadow: '0 8px 17px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19)',
         boxShadow: '0px 8px 17px 0px rgba(0,0,0,0.2),0px 6px 20px 0px rgba(0,0,0,0.19)'
-    }
-}
+    };
+};
 
 export default PageItem;

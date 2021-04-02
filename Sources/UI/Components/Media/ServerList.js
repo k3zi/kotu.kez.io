@@ -110,7 +110,7 @@ class SectionChildrenList extends React.Component {
                                     <small>{s.type === 'episode' && `Episode ${s.index}`}</small>
                                 </div>
 
-                                {(s.type === 'movie' || s.type === 'episode') && s.viewCount && s.viewCount > 0 && <i class='bi bi-check fs-3 text-success'></i>}
+                                {(s.type === 'movie' || s.type === 'episode') && s.viewCount && s.viewCount > 0 && <i className='bi bi-check fs-3 text-success'></i>}
                             </ListGroup.Item>))}
                         </ListGroup>
                     </div>
@@ -193,7 +193,7 @@ class ServerList extends React.Component {
     }
 
     async update() {
-        const response = await fetch(`/api/media/plex/resources`);
+        const response = await fetch('/api/media/plex/resources');
         if (!response.ok) {
             return;
         }

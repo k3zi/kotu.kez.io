@@ -164,7 +164,7 @@ class EditDeckModal extends React.Component {
                         </Form.Group>
 
                         <Form.Group controlId="editDeckNewOrder" className='mb-3'>
-                            <Form.Label>New Order <small class='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
+                            <Form.Label>New Order <small className='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
                             <InputGroup className="mt-2 mt-lg-0">
                                 <Form.Control value={this.displayForNewOrder(this.newOrder())} readOnly />
                                 <Form.Control value={this.newOrder()} name='newOrder' hidden />
@@ -177,7 +177,7 @@ class EditDeckModal extends React.Component {
                         </Form.Group>
 
                         <Form.Group controlId="editDeckReviewOrder" className='mb-3'>
-                            <Form.Label>Review Order <small class='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
+                            <Form.Label>Review Order <small className='text-muted'>(Only in effect when the schedule order is not mixed)</small></Form.Label>
                             <InputGroup className="mt-2 mt-lg-0">
                                 <Form.Control value={this.displayForReviewOrder(this.reviewOrder())} readOnly />
                                 <Form.Control value={this.reviewOrder()} name='reviewOrder' hidden />
