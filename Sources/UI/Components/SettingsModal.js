@@ -22,7 +22,10 @@ class SettingsModal extends React.Component {
                 message: null,
                 didError: false
             },
-            dictionaries: []
+            dictionaries: [],
+            keybind: this.emptyKeybind(),
+            isListeningForKeybind: null,
+            pressedKeys: []
         };
     }
 
@@ -111,7 +114,7 @@ class SettingsModal extends React.Component {
         }
     }
 
-    async save(e, change) {
+    async save(change) {
         const data = this.props.user.settings;
         change(data);
         await fetch('/api/me/settings', {
@@ -124,6 +127,95 @@ class SettingsModal extends React.Component {
         if (this.props.onSave) {
             this.props.onSave();
         }
+    }
+
+    keybindFromEvent(e) {
+        return {
+            key: e.key,
+            ctrlKey: e.ctrlKey,
+            shiftKey: e.shiftKey,
+            altKey: e.altKey,
+            metaKey: e.metaKey
+        };
+    }
+
+    onKeyDown(e) {
+        e.preventDefault();
+        this.state.pressedKeys[e.key] = true;
+        const partialKeybind = this.keybindFromEvent(e);
+        const keybind = this.state.keybind;
+        if (!e.getModifierState(partialKeybind.key) && partialKeybind.key && !keybind.keys.includes(partialKeybind.key)) {
+            keybind.keys.push(partialKeybind.key);
+        }
+        keybind.ctrlKey = keybind.ctrlKey || partialKeybind.ctrlKey;
+        keybind.shiftKey = keybind.shiftKey || partialKeybind.shiftKey;
+        keybind.altKey = keybind.altKey || partialKeybind.altKey;
+        keybind.metaKey = keybind.metaKey || partialKeybind.metaKey;
+        this.setState({ keybind, isListeningForKeybind: e.target.dataset.settingPath });
+    }
+
+    onKeyUp(e, change) {
+        e.preventDefault();
+        this.state.pressedKeys[e.key] = false;
+        // The Meta key impedes other keyup events so assume that all keys are unpressed when the meta key is.
+        if (e.key.startsWith('Meta') || Object.values(this.state.pressedKeys).every(k => !k)) {
+            const keybind = this.state.keybind;
+            this.setState({ isListeningForKeybind: null, keybind: this.emptyKeybind(), pressedKeys: [] });
+            this.save((s) => change(s, keybind));
+            e.target.blur();
+        }
+    }
+
+    emptyKeybind() {
+        return {
+            keys: [],
+            ctrlKey: false,
+            shiftKey: false,
+            altKey: false,
+            metaKey: false
+        };
+    }
+
+    keysFromKeybind(kb) {
+        const replacements = {
+            ' ': 'Space'
+        };
+        return [
+            kb.ctrlKey ? 'Ctrl' : '',
+            kb.shiftKey ? 'Shift' : '',
+            kb.altKey ? '⌥' : '',
+            kb.metaKey ? '⌘' : '',
+            ...(kb.keys.sort().map(k => replacements[k] !== undefined ? replacements[k] : k))
+        ].filter(k => k.length > 0);
+    }
+
+    renderKeybind(label, path, get, set) {
+        const setting = get(this.props.user.settings) || 'disabled';
+        return (
+            <Form.Group className='d-flex mb-3 align-items-center'>
+                <span className='text-nowrap col-3 col-lg-2 text-end px-2'>{label}</span>
+                <InputGroup>
+                    <div className='form-control readonly'>
+                        {setting !== 'disabled' && this.keysFromKeybind(setting).map((kb, i) =>
+                            <>
+                                {i > 0 && ' + '}
+                                <kbd>{kb}</kbd>
+                            </>
+                        )}
+                        {setting === 'disabled' && 'Disabled'}
+                    </div>
+                    <Form.Control
+                        value={''}
+                        className={this.state.isListeningForKeybind === path ? 'recording' : ''}
+                        data-setting-path={path}
+                        placeholder={this.state.isListeningForKeybind === path ? 'Recording...' : 'Enter a new keybinding'}
+                        onKeyDown={(e) => this.onKeyDown(e)}
+                        onKeyUp={(e) => this.onKeyUp(e, (s, kb) => set(s, kb))}
+                    />
+                    <Button onClick={() => this.save((s) => set(s, 'disabled'))} disabled={setting === 'disabled'} variant="danger" type='submit'>Remove</Button>
+                </InputGroup>
+            </Form.Group>
+        );
     }
 
     async uploadDictionary(e) {
@@ -166,9 +258,9 @@ class SettingsModal extends React.Component {
 
     render() {
         return (
-            <Modal {...this.props} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
+            <Modal {...this.props} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                    <Modal.Title>
                         Settings
                     </Modal.Title>
                 </Modal.Header>
@@ -176,9 +268,17 @@ class SettingsModal extends React.Component {
                 {this.props.user && <Modal.Body>
                     <h5>Anki</h5>
                     <Form.Group className='mb-3' controlId="settingsShowFieldPreview">
-                        <Form.Check defaultChecked={this.props.user.settings.anki.showFieldPreview} onChange={(e) => this.save(e, (s) => s.anki.showFieldPreview = e.target.checked)} type="checkbox" label="Show Field Preview" />
+                        <Form.Check defaultChecked={this.props.user.settings.anki.showFieldPreview} onChange={(e) => this.save((s) => s.anki.showFieldPreview = e.target.checked)} type="checkbox" label="Show Field Preview" />
                     </Form.Group>
 
+                    <h6><i class='bi bi-keyboard'></i> Keybindings</h6>
+                    {this.renderKeybind('Show Answer', 'anki.keybinds.showAnswer', (s) => s.anki.keybinds.showAnswer, (s, kb) => s.anki.keybinds.showAnswer = kb)}
+                    {this.renderKeybind('Grade: 0', 'anki.keybinds.grade0', (s) => s.anki.keybinds.grade0, (s, kb) => s.anki.keybinds.grade0 = kb)}
+                    {this.renderKeybind('Grade: 1', 'anki.keybinds.grade1', (s) => s.anki.keybinds.grade1, (s, kb) => s.anki.keybinds.grade1 = kb)}
+                    {this.renderKeybind('Grade: 2', 'anki.keybinds.grade2', (s) => s.anki.keybinds.grade2, (s, kb) => s.anki.keybinds.grade2 = kb)}
+                    {this.renderKeybind('Grade: 3', 'anki.keybinds.grade3', (s) => s.anki.keybinds.grade3, (s, kb) => s.anki.keybinds.grade3 = kb)}
+                    {this.renderKeybind('Grade: 4', 'anki.keybinds.grade4', (s) => s.anki.keybinds.grade4, (s, kb) => s.anki.keybinds.grade4 = kb)}
+                    {this.renderKeybind('Grade: 5', 'anki.keybinds.grade5', (s) => s.anki.keybinds.grade5, (s, kb) => s.anki.keybinds.grade5 = kb)}
                     <hr />
 
                     <h5>Dictionaries</h5>
@@ -225,28 +325,28 @@ class SettingsModal extends React.Component {
 
                     <h5>Reader</h5>
                     <Form.Group className='mb-3' controlId="settingsShowCardForm">
-                        <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save(e, (s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
+                        <Form.Check defaultChecked={this.props.user.settings.reader.showCreateNoteForm} onChange={(e) => this.save((s) => s.reader.showCreateNoteForm = e.target.checked)} type="checkbox" label="Show Create Note Form" />
                     </Form.Group>
 
                     <Form.Group className='mb-3' controlId="settingsReaderAutoplay">
-                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplay} onChange={(e) => this.save(e, (s) => s.reader.autoplay = e.target.checked)} type="checkbox" label="Enable Autoplay" />
+                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplay} onChange={(e) => this.save((s) => s.reader.autoplay = e.target.checked)} type="checkbox" label="Enable Autoplay" />
                     </Form.Group>
 
                     <Form.Group controlId="settingsReaderAutoplayDelay" className='mb-3'>
                         <Form.Label>Autoplay Delay</Form.Label>
                         <InputGroup>
                             <Form.Control value={`${this.props.user.settings.reader.autoplayDelay.toFixed(1)} seconds`} readOnly />
-                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.max((s.reader.autoplayDelay || 0) - 0.5, 0))}>
+                            <Button variant="outline-secondary" onClick={(e) => this.save((s) => s.reader.autoplayDelay = Math.max((s.reader.autoplayDelay || 0) - 0.5, 0))}>
                                 -
                             </Button>
-                            <Button variant="outline-secondary" onClick={(e) => this.save(e, (s) => s.reader.autoplayDelay = Math.min((s.reader.autoplayDelay || 0) + 0.5, 60)) }>
+                            <Button variant="outline-secondary" onClick={(e) => this.save((s) => s.reader.autoplayDelay = Math.min((s.reader.autoplayDelay || 0) + 0.5, 60)) }>
                                 +
                             </Button>
                         </InputGroup>
                     </Form.Group>
 
                     <Form.Group className='mb-3' controlId="settingsReaderAutoplayScroll">
-                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplayScroll} onChange={(e) => this.save(e, (s) => s.reader.autoplayScroll = e.target.checked)} type="checkbox" label="Scroll After Autoplay" />
+                        <Form.Check defaultChecked={this.props.user.settings.reader.autoplayScroll} onChange={(e) => this.save((s) => s.reader.autoplayScroll = e.target.checked)} type="checkbox" label="Scroll After Autoplay" />
                         <Form.Text className="text-muted">
                             Scrolls to the next line after the autoplay delay.
                         </Form.Text>
@@ -257,30 +357,30 @@ class SettingsModal extends React.Component {
                     <h5>Tests</h5>
                     <h6>Pitch Accent</h6>
                     <Form.Group className='mb-3' controlId="settingsTestsPitchAccentShowFurigana">
-                        <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.showFurigana} onChange={(e) => this.save(e, (s) => s.tests.pitchAccent.showFurigana = e.target.checked)} type="checkbox" label="Show Furigana Over Kanji" />
+                        <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.showFurigana} onChange={(e) => this.save((s) => s.tests.pitchAccent.showFurigana = e.target.checked)} type="checkbox" label="Show Furigana Over Kanji" />
                     </Form.Group>
 
                     <hr />
 
                     <h5>UI</h5>
                     <Form.Group className='mb-3' controlId="settingsPrefersColorContrast">
-                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersColorContrast} onChange={(e) => this.save(e, (s) => s.ui.prefersColorContrast = e.target.checked)} type="checkbox" label="Prefer Color Contrast" />
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersColorContrast} onChange={(e) => this.save((s) => s.ui.prefersColorContrast = e.target.checked)} type="checkbox" label="Prefer Color Contrast" />
                         <Form.Text className="text-muted">
                             Any feedback on additional places that could be addressed would be well appreciated. Use the "Feedback" link at the bottom of the page.
                         </Form.Text>
                     </Form.Group>
                     <Form.Group className='mb-3' controlId="settingsPrefersDarkMode">
-                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersDarkMode} onChange={(e) => this.save(e, (s) => s.ui.prefersDarkMode = e.target.checked)} type="checkbox" label="Prefer Dark Mode" />
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersDarkMode} onChange={(e) => this.save((s) => s.ui.prefersDarkMode = e.target.checked)} type="checkbox" label="Prefer Dark Mode" />
                     </Form.Group>
                     <Form.Group className='mb-3' controlId="settingsPrefersHorizontalText">
-                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersHorizontalText} onChange={(e) => this.save(e, (s) => s.ui.prefersHorizontalText = e.target.checked)} type="checkbox" label="Prefer Horizontal Text" />
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersHorizontalText} onChange={(e) => this.save((s) => s.ui.prefersHorizontalText = e.target.checked)} type="checkbox" label="Prefer Horizontal Text" />
                     </Form.Group>
 
                     <hr />
 
                     <h5>Word Status (Experimental)</h5>
                     <Form.Group className='mb-3' controlId="settingsWordStatusIsEnabled">
-                        <Form.Check defaultChecked={this.props.user.settings.wordStatus.isEnabled} onChange={(e) => this.save(e, (s) => s.wordStatus.isEnabled = e.target.checked)} type="checkbox" label="Enable" />
+                        <Form.Check defaultChecked={this.props.user.settings.wordStatus.isEnabled} onChange={(e) => this.save((s) => s.wordStatus.isEnabled = e.target.checked)} type="checkbox" label="Enable" />
                         <Form.Text className="text-muted">
                             This feature is still experimental. Please make sure to leave feedback if you run in to any issues or have suggestions.
                         </Form.Text>

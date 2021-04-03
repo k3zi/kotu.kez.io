@@ -1,6 +1,7 @@
 import { withRouter } from 'react-router';
 import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
+import UserContext from './../Context/User';
 
 import AceEditor from 'react-ace';
 import 'ace-builds/webpack-resolver';
@@ -28,6 +29,7 @@ import Table from 'react-bootstrap/Table';
 
 import scoper from './scoper.js';
 import Helpers from './../Helpers';
+import KeybindObserver from './../KeybindObserver';
 
 class Deck extends React.Component {
 
@@ -39,6 +41,8 @@ class Deck extends React.Component {
             showGradeButtons: false,
             answers: {}
         };
+
+        this.onKeybind = this.onKeybind.bind(this);
     }
 
     componentDidMount() {
@@ -123,37 +127,64 @@ class Deck extends React.Component {
         await this.load();
     }
 
+    onKeybind(matchesKeybind) {
+        if (!this.state.nextCard || !this.state.loadedHTML) {
+            return;
+        }
+
+        if (!this.state.showGradeButtons && matchesKeybind(this.context.settings.anki.keybinds.showAnswer)) {
+            this.showAnswer();
+        } else if (this.state.showGradeButtons) {
+            if (matchesKeybind(this.context.settings.anki.keybinds.grade0)) {
+                this.selectGrade(0);
+            } else if (matchesKeybind(this.context.settings.anki.keybinds.grade1)) {
+                this.selectGrade(1);
+            } else if (matchesKeybind(this.context.settings.anki.keybinds.grade2)) {
+                this.selectGrade(2);
+            } else if (matchesKeybind(this.context.settings.anki.keybinds.grade3)) {
+                this.selectGrade(3);
+            } else if (matchesKeybind(this.context.settings.anki.keybinds.grade4)) {
+                this.selectGrade(4);
+            } else if (matchesKeybind(this.context.settings.anki.keybinds.grade5)) {
+                this.selectGrade(5);
+            }
+        }
+    }
+
     render() {
         return (
-            <div>
-                {(!this.state.nextCard || !this.state.loadedHTML) && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
+            <KeybindObserver onKeybind={this.onKeybind}>
+                <div>
+                    {(!this.state.nextCard || !this.state.loadedHTML) && <h1 className="text-center"><Spinner animation="border" variant="secondary" /></h1>}
 
-                {this.state.nextCard && this.state.loadedHTML&& <div>
-                    <Row>
-                        <Col xs={0} lg={3}></Col>
-                        <Col xs={12} lg={6}>
-                            <div dangerouslySetInnerHTML={{ __html: this.state.loadedHTML }}></div>
-                            {!this.state.showGradeButtons && <div className="d-grid">
-                                <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>
-                            </div>}
-                            {this.state.showGradeButtons && <div className="text-center mt-3">
-                                <span className='px-2'>Fail</span>
-                                <ButtonGroup className="mb-2　d-block">
-                                    <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>
-                                    <Button variant='danger' onClick={() => this.selectGrade(2)}>2</Button>
-                                    <Button variant='success' onClick={() => this.selectGrade(3)}>3</Button>
-                                    <Button variant='success' onClick={() => this.selectGrade(4)}>4</Button>
-                                    <Button variant='success' onClick={() => this.selectGrade(5)}>5</Button>
-                                </ButtonGroup>
-                                <span className='px-2'>Pass</span>
-                            </div>}
-                        </Col>
-                        <Col xs={0} lg={3}></Col>
-                    </Row>
-                </div>}
-            </div>
+                    {this.state.nextCard && this.state.loadedHTML && <div>
+                        <Row>
+                            <Col xs={0} lg={3}></Col>
+                            <Col xs={12} lg={6}>
+                                <div dangerouslySetInnerHTML={{ __html: this.state.loadedHTML }}></div>
+                                {!this.state.showGradeButtons && <div className="d-grid">
+                                    <Button block variant="primary" className="mt-3" onClick={() => this.showAnswer()}>Show Answer</Button>
+                                </div>}
+                                {this.state.showGradeButtons && <div className="text-center mt-3">
+                                    <span className='px-2'>Fail</span>
+                                    <ButtonGroup className="mb-2　d-block">
+                                        <Button variant='danger' onClick={() => this.selectGrade(1)}>1</Button>
+                                        <Button variant='danger' onClick={() => this.selectGrade(2)}>2</Button>
+                                        <Button variant='success' onClick={() => this.selectGrade(3)}>3</Button>
+                                        <Button variant='success' onClick={() => this.selectGrade(4)}>4</Button>
+                                        <Button variant='success' onClick={() => this.selectGrade(5)}>5</Button>
+                                    </ButtonGroup>
+                                    <span className='px-2'>Pass</span>
+                                </div>}
+                            </Col>
+                            <Col xs={0} lg={3}></Col>
+                        </Row>
+                    </div>}
+                </div>
+            </KeybindObserver>
         );
     }
 }
 
+Deck.contextType = UserContext;
 export default withRouter(Deck);

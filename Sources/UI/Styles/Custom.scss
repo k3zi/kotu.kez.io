@@ -987,3 +987,13 @@ blockquote {
 .navbar-dark button:hover, .navbar-dark button:focus {
     color: rgba(255, 255, 255, 0.75);
 }
+
+.form-control.recording, .form-control.recording:focus {
+    border-color: tint-color($danger, 50%);
+    box-shadow: 0 0 $input-btn-focus-blur $input-btn-focus-width rgba($danger, $input-btn-focus-color-opacity);
+}
+
+.form-control.readonly {
+    background-color: $input-disabled-bg;
+    border-color: $input-disabled-border-color;
+}

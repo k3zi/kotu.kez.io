@@ -6,6 +6,11 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/4/3
+- **[anki]:** add modifiable keybindings
+- **[anki]:** speed up performance
+- **[anki]:** add shuffle button for decs
+---
 #### 2021/3/28
 - **[reader]:** allow reading with media
 - **[transcribe]:** allow auto-syncing text

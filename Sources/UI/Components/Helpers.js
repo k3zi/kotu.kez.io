@@ -49,8 +49,7 @@ helpers.addLiveEventListeners = (selector, event, handler, useCapture, querySele
     document.querySelector((typeof querySelector === 'undefined') ? 'body' : querySelector).addEventListener(event, (evt) => {
         let target = evt.target;
         while (target) {
-            var isMatch = target.matches(selector);
-            if (isMatch) {
+            if (target.matches(selector)) {
                 return handler(evt, target);
             }
             target = target.parentElement;
