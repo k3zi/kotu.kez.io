@@ -292,6 +292,10 @@ class TranscriptionController: RouteCollection {
             }
         }
 
+        func dummify(string: String) throws -> String {
+            string.katakana
+        }
+
         project.post(":id", "autoSync") { (req: Request) -> EventLoopFuture<Response> in
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             struct Body: Content {
@@ -362,10 +366,17 @@ class TranscriptionController: RouteCollection {
                         return words
                     }.flatMap { $0 }
 
-                    let individualCharacters = individualWords.flatMap { word in
-                        Array(word.text).map { SubtitleCharacter(character: $0, time: word.time)}
+                    let individualCharacters = try individualWords.flatMap { word in
+                        Array(try dummify(string: word.text)).map { SubtitleCharacter(character: $0, time: word.time)}
                     }
-                    let alignment = try NeedlemanWunsch.align(input1: Array(originalText), input2: individualCharacters.concurrentMap { $0.character })
+                    let originalTextChunks = originalText.splitSeparator(separatorDecision: {
+                        switch $0 {
+                        case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
+                        case "。", ".", "？", "?": return .keepLeft
+                        default: return .notSeparator
+                        }
+                    }).map { String($0) }
+                    let alignment = try NeedlemanWunsch.align(input1: Array(dummify(string: originalText)), input2: individualCharacters.concurrentMap { $0.character })
                     let originalAlignedCharacters = alignment.output1.enumerated().splitSeparator(separatorDecision: {
                         if case let .indexAndValue(_, char) = $0.element {
                             switch char {
@@ -378,13 +389,8 @@ class TranscriptionController: RouteCollection {
                     })
                     .filter { !$0.isEmpty }
 
-                    let alignedSubtitles = originalAlignedCharacters.compactMap { characters -> MediaSubtitle? in
-                        let text = String(characters.compactMap { match -> Character? in
-                            if case let .indexAndValue(_, value) = match.element {
-                                return value
-                            }
-                            return nil
-                        }).trimmingCharacters(in: .whitespacesAndNewlines)
+                    let alignedSubtitles = originalAlignedCharacters.enumerated().compactMap { (i, characters) -> MediaSubtitle? in
+                        let text = originalTextChunks[i].trimmingCharacters(in: .whitespacesAndNewlines)
 
                         if text.isEmpty {
                             return nil

@@ -17,7 +17,7 @@ enum NeedlemanWunsch {
         case couldNotFindOverlap
     }
 
-    static func align(input1 seq1: [Character], input2 seq2: [Character], match: Int = 5, substitution: Int = -3, gap: Int = -2, offset1: Int = 0, offset2: Int = 0) throws -> (output1: [Match], output2: [Match]) {
+    static func align(input1 seq1: [Character], input2 seq2: [Character], match: Int = 10, substitution: Int = -3, gap: Int = -2, offset1: Int = 0, offset2: Int = 0) throws -> (output1: [Match], output2: [Match]) {
         let m = min(seq1.count, seq2.count)
         if m < 20000 {
             return partialAlign(input1: seq1, input2: seq2, match: match, substitution: substitution, gap: gap, offset1: offset1, offset2: offset2)
@@ -101,33 +101,34 @@ enum NeedlemanWunsch {
 
     static func partialAlign(input1 seq1: [Character], input2 seq2: [Character], match: Int = 5, substitution: Int = -3, gap: Int = -2, offset1: Int = 0, offset2: Int = 0) -> (output1: [Match], output2: [Match]) {
         var scores: [[Int]] = Array(repeating: Array(repeating: 0, count: seq1.count + 1), count: seq2.count + 1)
-        var paths: [[[Origin]]] = Array(repeating: Array(repeating: [], count: seq1.count + 1), count: seq2.count + 1)
+        var paths: [[Origin?]] = Array(repeating: Array(repeating: .none, count: seq1.count + 1), count: seq2.count + 1)
 
         for j in 1...seq1.count {
             scores[0][j] = scores[0][j - 1] &+ gap
-            paths[0][j] = [.left]
+            paths[0][j] = .left
         }
         for i in 1...seq2.count {
             scores[i][0] = scores[i - 1][0] &+ gap
-            paths[i][0] = [.top]
+            paths[i][0] = .top
         }
 
         for i in 1...seq2.count {
-            let diagSeq2 = seq2[i &- 1]
+            let diagSeq2 = seq2[i - 1]
             for j in 1...seq1.count {
-                if i == 1 {
-                    paths[i][j].reserveCapacity(seq1.count)
-                }
-                let fromTop = scores[i &- 1][j] &+ gap
-                let fromLeft = scores[i][j &- 1] &+ gap
-                let fromDiagonal = scores[i &- 1][j &- 1] &+ (seq1[j &- 1] == diagSeq2 ? match : substitution)
+                let fromTop = scores[i - 1][j] + gap
+                let fromLeft = scores[i][j - 1] + gap
+                let fromDiagonal = scores[i - 1][j - 1] + (seq1[j - 1] == diagSeq2 ? match : substitution)
                 let fromMax = max(fromTop, fromLeft, fromDiagonal)
 
                 scores[i][j] = fromMax
 
-                if fromDiagonal == fromMax { paths[i][j].append(.diagonal) }
-                if fromTop == fromMax { paths[i][j].append(.top) }
-                if fromLeft == fromMax { paths[i][j].append(.left) }
+                if fromDiagonal == fromMax {
+                    paths[i][j] = .diagonal
+                } else if fromLeft == fromMax {
+                    paths[i][j] = .left
+                } else {
+                    paths[i][j] = .top
+                }
             }
         }
 
@@ -140,8 +141,9 @@ enum NeedlemanWunsch {
         output1.reserveCapacity(m)
         output2.reserveCapacity(m)
 
+        // Backtrace the best score (from the bottom right of the matrix)
         while i != 0 || j != 0 {
-            switch paths[i][j].first! {
+            switch paths[i][j]! {
             case .diagonal:
                 output1.insert(.indexAndValue(j - 1 + offset1, seq1[j &- 1]), at: .zero)
                 output2.insert(.indexAndValue(i - 1 + offset2, seq2[i &- 1]), at: .zero)
