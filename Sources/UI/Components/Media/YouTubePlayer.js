@@ -16,6 +16,8 @@ import YouTube from 'react-youtube';
 
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
 import Helpers from './../Helpers';
+import KeybindObserver from './../KeybindObserver';
+import UserContext from './../Context/User';
 
 class YouTubePlayer extends React.Component {
 
@@ -35,6 +37,8 @@ class YouTubePlayer extends React.Component {
             rubyType: 'none',
             isLoadingSubtitles: false
         };
+
+        this.onKeybind = this.onKeybind.bind(this);
     }
 
     componentDidMount() {
@@ -247,90 +251,102 @@ class YouTubePlayer extends React.Component {
         return [{ name: 'Hide', value: 'none' }, ...this.frequencyOptions()];
     }
 
+    onKeybind(matchesKeybind) {
+
+        if (this.state.subtitles.length > 0 && matchesKeybind(this.context.settings.youTube.keybinds.previousSubtitle)) {
+            this.goToPreviousSub();
+        } else if (this.state.subtitles.length > 0 && matchesKeybind(this.context.settings.youTube.keybinds.nextSubtitle)) {
+            this.goToNextSub();
+        }
+    }
+
     render() {
         return (
-            <Row>
-                <Col xs={12} md={7}>
-                    <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.goToVideo(e)} placeholder="YouTube ID / URL" defaultValue={this.props.match.params.id ? `https://youtu.be/${this.props.match.params.id}` : ''} />
-                    {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
-                        <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} onStateChange={(e) => this.onStateChange(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
-                    </ResponsiveEmbed>}
-                    {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
-                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i className="bi bi-arrow-left"></i></span>
-                        <span>
-                            <Dropdown as='span' style={{cursor: 'pointer'}}>
-                                <Dropdown.Toggle as='span' className='pe-1'>
-                                    Visual: {this.visualOptions().filter(f => f.value === this.state.visualType)[0].name}
-                                </Dropdown.Toggle>
+            <KeybindObserver onKeybind={this.onKeybind}>
+                <Row>
+                    <Col xs={12} md={7}>
+                        <Form.Control autoComplete='off' className='text-center' type="text" name="youtubeID" onChange={(e) => this.goToVideo(e)} placeholder="YouTube ID / URL" defaultValue={this.props.match.params.id ? `https://youtu.be/${this.props.match.params.id}` : ''} />
+                        {this.state.youtubeID.length > 0 && <ResponsiveEmbed className='mt-3' aspectRatio="16by9">
+                            <YouTube videoId={this.state.youtubeID} onReady={(e) => this.videoOnReady(e)} onStateChange={(e) => this.onStateChange(e)} opts={{ playerVars: { modestbranding: 1, fs: 0, autoplay: 1 }}} />
+                        </ResponsiveEmbed>}
+                        {this.state.subtitles.length > 0 && <div className='bg-dark text-white-50 py-1 px-3 d-flex justify-content-between align-items-center'>
+                            <span style={{ cursor: 'pointer' }} onClick={() => this.goToPreviousSub()}><i className="bi bi-arrow-left"></i></span>
+                            <span>
+                                <Dropdown as='span' style={{cursor: 'pointer'}}>
+                                    <Dropdown.Toggle as='span' className='pe-1'>
+                                        Visual: {this.visualOptions().filter(f => f.value === this.state.visualType)[0].name}
+                                    </Dropdown.Toggle>
 
-                                <Dropdown.Menu>
-                                    {this.visualOptions().map((item, i) => {
-                                        return <Dropdown.Item key={i} active={this.state.visualType === item.value} onSelect={(e) => this.setState({ visualType: item.value })}>{item.name}</Dropdown.Item>;
-                                    })}
-                                </Dropdown.Menu>
-                            </Dropdown>
-                            ｜
-                            <Dropdown as='span' style={{cursor: 'pointer'}}>
-                                <Dropdown.Toggle as='span' className='ps-1'>
-                                    Furigana: {this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name}
-                                </Dropdown.Toggle>
+                                    <Dropdown.Menu>
+                                        {this.visualOptions().map((item, i) => {
+                                            return <Dropdown.Item key={i} active={this.state.visualType === item.value} onSelect={(e) => this.setState({ visualType: item.value })}>{item.name}</Dropdown.Item>;
+                                        })}
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                                ｜
+                                <Dropdown as='span' style={{cursor: 'pointer'}}>
+                                    <Dropdown.Toggle as='span' className='ps-1'>
+                                        Furigana: {this.furiganaFrequencyOptions().filter(f => f.value === this.state.rubyType)[0].name}
+                                    </Dropdown.Toggle>
 
-                                <Dropdown.Menu>
-                                    {this.furiganaFrequencyOptions().map((item, i) => {
-                                        return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
-                                    })}
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </span>
-                        <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i className="bi bi-arrow-right"></i></span>
-                    </div>}
-                    {this.state.isLoadingSubtitles && <div className='bg-secondary text-light text-center p-3'>
-                        <h1 className="text-center"><Spinner animation="border" variant="light" /></h1>
-                    </div>}
-                    {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
-                        <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
-                            <i className="bi bi-clipboard"></i>
+                                    <Dropdown.Menu>
+                                        {this.furiganaFrequencyOptions().map((item, i) => {
+                                            return <Dropdown.Item key={i} active={this.state.rubyType === item.value} onSelect={(e) => this.setState({ rubyType: item.value })}>{item.name}</Dropdown.Item>;
+                                        })}
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </span>
+                            <span style={{ cursor: 'pointer' }} onClick={() => this.goToNextSub()}><i className="bi bi-arrow-right"></i></span>
+                        </div>}
+                        {this.state.isLoadingSubtitles && <div className='bg-secondary text-light text-center p-3'>
+                            <h1 className="text-center"><Spinner animation="border" variant="light" /></h1>
+                        </div>}
+                        {this.state.subtitles.length > 0 && <div className='bg-secondary text-light text-center p-3 d-flex justify-content-between align-items-center'>
+                            <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.copy(this.state.subtitle.text, e)} onTouchEnd={(e) => this.copy(this.state.subtitle.text, e)} disabled={!this.state.subtitle} className='user-select-none mx-1'>
+                                <i className="bi bi-clipboard"></i>
+                            </Button>
+                            {this.state.subtitleHTML && <span className={`fs-5 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType} text-center`} dangerouslySetInnerHTML={{__html: this.state.subtitleHTML}}></span>}
+                            <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} onTouchEnd={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} disabled={!this.state.subtitle || this.state.isSubmitting || !this.state.youtubeID} className='user-select-none mx-1' variant='danger'>
+                                <i className="bi bi-record2"></i>
+                            </Button>
+                        </div>}
+
+                        {this.state.visualType === 'showFrequency' && <>
+                            <hr />
+                            {this.frequencyOptions().map(item => (
+                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                            ))}
+                        </>}
+
+                        {this.state.visualType === 'showPitchAccent' && <>
+                            <hr />
+                            {[
+                                { name: 'Heiban (平板)', value: 'heiban' },
+                                { name: 'Kihuku (起伏)', value: 'kihuku' },
+                                { name: 'Odaka (尾高)', value: 'odaka' },
+                                { name: 'Nakadaka (中高)', value: 'nakadaka' },
+                                { name: 'Atamadaka (頭高)', value: 'atamadaka' },
+                                { name: 'Unknown (知らんw)', value: 'unknown' }
+                            ].map(item => (
+                                <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
+                            ))}
+                            <br />
+                            <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
+                        </>}
+                    </Col>
+
+                    <Col xs={12} md={5}>
+                        <Button onTouchStart={(e) => this.startCapture(e)} onMouseDown={(e) => this.startCapture(e)} onTouchEnd={() => this.endCapture()} onMouseUp={() => this.endCapture()} className='col-12 mt-3 mt-md-0 user-select-none' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
+                            {this.state.isRecording ? 'Release to Capture' : (this.state.isSubmitting ? 'Capturing' : 'Hold to Record')}
                         </Button>
-                        {this.state.subtitleHTML && <span className={`fs-5 visual-type-${this.state.visualType} ruby-type-${this.state.rubyType} text-center`} dangerouslySetInnerHTML={{__html: this.state.subtitleHTML}}></span>}
-                        <Button onMouseDown={(e) => e.preventDefault()} onMouseUp={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} onTouchEnd={(e) => this.capture(this.state.subtitle.startTime, this.state.subtitle.endTime, e)} disabled={!this.state.subtitle || this.state.isSubmitting || !this.state.youtubeID} className='user-select-none mx-1' variant='danger'>
-                            <i className="bi bi-record2"></i>
-                        </Button>
-                    </div>}
-
-                    {this.state.visualType === 'showFrequency' && <>
-                        <hr />
-                        {this.frequencyOptions().map(item => (
-                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                        ))}
-                    </>}
-
-                    {this.state.visualType === 'showPitchAccent' && <>
-                        <hr />
-                        {[
-                            { name: 'Heiban (平板)', value: 'heiban' },
-                            { name: 'Kihuku (起伏)', value: 'kihuku' },
-                            { name: 'Odaka (尾高)', value: 'odaka' },
-                            { name: 'Nakadaka (中高)', value: 'nakadaka' },
-                            { name: 'Atamadaka (頭高)', value: 'atamadaka' },
-                            { name: 'Unknown (知らんw)', value: 'unknown' }
-                        ].map(item => (
-                            <span className='d-inline-flex me-2'><Badge className={`bg-${item.value} me-2`}>{' '}</Badge> <span className='align-self-center'>{item.name}</span></span>
-                        ))}
-                        <br />
-                        <small>The labeled pitch accent is usually correct for each word when produced in isolation. Compound words may appear separated and with their individual accents.</small>
-                    </>}
-                </Col>
-
-                <Col xs={12} md={5}>
-                    <Button onTouchStart={(e) => this.startCapture(e)} onMouseDown={(e) => this.startCapture(e)} onTouchEnd={() => this.endCapture()} onMouseUp={() => this.endCapture()} className='col-12 mt-3 mt-md-0 user-select-none' variant={this.state.isRecording ? 'warning' : (this.state.isSubmitting ? 'secondary' : 'danger')} type="submit" disabled={this.state.isSubmitting || !this.state.youtubeID}>
-                        {this.state.isRecording ? 'Release to Capture' : (this.state.isSubmitting ? 'Capturing' : 'Hold to Record')}
-                    </Button>
-                    {this.state.lastFile && <Alert dismissible onClose={() => this.setState({ lastFile: null })} className='mt-3' variant='primary'>Audio Embed Code: <pre className='mb-0 user-select-all'>[audio: {this.state.lastFile.id}]</pre></Alert>}
-                    <CreateNoteForm className='mt-3' onSuccess={() => { }} />
-                </Col>
-            </Row>
+                        {this.state.lastFile && <Alert dismissible onClose={() => this.setState({ lastFile: null })} className='mt-3' variant='primary'>Audio Embed Code: <pre className='mb-0 user-select-all'>[audio: {this.state.lastFile.id}]</pre></Alert>}
+                        <CreateNoteForm className='mt-3' onSuccess={() => { }} />
+                    </Col>
+                </Row>
+            </KeybindObserver>
         );
     }
 }
 
+YouTubePlayer.contextType = UserContext;
 export default withRouter(YouTubePlayer);

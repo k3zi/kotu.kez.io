@@ -2,50 +2,6 @@ import Vapor
 
 struct Settings: Content {
 
-    enum Keybind: Content {
-
-        enum CodingKeys: String, CodingKey {
-            case keys
-            case ctrlKey
-            case shiftKey
-            case altKey
-            case metaKey
-        }
-
-        case with(keys: [String], ctrlKey: Bool, shiftKey: Bool, altKey: Bool, metaKey: Bool)
-        case disabled
-
-        init(from decoder: Decoder) throws {
-            let singleValueContainer = try? decoder.singleValueContainer()
-            if let stringValue = try? singleValueContainer?.decode(String.self), stringValue == "disabled" {
-                self = .disabled
-            } else {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                let keys = try container.decode([String].self, forKey: .keys)
-                let ctrlKey = try container.decode(Bool.self, forKey: .ctrlKey)
-                let shiftKey = try container.decode(Bool.self, forKey: .shiftKey)
-                let altKey = try container.decode(Bool.self, forKey: .altKey)
-                let metaKey = try container.decode(Bool.self, forKey: .metaKey)
-                self = .with(keys: keys, ctrlKey: ctrlKey, shiftKey: shiftKey, altKey: altKey, metaKey: metaKey)
-            }
-        }
-
-        func encode(to encoder: Encoder) throws {
-            switch self {
-            case .with(keys: let keys, ctrlKey: let ctrlKey, shiftKey: let shiftKey, altKey: let altKey, metaKey: let metaKey):
-                var container = encoder.container(keyedBy: CodingKeys.self)
-                try container.encode(keys, forKey: .keys)
-                try container.encode(ctrlKey, forKey: .ctrlKey)
-                try container.encode(shiftKey, forKey: .shiftKey)
-                try container.encode(altKey, forKey: .altKey)
-                try container.encode(metaKey, forKey: .metaKey)
-            case .disabled:
-                var container = encoder.singleValueContainer()
-                try container.encode("disabled")
-            }
-        }
-    }
-
     struct Anki: Content {
 
         struct Keybinds: Content {
@@ -207,12 +163,50 @@ struct Settings: Content {
         }
     }
 
+    struct YouTube: Content {
+
+        struct Keybinds: Content {
+            enum CodingKeys: String, CodingKey {
+                case nextSubtitle
+                case previousSubtitle
+            }
+
+            static let defaultNextSubtitle = Keybind.with(keys: ["ArrowRight"], ctrlKey: false, shiftKey: false, altKey: false, metaKey: false)
+            var nextSubtitle: Keybind = Self.defaultNextSubtitle
+
+            static let defaultPreviousSubtitle = Keybind.with(keys: ["ArrowLeft"], ctrlKey: false, shiftKey: false, altKey: false, metaKey: false)
+            var previousSubtitle: Keybind = Self.defaultPreviousSubtitle
+
+            init() { }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                nextSubtitle = (try? container.decodeIfPresent(Keybind.self, forKey: .nextSubtitle)) ?? Self.defaultNextSubtitle
+                previousSubtitle = (try? container.decodeIfPresent(Keybind.self, forKey: .previousSubtitle)) ?? Self.defaultPreviousSubtitle
+            }
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case keybinds
+        }
+
+        var keybinds: Keybinds = .init()
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            keybinds = (try? container.decodeIfPresent(Keybinds.self, forKey: .keybinds)) ?? .init()
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case anki
         case reader
         case tests
         case ui
         case wordStatus
+        case youTube
     }
 
     var anki = Anki()
@@ -220,6 +214,7 @@ struct Settings: Content {
     var tests = Tests()
     var ui = UI()
     var wordStatus = WordStatus()
+    var youTube = YouTube()
 
     init() { }
 
@@ -230,6 +225,7 @@ struct Settings: Content {
         tests = (try? container.decodeIfPresent(Tests.self, forKey: .tests)) ?? Tests()
         ui = (try? container.decodeIfPresent(UI.self, forKey: .ui)) ?? UI()
         wordStatus = (try? container.decodeIfPresent(WordStatus.self, forKey: .wordStatus)) ?? WordStatus()
+        youTube = (try? container.decodeIfPresent(YouTube.self, forKey: .youTube)) ?? YouTube()
     }
 
 }

@@ -178,7 +178,11 @@ class SettingsModal extends React.Component {
 
     keysFromKeybind(kb) {
         const replacements = {
-            ' ': 'Space'
+            ' ': 'Space',
+            'ArrowLeft': '◄',
+            'ArrowRight': '►',
+            'ArrowDown': '▼',
+            'ArrowUp': '▲'
         };
         return [
             kb.ctrlKey ? 'Ctrl' : '',
@@ -193,13 +197,13 @@ class SettingsModal extends React.Component {
         const setting = get(this.props.user.settings) || 'disabled';
         return (
             <Form.Group className='d-flex mb-3 align-items-center'>
-                <span className='text-nowrap col-3 col-lg-2 text-end px-2'>{label}</span>
+                <span className='text-nowrap col-4 col-lg-3 text-end px-2'>{label}</span>
                 <InputGroup>
-                    <div className='form-control readonly'>
+                    <div className='form-control readonly d-flex align-items-center'>
                         {setting !== 'disabled' && this.keysFromKeybind(setting).map((kb, i) =>
                             <>
-                                {i > 0 && ' + '}
-                                <kbd>{kb}</kbd>
+                                {i > 0 && <span className='px-1'>+</span>}
+                                <kbd className='px-3' style={{ lineHeight: 1.25 }}>{kb}</kbd>
                             </>
                         )}
                         {setting === 'disabled' && 'Disabled'}
@@ -271,14 +275,6 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.anki.showFieldPreview} onChange={(e) => this.save((s) => s.anki.showFieldPreview = e.target.checked)} type="checkbox" label="Show Field Preview" />
                     </Form.Group>
 
-                    <h6><i class='bi bi-keyboard'></i> Keybindings</h6>
-                    {this.renderKeybind('Show Answer', 'anki.keybinds.showAnswer', (s) => s.anki.keybinds.showAnswer, (s, kb) => s.anki.keybinds.showAnswer = kb)}
-                    {this.renderKeybind('Grade: 0', 'anki.keybinds.grade0', (s) => s.anki.keybinds.grade0, (s, kb) => s.anki.keybinds.grade0 = kb)}
-                    {this.renderKeybind('Grade: 1', 'anki.keybinds.grade1', (s) => s.anki.keybinds.grade1, (s, kb) => s.anki.keybinds.grade1 = kb)}
-                    {this.renderKeybind('Grade: 2', 'anki.keybinds.grade2', (s) => s.anki.keybinds.grade2, (s, kb) => s.anki.keybinds.grade2 = kb)}
-                    {this.renderKeybind('Grade: 3', 'anki.keybinds.grade3', (s) => s.anki.keybinds.grade3, (s, kb) => s.anki.keybinds.grade3 = kb)}
-                    {this.renderKeybind('Grade: 4', 'anki.keybinds.grade4', (s) => s.anki.keybinds.grade4, (s, kb) => s.anki.keybinds.grade4 = kb)}
-                    {this.renderKeybind('Grade: 5', 'anki.keybinds.grade5', (s) => s.anki.keybinds.grade5, (s, kb) => s.anki.keybinds.grade5 = kb)}
                     <hr />
 
                     <h5>Dictionaries</h5>
@@ -320,6 +316,22 @@ class SettingsModal extends React.Component {
                             </Alert>}
                         </Form.Group>
                     </Form>
+
+                    <hr />
+
+                    <h5><i class='bi bi-keyboard'></i> Keybindings</h5>
+                    <h6>Anki</h6>
+                    {this.renderKeybind('Show Answer', 'anki.keybinds.showAnswer', (s) => s.anki.keybinds.showAnswer, (s, kb) => s.anki.keybinds.showAnswer = kb)}
+                    {this.renderKeybind('Grade: 0', 'anki.keybinds.grade0', (s) => s.anki.keybinds.grade0, (s, kb) => s.anki.keybinds.grade0 = kb)}
+                    {this.renderKeybind('Grade: 1', 'anki.keybinds.grade1', (s) => s.anki.keybinds.grade1, (s, kb) => s.anki.keybinds.grade1 = kb)}
+                    {this.renderKeybind('Grade: 2', 'anki.keybinds.grade2', (s) => s.anki.keybinds.grade2, (s, kb) => s.anki.keybinds.grade2 = kb)}
+                    {this.renderKeybind('Grade: 3', 'anki.keybinds.grade3', (s) => s.anki.keybinds.grade3, (s, kb) => s.anki.keybinds.grade3 = kb)}
+                    {this.renderKeybind('Grade: 4', 'anki.keybinds.grade4', (s) => s.anki.keybinds.grade4, (s, kb) => s.anki.keybinds.grade4 = kb)}
+                    {this.renderKeybind('Grade: 5', 'anki.keybinds.grade5', (s) => s.anki.keybinds.grade5, (s, kb) => s.anki.keybinds.grade5 = kb)}
+
+                    <h6>YouTube</h6>
+                    {this.renderKeybind('Next Subtitle', 'youTube.keybinds.nextSubtitle', (s) => s.youTube.keybinds.nextSubtitle, (s, kb) => s.youTube.keybinds.nextSubtitle = kb)}
+                    {this.renderKeybind('Previous Subtitle', 'youTube.keybinds.previousSubtitle', (s) => s.youTube.keybinds.previousSubtitle, (s, kb) => s.youTube.keybinds.previousSubtitle = kb)}
 
                     <hr />
 

@@ -980,11 +980,11 @@ blockquote {
     @extend .d-flex;
 }
 
-.navbar-dark button {
+.navbar-dark button.btn-dark {
     color: rgba(255, 255, 255, 0.55);
 }
 
-.navbar-dark button:hover, .navbar-dark button:focus {
+.navbar-dark button.btn-dark:hover, .navbar-dark button.btn-dark:focus {
     color: rgba(255, 255, 255, 0.75);
 }
 
