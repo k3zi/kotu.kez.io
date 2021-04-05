@@ -166,6 +166,7 @@ class MediaController: RouteCollection {
             }
             return query.filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$video)
+                .sort(\.$id)
                 .paginate(for: req)
         }
 
