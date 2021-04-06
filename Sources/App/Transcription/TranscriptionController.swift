@@ -302,7 +302,13 @@ class TranscriptionController: RouteCollection {
             struct Body: Content {
                 let text: String
             }
-            let originalText = try req.content.decode(Body.self).text
+            let originalText = String(try req.content.decode(Body.self).text.splitSeparator(separatorDecision: {
+                switch $0 {
+                case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
+                case "。", ".", "？", "?": return .keepLeft
+                default: return .notSeparator
+                }
+            }).joined(separator: "\n"))
 
             // In the future do a join for shared projects.
             return Project.query(on: req.db)
@@ -370,23 +376,14 @@ class TranscriptionController: RouteCollection {
                     let individualCharacters: [SubtitleCharacter] = try individualWords.flatMap { word in
                         Array(try dummify(string: word.text)).flatMap { $0.unicodeScalars }.map { SubtitleCharacter(character: $0, time: word.time)}
                     }
-                    let originalTextChunks = originalText.splitSeparator(separatorDecision: {
-                        switch $0 {
-                        case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
-                        case "。", ".", "？", "?": return .keepLeft
-                        default: return .notSeparator
-                        }
-                    }).map { String($0) }
+                    let originalTextChunks = originalText.split(separator: "\n")
                     let alignment = try NeedlemanWunsch.align(input1: Array(dummify(string: originalText)).flatMap { $0.unicodeScalars }, input2: individualCharacters.concurrentMap { $0.character })
-                    let originalAlignedCharacters = alignment.output1.enumerated().splitSeparator(separatorDecision: {
+                    let originalAlignedCharacters = alignment.output1.enumerated().split(whereSeparator: {
                         if case let .indexAndValue(_, char) = $0.element {
-                            switch char {
-                            case "\r", "\n", "\"", "「", "」": return .remove
-                            case "。", ".", "？", "?": return .keepLeft
-                            default: return .notSeparator
-                            }
+                            return char == "\n"
                         }
-                        return .notSeparator
+
+                        return false
                     })
                     .filter { !$0.isEmpty }
 
