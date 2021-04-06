@@ -140,8 +140,8 @@ enum NeedlemanWunsch {
         let m = max(seq1.count, seq2.count)
         output1.reserveCapacity(m)
         output2.reserveCapacity(m)
-        var fwd: [[Int?]] = [Array(repeating: nil, count: m), Array(repeating: nil, count: m)]
-        var rev: [[Int?]] = [Array(repeating: nil, count: m), Array(repeating: nil, count: m)]
+        var fwd: [[Int?]] = [Array(repeating: nil, count: m + 1), Array(repeating: nil, count: m + 1)]
+        var rev: [[Int?]] = [Array(repeating: nil, count: m + 1), Array(repeating: nil, count: m + 1)]
 
         func forwardAlg(p1: Int, p2: Int, q1: Int, q2: Int) {
             fwd[p1 % 2][js: q1] = 0
