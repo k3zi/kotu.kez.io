@@ -678,7 +678,7 @@ class App extends React.Component {
                             </LinkContainer>
                             <div className='d-block d-md-none'>
                                 {this.state.user && <Button className='fs-5' variant='dark' onClick={() => this.toggleCreateNoteModal(true)}><i className="bi bi-card-text"></i></Button>}
-                                <Button data-bs-toggle="collapse" data-bs-target="#dropdownNav" variant='dark' className='navbar-toggler-icon'></Button>
+                                <Button data-bs-toggle="collapse" data-bs-target="#dropdownNav" variant='dark' className='btn btn-dark fs-1 d-inline-flex justify-content-center align-items-center p-1'><i class="bi bi-list"></i></Button>
                             </div>
                             {this.renderMenu()}
                             {this.renderCollapseMenu()}

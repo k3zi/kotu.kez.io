@@ -447,9 +447,7 @@ class TranscriptionController: RouteCollection {
                 }
         }
 
-        func saveSection(application: Application, file: URL, start: Double, end: Double) throws -> URL {
-            let directory = URL(fileURLWithPath: application.directory.resourcesDirectory).appendingPathComponent("Temp")
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        func saveSection(application: Application, file: URL, directory: URL, start: Double, end: Double) throws -> URL {
             let uuid = UUID().uuidString
 
             let task = Process()
@@ -462,9 +460,12 @@ class TranscriptionController: RouteCollection {
 
             task.arguments = [
                 "ffmpeg",
+                "-hide_banner",
+                "-loglevel", "error",
                 "-ss", start.toString(),
                 "-to", end.toString(),
                 "-i", file.path,
+                "-c:a", "copy",
                 "\(uuid).\(file.pathExtension)"
             ]
             try task.run()
@@ -548,8 +549,11 @@ class TranscriptionController: RouteCollection {
 
                     let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("m4a")
 
-                    let savedFiles = try subtitles.map {
-                        try saveSection(application: req.application, file: fileURL, start: $0.fragment.startTime, end: $0.fragment.endTime)
+                    let savedFiles: [URL] = try subtitles.concurrentMap(batchSize: 5) {
+                        try? saveSection(application: req.application, file: fileURL, directory: directory, start: $0.fragment.startTime, end: $0.fragment.endTime)
+                    }.compactMap {
+                        guard let url = $0 else { throw Abort(.internalServerError, reason: "Error segmenting audio files") }
+                        return url
                     }
 
                     let video = AnkiDeckVideo(title: project.name, source: "youtube", tags: tags)
