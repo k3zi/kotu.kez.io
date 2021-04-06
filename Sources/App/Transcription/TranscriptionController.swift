@@ -1,4 +1,5 @@
 import Fluent
+import MeCab
 import Vapor
 
 extension EventLoopFuture {
@@ -47,7 +48,7 @@ struct SubtitleWord {
 }
 
 struct SubtitleCharacter {
-    let character: Character
+    let character: Unicode.Scalar
     let time: VTTFileRoot.Subtitle.TimeRange
 }
 
@@ -366,8 +367,8 @@ class TranscriptionController: RouteCollection {
                         return words
                     }.flatMap { $0 }
 
-                    let individualCharacters = try individualWords.flatMap { word in
-                        Array(try dummify(string: word.text)).map { SubtitleCharacter(character: $0, time: word.time)}
+                    let individualCharacters: [SubtitleCharacter] = try individualWords.flatMap { word in
+                        Array(try dummify(string: word.text)).flatMap { $0.unicodeScalars }.map { SubtitleCharacter(character: $0, time: word.time)}
                     }
                     let originalTextChunks = originalText.splitSeparator(separatorDecision: {
                         switch $0 {
@@ -376,11 +377,11 @@ class TranscriptionController: RouteCollection {
                         default: return .notSeparator
                         }
                     }).map { String($0) }
-                    let alignment = try NeedlemanWunsch.align(input1: Array(dummify(string: originalText)), input2: individualCharacters.concurrentMap { $0.character })
+                    let alignment = try NeedlemanWunsch.align(input1: Array(dummify(string: originalText)).flatMap { $0.unicodeScalars }, input2: individualCharacters.concurrentMap { $0.character })
                     let originalAlignedCharacters = alignment.output1.enumerated().splitSeparator(separatorDecision: {
                         if case let .indexAndValue(_, char) = $0.element {
                             switch char {
-                            case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
+                            case "\r", "\n", "\"", "「", "」": return .remove
                             case "。", ".", "？", "?": return .keepLeft
                             default: return .notSeparator
                             }
@@ -422,6 +423,12 @@ class TranscriptionController: RouteCollection {
 
                         let startTime = individualCharacters[matchStartIndex].time.start.milliseconds / 1000
                         let endTime = individualCharacters[matchEndIndex].time.end.milliseconds / 1000
+//                        if case .missing = searchArea.last, (matchEndIndex + 1) < individualCharacters.count {
+//                            let otherEndTime = individualCharacters[matchEndIndex + 1].time.end.milliseconds / 1000
+//                            if otherEndTime - endTime < 1 {
+//                                endTime = (otherEndTime + endTime) / 2
+//                            }
+//                        }
 
                         return MediaSubtitle(startTime: startTime, endTime: endTime, text: text)
                     }
