@@ -20,7 +20,8 @@ class OtherVideos extends React.Component {
                 page: 1,
                 per: 15,
                 total: 0
-            }
+            },
+            isAudiobook: false
         };
     }
 
@@ -29,7 +30,7 @@ class OtherVideos extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/admin/otherVideos?page=${this.state.metadata.page}&per=${this.state.metadata.per}`);
+        const response = await fetch(`/api/admin/otherVideos?page=${this.state.metadata.page}&per=${this.state.metadata.per}&isAudiobook=${this.state.isAudiobook ? 'true': 'false'}`);
         if (response.ok) {
             const otherVideos = await response.json();
             this.setState({ otherVideos: otherVideos.items, metadata: otherVideos.metadata });
@@ -37,15 +38,22 @@ class OtherVideos extends React.Component {
     }
 
     loadPage(page) {
-        const metadata = this.state.metadata;
-        metadata.page = page;
+        this.state.metadata.page = page;
         this.load();
+    }
+
+    toggleIsAudiobook(e) {
+        this.state.isAudiobook = e.target.checked;
+        this.loadPage(1);
     }
 
     render() {
         return (
             <div>
-                <h2>Admin <small className="text-muted">Other Videos {this.state.otherVideos.length}</small></h2>
+                <h2>Admin <small className="text-muted">Other Videos {this.state.metadata.total}</small></h2>
+                <Form.Group className='mb-3'>
+                    <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook} onChange={(e) => this.toggleIsAudiobook(e)} />
+                </Form.Group>
                 <hr/>
                 <Table striped bordered hover>
                     <thead>

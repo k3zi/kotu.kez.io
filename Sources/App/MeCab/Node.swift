@@ -148,7 +148,7 @@ extension Node {
             statuses.append((status, a...(b ?? a)))
         }
 
-        var r = "<ruby>"
+        var r = ""
         for (status, range) in statuses {
             switch status {
             case .matchFurigana:
@@ -165,7 +165,7 @@ extension Node {
                     }
                     x.append(y)
                 })
-                r += "\(kanji.hiragana)<rt>\(pronunciation.hiragana)</rt>"
+                r += "<ruby>\(kanji.hiragana)<rt>\(pronunciation.hiragana)</rt></ruby>"
             case .matchOkurigana:
                 let pronunciation = overlap.output2[range].reduce(into: "", { (x, match) in
                     guard case let .indexAndValue(_, y) = match else {
@@ -173,12 +173,11 @@ extension Node {
                     }
                     x.append(y)
                 })
-                r += "\(pronunciation.hiragana)<rt></rt>"
+                r += "<ruby>\(pronunciation.hiragana)<rt></rt></ruby>"
             case .none:
                 break
             }
         }
-        r += "</ruby>"
         return r
     }
 

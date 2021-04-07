@@ -180,6 +180,7 @@ class AdminController: RouteCollection {
 
         admin.get("otherVideos") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
             let q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let isAudiobook = (try? req.query.get(Bool.self, at: "q")) ?? false
             guard let db = req.db as? SQLDatabase else {
                 throw Abort(.internalServerError)
             }
@@ -204,6 +205,9 @@ class AdminController: RouteCollection {
                 .join(AnkiDeckSubtitle.schema, on: "\(AnkiDeckSubtitle.schema).video_id=\(AnkiDeckVideo.schema).id")
             if !q.isEmpty {
                 itemsQuery = itemsQuery.where(.init("\(AnkiDeckVideo.schema).title"), .like, q)
+            }
+            if isAudiobook {
+                itemsQuery = itemsQuery.where(SQLLiteral.string("audiobook"), .equal, SQLFunction("ANY", args: (SQLColumn("tags", table: AnkiDeckVideo.schema))))
             }
             let items = itemsQuery
                 .groupBy(SQLColumn("id", table: AnkiDeckVideo.schema))
