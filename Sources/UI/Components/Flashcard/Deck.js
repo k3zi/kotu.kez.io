@@ -1,7 +1,6 @@
 import { withRouter } from 'react-router';
 import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
-import UserContext from './../Context/User';
 
 import AceEditor from 'react-ace';
 import 'ace-builds/webpack-resolver';
@@ -30,6 +29,7 @@ import Table from 'react-bootstrap/Table';
 import scoper from './scoper.js';
 import Helpers from './../Helpers';
 import KeybindObserver from './../KeybindObserver';
+import UserContext from './../Context/User';
 
 class Deck extends React.Component {
 

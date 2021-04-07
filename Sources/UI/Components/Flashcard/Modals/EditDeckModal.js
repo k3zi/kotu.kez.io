@@ -38,7 +38,7 @@ class EditDeckModal extends React.Component {
     async load() {
         if (!this.props.deck) return;
         const id = this.props.deck.id;
-        const response = await fetch(`/api/flashcard/deck/${id}?includeSM=true`);
+        const response = await fetch(`/api/flashcard/deck/${id}`);
         if (response.ok) {
             const deck = await response.json();
             this.setState({ deck });

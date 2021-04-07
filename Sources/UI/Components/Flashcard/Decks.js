@@ -20,6 +20,7 @@ class Decks extends React.Component {
         this.state = {
             showCreateDeckModal: false,
             showDeleteDeckModal: null,
+            showEditDeckModal: null,
             showImportDeckModal: false,
             decks: []
         };

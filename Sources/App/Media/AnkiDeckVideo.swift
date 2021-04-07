@@ -20,6 +20,9 @@ final class AnkiDeckVideo: Model, Content {
     @Children(for: \.$video)
     var subtitles: [AnkiDeckSubtitle]
 
+    @Children(for: \.$media)
+    var readerSessions: [ReaderSession]
+
     init() { }
 
     init(id: UUID? = nil, title: String, source: String = "anki", tags: [String] = [], startTime: Double? = nil, endTime: Double? = nil) {
@@ -27,6 +30,18 @@ final class AnkiDeckVideo: Model, Content {
         self.title = title
         self.source = source
         self.tags = tags
+    }
+
+}
+
+extension AnkiDeckVideo {
+
+    struct Update: Content, Validatable {
+        let title: String
+
+        static func validations(_ validations: inout Validations) {
+            validations.add("title", as: String.self, is: !.empty)
+        }
     }
 
 }

@@ -178,11 +178,65 @@ class AdminController: RouteCollection {
                 }
         }
 
+        let otherVideoID = admin.grouped("otherVideo", ":id")
+
+        otherVideoID.put { (req: Request) -> EventLoopFuture<Response> in
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            try AnkiDeckVideo.Update.validate(content: req)
+            let object = try req.content.decode(AnkiDeckVideo.Update.self)
+
+            return AnkiDeckVideo
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .set(\.$title, to: object.title)
+                .limit(1)
+                .update()
+                .map { Response(status: .ok) }
+        }
+
+        otherVideoID.delete { (req: Request) -> EventLoopFuture<Response> in
+            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+
+            return AnkiDeckVideo
+                .query(on: req.db)
+                .filter(\.$id == id)
+                .with(\.$subtitles) {
+                    $0.with(\.$externalFile)
+                }
+                .first()
+                .unwrap(or: Abort(.notFound))
+                .throwingFlatMap { (video: AnkiDeckVideo) in
+                    let externalFilesDirectory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files")
+                    _ = video.subtitles.map { $0.externalFile }.concurrentMap {
+                        try? FileManager.default.removeItem(at: externalFilesDirectory.appendingPathComponent($0.path))
+                    }
+
+                    let chunks = video.subtitles.map { (subtitle: AnkiDeckSubtitle) in
+                        subtitle.delete(on: req.db).flatMap {
+                            subtitle.externalFile.delete(on: req.db)
+                        }
+                    }
+                    .chunked(into: 127)
+                    .map { chunk -> EventLoopFuture<Void> in
+                        return EventLoopFuture.whenAllSucceed(chunk, on: req.db.eventLoop).map { _ in () }
+                    }
+                    return EventLoopFuture.reduce((), chunks, on: req.eventLoop) { _,_  in () }
+                        .flatMap {
+                            video.$readerSessions.query(on: req.db)
+                                .set([FieldKey.string("media_id"): .null])
+                                .update()
+                        }
+                        .flatMap {
+                            video.delete(on: req.db)
+                        }
+                }
+                .map { Response(status: .ok) }
+        }
+
         admin.get("otherVideos") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
             let q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let isAudiobook = (try? req.query.get(Bool.self, at: "audiobook")) ?? false
             let tags: [String] = [
-                isAudiobook ? "audiobook" : nil
+                ((try? req.query.get(Bool.self, at: "audiobook")) ?? false) ? "audiobook" : nil
             ].compactMap { $0 }
             guard let db = req.db as? SQLDatabase else {
                 throw Abort(.internalServerError)

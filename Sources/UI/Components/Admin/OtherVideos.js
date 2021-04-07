@@ -10,6 +10,9 @@ import Pagination from './../react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
+import EditModal from './EditModal';
+import DeleteModal from './DeleteModal';
+
 class OtherVideos extends React.Component {
 
     constructor(props) {
@@ -21,7 +24,9 @@ class OtherVideos extends React.Component {
                 per: 15,
                 total: 0
             },
-            isAudiobook: false
+            isAudiobook: false,
+            showDeleteModal: null,
+            showEditModal: null
         };
     }
 
@@ -47,6 +52,20 @@ class OtherVideos extends React.Component {
         this.loadPage(1);
     }
 
+    async showDeleteModal(video) {
+        this.setState({
+            showDeleteModal: video
+        });
+        await this.load();
+    }
+
+    async showEditModal(video) {
+        this.setState({
+            showEditModal: video
+        });
+        await this.load();
+    }
+
     render() {
         return (
             <div>
@@ -62,6 +81,7 @@ class OtherVideos extends React.Component {
                             <th>Source</th>
                             <th>Tags</th>
                             <th className='text-center'># of Subtitles</th>
+                            <th className="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,11 +93,34 @@ class OtherVideos extends React.Component {
                                     <Badge className='bg-secondary me-1 my-1'>{tag}</Badge>
                                 )}</div></td>
                                 <td className="align-middle text-center">{otherVideo.count}</td>
+                                <td className="align-middle text-center expand">
+                                    <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditModal(otherVideo)}><i className="bi bi-pencil-square"></i></Button>
+                                    <div className='w-100 d-block d-md-none'></div>
+                                    <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteModal(otherVideo)}><i className="bi bi-trash"></i></Button>
+                                </td>
                             </tr>);
                         })}
                     </tbody>
                 </Table>
                 <Pagination totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
+                <EditModal
+                    title='Edit Video'
+                    fields={[
+                        { label: 'Title', name: 'title', type: 'text', placeholder: 'Enter the name of the video' }
+                    ]}
+                    object={this.state.showEditModal}
+                    url={this.state.showEditModal && `/api/admin/otherVideo/${this.state.showEditModal.id}`}
+                    onHide={() => this.showEditModal(null)}
+                    onSuccess={() => this.showEditModal(null)}
+                />
+                <DeleteModal
+                    title='Delete Video'
+                    object={this.state.showDeleteModal}
+                    confirmationMessage={`Are you sure you wish to delete: ${this.state.showDeleteModal && this.state.showDeleteModal.title}?`}
+                    url={this.state.showDeleteModal && `/api/admin/otherVideo/${this.state.showDeleteModal.id}`}
+                    onHide={() => this.showDeleteModal(null)}
+                    onSuccess={() => this.showDeleteModal(null)}
+                />
             </div>
         );
     }

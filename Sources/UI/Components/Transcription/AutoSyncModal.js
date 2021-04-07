@@ -51,6 +51,7 @@ class AutoSyncModal extends React.Component {
         if (response.ok) {
             this.props.onFinish();
         } else {
+            const result = await response.json();
             this.setState({
                 didError: result.error,
                 message: result.reason

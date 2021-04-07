@@ -124,7 +124,7 @@ class Search extends React.Component {
         if (!query || query.length === 0) {
             this.props.history.push(`/search/${params}`);
         } else {
-            this.props.history.push(`/search/${encodeURIComponent(query)}/${params}`);
+            this.props.history.push(`/search/${encodeURIComponent(query).replace(/\./g, '%2E')}/${params}`);
         }
     }
 
