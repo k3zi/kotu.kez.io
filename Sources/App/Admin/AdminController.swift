@@ -180,7 +180,10 @@ class AdminController: RouteCollection {
 
         admin.get("otherVideos") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
             let q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let isAudiobook = (try? req.query.get(Bool.self, at: "q")) ?? false
+            let isAudiobook = (try? req.query.get(Bool.self, at: "audiobook")) ?? false
+            let tags: [String] = [
+                isAudiobook ? "audiobook" : nil
+            ].compactMap { $0 }
             guard let db = req.db as? SQLDatabase else {
                 throw Abort(.internalServerError)
             }
@@ -192,6 +195,9 @@ class AdminController: RouteCollection {
                 .query(on: req.db)
             if !q.isEmpty {
                 countQuery = countQuery.filter(\.$title, .custom("LIKE"), q)
+            }
+            if !tags.isEmpty {
+                countQuery = countQuery.filter(\.$tags, .custom("@>"), tags)
             }
             let count = countQuery.count()
 
@@ -206,14 +212,15 @@ class AdminController: RouteCollection {
             if !q.isEmpty {
                 itemsQuery = itemsQuery.where(.init("\(AnkiDeckVideo.schema).title"), .like, q)
             }
-            if isAudiobook {
-                itemsQuery = itemsQuery.where(SQLLiteral.string("audiobook"), .equal, SQLFunction("ANY", args: (SQLColumn("tags", table: AnkiDeckVideo.schema))))
+            if !tags.isEmpty {
+                itemsQuery = itemsQuery.where(SQLColumn("tags", table: AnkiDeckVideo.schema), SQLRaw("@>"), SQLBind(tags))
             }
             let items = itemsQuery
                 .groupBy(SQLColumn("id", table: AnkiDeckVideo.schema))
                 .groupBy(SQLColumn("title", table: AnkiDeckVideo.schema))
                 .groupBy(SQLColumn("source", table: AnkiDeckVideo.schema))
                 .groupBy(SQLColumn("tags", table: AnkiDeckVideo.schema))
+                .orderBy(SQLColumn("title", table: AnkiDeckVideo.schema))
                 .offset(start)
                 .limit(end - start)
                 .all()

@@ -30,7 +30,7 @@ class OtherVideos extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/admin/otherVideos?page=${this.state.metadata.page}&per=${this.state.metadata.per}&isAudiobook=${this.state.isAudiobook ? 'true': 'false'}`);
+        const response = await fetch(`/api/admin/otherVideos?page=${this.state.metadata.page}&per=${this.state.metadata.per}&audiobook=${this.state.isAudiobook ? 'true': 'false'}`);
         if (response.ok) {
             const otherVideos = await response.json();
             this.setState({ otherVideos: otherVideos.items, metadata: otherVideos.metadata });
