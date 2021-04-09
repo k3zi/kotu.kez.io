@@ -81,6 +81,7 @@ class Subtitles extends React.Component {
                             <th>Source</th>
                             <th>Tags</th>
                             <th className='text-center'># of Subtitles</th>
+                            <th className='text-center'># of CPS Warnings / Errors</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -93,6 +94,10 @@ class Subtitles extends React.Component {
                                     <Badge className='bg-secondary me-1 my-1'>{tag}</Badge>
                                 )}</div></td>
                                 <td className="align-middle text-center">{otherVideo.count}</td>
+                                <td className="align-middle text-center">
+                                    <Badge pill className={`me-1 bg-${otherVideo.charactersPerSecondWarningCount > 0 ? 'warning' : 'secondary'}`}>{otherVideo.charactersPerSecondWarningCount}</Badge>
+                                    <Badge pill className={`bg-${otherVideo.charactersPerSecondErrorCount > 0 ? 'danger' : 'secondary'}`}>{otherVideo.charactersPerSecondErrorCount}</Badge>
+                                </td>
                                 <td className="align-middle text-center expand">
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditModal(otherVideo)}><i className="bi bi-pencil-square"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>
