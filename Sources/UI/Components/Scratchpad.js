@@ -41,7 +41,7 @@ class Scratchpad extends React.Component {
                     <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.content)}}></div>
                 </Col>
             </Row>
-            <h6 className='text-muted'>Type in the left box and the preview will appear to the right.</h6>
+            <h6 className='text-muted mt-2'>Type in the left box and the preview will appear to the right.</h6>
         </div>);
     }
 }
