@@ -27,6 +27,7 @@ import Toast from 'react-bootstrap/Toast';
 
 import Changelog from './Changelog';
 import Help from './Help';
+import Scratchpad from './Scratchpad';
 import Home from './Home';
 import Search from './Search';
 
@@ -509,6 +510,9 @@ class App extends React.Component {
                 <NavDropdown className='dropdown-menu-end d-inline-block' title={<i className="bi bi-person-circle"></i>}>
                     <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
                     <NavDropdown.Divider />
+                    <LinkContainer to="/scratchpad">
+                        <NavDropdown.Item active={false}>Scratchpad</NavDropdown.Item>
+                    </LinkContainer>
                     <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
                     <NavDropdown.Divider />
                     <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
@@ -591,6 +595,9 @@ class App extends React.Component {
                         <NavDropdown className='dropdown-menu-end' title={<i className="bi bi-person-circle"></i>}>
                             <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
                             <NavDropdown.Divider />
+                            <LinkContainer to="/scratchpad">
+                                <NavDropdown.Item active={false}>Scratchpad</NavDropdown.Item>
+                            </LinkContainer>
                             <NavDropdown.Item active={false} onClick={() => this.toggleShowSettingsModal(true)}>Settings</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item active={false} onClick={() => this.logout()}>Logout</NavDropdown.Item>
@@ -711,6 +718,9 @@ class App extends React.Component {
                                 </Route>
                                 <Route path="/changelog">
                                     <Changelog />
+                                </Route>
+                                <Route path="/scratchpad">
+                                    <Scratchpad />
                                 </Route>
                                 <Route exact path="/search/:query/:optionValue/:page/:per">
                                     {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
