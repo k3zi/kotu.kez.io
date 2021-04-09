@@ -268,7 +268,7 @@ class AdminController: RouteCollection {
                 .column(table: AnkiDeckVideo.schema, column: "title")
                 .column(table: AnkiDeckVideo.schema, column: "source")
                 .column(table: AnkiDeckVideo.schema, column: "tags")
-                .column(SQLRaw("SUM(CASE WHEN \"start_time\" IS NOT NULL AND \"end_time\" IS NOT NULL AND \"end_time\" > \"start_time\" AND (LENGTH(\"text\") * 1.0) / (\"end_time\" - \"start_time\") > 15.0 THEN 1 ELSE 0 END) AS characters_per_second_warning_count"))
+                .column(SQLRaw("SUM(CASE WHEN \"start_time\" IS NOT NULL AND \"end_time\" IS NOT NULL AND \"end_time\" > \"start_time\" AND ((LENGTH(\"text\") * 1.0) / (\"end_time\" - \"start_time\") BETWEEN 15.0 AND 20.0) THEN 1 ELSE 0 END) AS characters_per_second_warning_count"))
                 .column(SQLRaw("SUM(CASE WHEN \"start_time\" IS NOT NULL AND \"end_time\" IS NOT NULL AND \"end_time\" > \"start_time\" AND (LENGTH(\"text\") * 1.0) / (\"end_time\" - \"start_time\") > 20.0 THEN 1 ELSE 0 END) AS characters_per_second_error_count"))
                 .from(AnkiDeckVideo.schema)
                 .join(AnkiDeckSubtitle.schema, on: "\(AnkiDeckSubtitle.schema).video_id=\(AnkiDeckVideo.schema).id")
