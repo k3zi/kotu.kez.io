@@ -81,7 +81,7 @@ class Subtitles extends React.Component {
                             <th>Source</th>
                             <th>Tags</th>
                             <th className='text-center'># of Subtitles</th>
-                            <th className='text-center'># of CPS Warnings / Errors</th>
+                            <th className='text-center'>CPS Issues</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
