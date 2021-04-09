@@ -32,9 +32,8 @@ class Scratchpad extends React.Component {
     }
 
     render() {
-        return (
-            <div>
-                <Row>
+        return (<div>
+            <Row>
                 <Col>
                     <ContentEditable value={this.state.content} onChange={(e) => this.onTextChange(e)} className='form-control h-auto text-break plaintext clickable' />
                 </Col>
@@ -42,6 +41,7 @@ class Scratchpad extends React.Component {
                     <div dangerouslySetInnerHTML={{__html: Helpers.parseMarkdown(this.state.content)}}></div>
                 </Col>
             </Row>
+            <h6 className='text-muted'>Type in the left box and the preview will appear to the right.</h6>
         </div>);
     }
 }

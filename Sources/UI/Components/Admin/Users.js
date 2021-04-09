@@ -176,16 +176,16 @@ class Decks extends React.Component {
                                 <td className="align-middle text-center text-success">{user.createdAt}</td>
 
                                 <td className="align-middle text-center">
-                                    <Form.Check defaultChecked={user.permissions.includes('admin')} onChange={(e) => this.updatePermission(user, 'admin', e.target.checked)} type="checkbox" />
+                                    <Form.Check checked={user.permissions.includes('admin')} onChange={(e) => this.updatePermission(user, 'admin', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
-                                    <Form.Check defaultChecked={user.permissions.includes('blog')} onChange={(e) => this.updatePermission(user, 'blog', e.target.checked)} type="checkbox" />
+                                    <Form.Check checked={user.permissions.includes('blog')} onChange={(e) => this.updatePermission(user, 'blog', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
-                                    <Form.Check defaultChecked={user.permissions.includes('api')} onChange={(e) => this.updatePermission(user, 'api', e.target.checked)} type="checkbox" />
+                                    <Form.Check checked={user.permissions.includes('api')} onChange={(e) => this.updatePermission(user, 'api', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
-                                    <Form.Check defaultChecked={user.permissions.includes('subtitles')} onChange={(e) => this.updatePermission(user, 'subtitles', e.target.checked)} type="checkbox" />
+                                    <Form.Check checked={user.permissions.includes('subtitles')} onChange={(e) => this.updatePermission(user, 'subtitles', e.target.checked)} type="checkbox" />
                                 </td>
                                 <td className="align-middle text-center">
                                     <Button variant="warning" onClick={() => this.resetPassword(user)}><i className="bi bi-arrow-counterclockwise"></i></Button>
