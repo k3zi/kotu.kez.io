@@ -61,7 +61,7 @@ import TestsPitchAccentCounters from './Tests/PitchAccent/Counters';
 
 import AdminUsers from './Admin/Users';
 import AdminFeedback from './Admin/Feedback';
-import AdminOtherVideos from './Admin/OtherVideos';
+import AdminSubtitles from './Admin/Subtitles';
 
 import ResetPassword from './ResetPassword';
 
@@ -424,6 +424,10 @@ class App extends React.Component {
         this.setState({ subtitleIndex: undefined, willAutoplay: false });
     }
 
+    isAdminVisible() {
+        return this.state.user.permissions.includes('admin') || this.state.user.permissions.includes('subtitles');
+    }
+
     renderMenu() {
         return (<>
             <div className="col-12 d-block d-md-none"></div>
@@ -485,19 +489,9 @@ class App extends React.Component {
                         <Nav.Link active={false}>Articles</Nav.Link>
                     </LinkContainer>
 
-                    {this.state.user.permissions.includes('admin') && <>
-                        <NavDropdown title='Admin'>
-                            <LinkContainer to="/admin/users">
-                                <NavDropdown.Item active={false}>Users</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/admin/feedback">
-                                <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
-                            </LinkContainer>
-                            <LinkContainer to="/admin/otherVideos">
-                                <NavDropdown.Item active={false}>Other Videos</NavDropdown.Item>
-                            </LinkContainer>
-                        </NavDropdown>
-                    </>}
+                    {this.isAdminVisible() && <NavDropdown title='Admin'>
+                        {this.renderAdminLinks()}
+                    </NavDropdown>}
                 </Nav>}
             </div>
             {this.renderSearch('main')}
@@ -590,19 +584,9 @@ class App extends React.Component {
                             <Nav.Link active={false}>Articles</Nav.Link>
                         </LinkContainer>
 
-                        {this.state.user.permissions.includes('admin') && <>
-                            <NavDropdown drop='down' title='Admin'>
-                                <LinkContainer to="/admin/users">
-                                    <NavDropdown.Item active={false}>Users</NavDropdown.Item>
-                                </LinkContainer>
-                                <LinkContainer to="/admin/feedback">
-                                    <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
-                                </LinkContainer>
-                                <LinkContainer to="/admin/otherVideos">
-                                    <NavDropdown.Item active={false}>Other Videos</NavDropdown.Item>
-                                </LinkContainer>
-                            </NavDropdown>
-                        </>}
+                        {this.isAdminVisible() && <NavDropdown title='Admin'>
+                            {this.renderAdminLinks()}
+                        </NavDropdown>}
 
                         <NavDropdown className='dropdown-menu-end' title={<i className="bi bi-person-circle"></i>}>
                             <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
@@ -615,6 +599,24 @@ class App extends React.Component {
                 </Nav>
             </div>
             {this.renderSearch('collapse')}
+        </>);
+    }
+
+    renderAdminLinks() {
+        return (<>
+            {this.state.user.permissions.includes('admin') && <>
+                <LinkContainer to="/admin/users">
+                    <NavDropdown.Item active={false}>Users</NavDropdown.Item>
+                </LinkContainer>
+                <LinkContainer to="/admin/feedback">
+                    <NavDropdown.Item active={false}>Feedback</NavDropdown.Item>
+                </LinkContainer>
+            </>}
+            {(this.state.user.permissions.includes('admin') || this.state.user.permissions.includes('subtitles')) && <>
+                <LinkContainer to="/admin/subtitles">
+                    <NavDropdown.Item active={false}>Subtitles</NavDropdown.Item>
+                </LinkContainer>
+            </>}
         </>);
     }
 
@@ -785,8 +787,8 @@ class App extends React.Component {
                                 <Route path="/admin/feedback">
                                     {this.loginProtect(<AdminFeedback />)}
                                 </Route>
-                                <Route path="/admin/otherVideos">
-                                    {this.loginProtect(<AdminOtherVideos />)}
+                                <Route path="/admin/subtitles">
+                                    {this.loginProtect(<AdminSubtitles />)}
                                 </Route>
 
                                 <Route path="/auth/resetPassword/:userID/:key">

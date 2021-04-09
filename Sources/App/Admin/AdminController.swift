@@ -82,10 +82,14 @@ extension QueryBuilder {
 
 final class GuardPermissionMiddleware: Middleware {
 
-    let permission: Permission
+    let permissions: [String]
 
     init(require permission: Permission) {
-        self.permission = permission
+        self.permissions = [permission.rawValue]
+    }
+
+    init(requireOneOf permissions: Permission...) {
+        self.permissions = permissions.map { $0.rawValue }
     }
 
     public func respond(to req: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
@@ -93,8 +97,8 @@ final class GuardPermissionMiddleware: Middleware {
             return req.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "\(Self.self) not authenticated."))
         }
 
-        guard user.permissions.contains(permission.rawValue) else {
-            return req.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "\(Self.self) authorized for permission: \(permission)."))
+        guard user.permissions.contains(where: permissions.contains) else {
+            return req.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "\(Self.self) not authorized for permissions: \(permissions)."))
         }
 
         return next.respond(to: req)
@@ -107,16 +111,19 @@ class AdminController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let admin = routes.grouped("admin")
             .grouped(User.guardMiddleware())
-            .grouped(GuardPermissionMiddleware(require: .admin))
 
-        admin.get("feedback") { (req: Request) -> EventLoopFuture<[Feedback]> in
+        let adminProtected = admin.grouped(GuardPermissionMiddleware(require: .admin))
+        let subtitleProtected =
+            admin.grouped(GuardPermissionMiddleware(requireOneOf: .admin, .subtitles))
+
+        adminProtected.get("feedback") { (req: Request) -> EventLoopFuture<[Feedback]> in
             return Feedback
                 .query(on: req.db)
                 .sort(\.$createdAt)
                 .all()
         }
 
-        admin.get("users") { (req: Request) -> EventLoopFuture<Page<User>> in
+        adminProtected.get("users") { (req: Request) -> EventLoopFuture<Page<User>> in
             return User
                 .query(on: req.db)
                 .sort(\.$createdAt)
@@ -127,7 +134,7 @@ class AdminController: RouteCollection {
             let count: Int
             let createdAt: Date?
         }
-        admin.get("numberOfUsersGroupedByDate") { req -> EventLoopFuture<[GroupedUsers]> in
+        adminProtected.get("numberOfUsersGroupedByDate") { req -> EventLoopFuture<[GroupedUsers]> in
             guard let db = req.db as? SQLDatabase else {
                 throw Abort(.internalServerError)
             }
@@ -144,7 +151,7 @@ class AdminController: RouteCollection {
                 }
         }
 
-        admin.post("user", ":userID", "resetPassword") { (req: Request) -> EventLoopFuture<String> in
+        adminProtected.post("user", ":userID", "resetPassword") { (req: Request) -> EventLoopFuture<String> in
             guard let userID = req.parameters.get("userID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             return User
                 .find(userID, on: req.db)
@@ -159,7 +166,7 @@ class AdminController: RouteCollection {
                 }
         }
 
-        admin.put("user", ":userID", "permission", ":permission", ":value") { (req: Request) -> EventLoopFuture<String> in
+        adminProtected.put("user", ":userID", "permission", ":permission", ":value") { (req: Request) -> EventLoopFuture<String> in
             guard let userID = req.parameters.get("userID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             guard let permission = req.parameters.get("permission", as: Permission.self) else { throw Abort(.badRequest, reason: "Permission not provided") }
             guard let value = req.parameters.get("value", as: String.self) else { throw Abort(.badRequest, reason: "Value not provided") }
@@ -178,9 +185,9 @@ class AdminController: RouteCollection {
                 }
         }
 
-        let otherVideoID = admin.grouped("otherVideo", ":id")
+        let subtitleID = subtitleProtected.grouped("subtitle", ":id")
 
-        otherVideoID.put { (req: Request) -> EventLoopFuture<Response> in
+        subtitleID.put { (req: Request) -> EventLoopFuture<Response> in
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             try AnkiDeckVideo.Update.validate(content: req)
             let object = try req.content.decode(AnkiDeckVideo.Update.self)
@@ -194,7 +201,7 @@ class AdminController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        otherVideoID.delete { (req: Request) -> EventLoopFuture<Response> in
+        subtitleID.delete { (req: Request) -> EventLoopFuture<Response> in
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
             return AnkiDeckVideo
@@ -233,7 +240,7 @@ class AdminController: RouteCollection {
                 .map { Response(status: .ok) }
         }
 
-        admin.get("otherVideos") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
+        subtitleProtected.get("subtitles") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
             let q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let tags: [String] = [
                 ((try? req.query.get(Bool.self, at: "audiobook")) ?? false) ? "audiobook" : nil

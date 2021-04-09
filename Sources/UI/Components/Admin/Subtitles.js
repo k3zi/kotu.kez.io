@@ -13,7 +13,7 @@ import Table from 'react-bootstrap/Table';
 import EditModal from './EditModal';
 import DeleteModal from './DeleteModal';
 
-class OtherVideos extends React.Component {
+class Subtitles extends React.Component {
 
     constructor(props) {
         super(props);
@@ -35,7 +35,7 @@ class OtherVideos extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/admin/otherVideos?page=${this.state.metadata.page}&per=${this.state.metadata.per}&audiobook=${this.state.isAudiobook ? 'true': 'false'}`);
+        const response = await fetch(`/api/admin/subtitles?page=${this.state.metadata.page}&per=${this.state.metadata.per}&audiobook=${this.state.isAudiobook ? 'true': 'false'}`);
         if (response.ok) {
             const otherVideos = await response.json();
             this.setState({ otherVideos: otherVideos.items, metadata: otherVideos.metadata });
@@ -69,7 +69,7 @@ class OtherVideos extends React.Component {
     render() {
         return (
             <div>
-                <h2>Admin <small className="text-muted">Other Videos {this.state.metadata.total}</small></h2>
+                <h2>Admin <small className="text-muted">Subtitles {this.state.metadata.total}</small></h2>
                 <Form.Group className='mb-3'>
                     <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook} onChange={(e) => this.toggleIsAudiobook(e)} />
                 </Form.Group>
@@ -109,7 +109,7 @@ class OtherVideos extends React.Component {
                         { label: 'Title', name: 'title', type: 'text', placeholder: 'Enter the name of the video' }
                     ]}
                     object={this.state.showEditModal}
-                    url={this.state.showEditModal && `/api/admin/otherVideo/${this.state.showEditModal.id}`}
+                    url={this.state.showEditModal && `/api/admin/subtitle/${this.state.showEditModal.id}`}
                     onHide={() => this.showEditModal(null)}
                     onSuccess={() => this.showEditModal(null)}
                 />
@@ -117,7 +117,7 @@ class OtherVideos extends React.Component {
                     title='Delete Video'
                     object={this.state.showDeleteModal}
                     confirmationMessage={`Are you sure you wish to delete: ${this.state.showDeleteModal && this.state.showDeleteModal.title}?`}
-                    url={this.state.showDeleteModal && `/api/admin/otherVideo/${this.state.showDeleteModal.id}`}
+                    url={this.state.showDeleteModal && `/api/admin/subtitle/${this.state.showDeleteModal.id}`}
                     onHide={() => this.showDeleteModal(null)}
                     onSuccess={() => this.showDeleteModal(null)}
                 />
@@ -126,4 +126,4 @@ class OtherVideos extends React.Component {
     }
 }
 
-export default OtherVideos;
+export default Subtitles;
