@@ -163,6 +163,21 @@ struct Settings: Content {
         }
     }
 
+    struct Scratchpad: Content {
+        enum CodingKeys: String, CodingKey {
+            case text
+        }
+
+        var text: String = ""
+
+        init() { }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            text = (try? container.decodeIfPresent(String.self, forKey: .text)) ?? ""
+        }
+    }
+
     struct YouTube: Content {
 
         struct Keybinds: Content {
@@ -203,6 +218,7 @@ struct Settings: Content {
     enum CodingKeys: String, CodingKey {
         case anki
         case reader
+        case scratchpad
         case tests
         case ui
         case wordStatus
@@ -211,6 +227,7 @@ struct Settings: Content {
 
     var anki = Anki()
     var reader = Reader()
+    var scratchpad = Scratchpad()
     var tests = Tests()
     var ui = UI()
     var wordStatus = WordStatus()
@@ -222,6 +239,7 @@ struct Settings: Content {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         anki = (try? container.decodeIfPresent(Anki.self, forKey: .anki)) ?? Anki()
         reader = (try? container.decodeIfPresent(Reader.self, forKey: .reader)) ?? Reader()
+        scratchpad = (try? container.decodeIfPresent(Scratchpad.self, forKey: .scratchpad)) ?? Scratchpad()
         tests = (try? container.decodeIfPresent(Tests.self, forKey: .tests)) ?? Tests()
         ui = (try? container.decodeIfPresent(UI.self, forKey: .ui)) ?? UI()
         wordStatus = (try? container.decodeIfPresent(WordStatus.self, forKey: .wordStatus)) ?? WordStatus()

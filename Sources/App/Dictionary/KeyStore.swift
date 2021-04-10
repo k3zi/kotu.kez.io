@@ -24,7 +24,11 @@ extension Array where Element == KeyStore.Match {
 
     public static func parse(tokenizer: DataTokenizer) throws -> Self {
         let count = tokenizer.consume()
-        try tokenizer.consume(expect: 0)
+        if tokenizer.next != 0 {
+            print("not zero: \(tokenizer.consume())")
+        } else {
+            try tokenizer.consume(expect: 0)
+        }
         var matches = [KeyStore.Match]()
         for _ in 0..<count {
             let header = tokenizer.consume()

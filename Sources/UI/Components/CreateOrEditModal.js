@@ -38,8 +38,13 @@ class EditDeckModal extends React.Component {
         this.setState({ isSubmitting: true, didError: false, message: null });
 
         const data = Object.fromEntries(new FormData(event.target));
+        for (let field of this.props.fields) {
+            if (field.type === 'check') {
+                data[field.name] = !!data[field.name];
+            }
+        }
         const response = await fetch(this.props.url, {
-            method: 'PUT',
+            method: this.props.method,
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json'
@@ -51,7 +56,7 @@ class EditDeckModal extends React.Component {
         });
 
         if (response.ok) {
-            this.props.onSuccess();
+            this.props.onSuccess(response);
             this.setState({
                 didError: false,
                 message: null
@@ -82,6 +87,27 @@ class EditDeckModal extends React.Component {
                                     <Form.Group className='mb-3'>
                                         <Form.Label>{field.label}</Form.Label>
                                         <Form.Control defaultValue={this.state.object[field.name]} autoComplete='off' type='text' name={field.name} placeholder={field.placeholder} />
+                                    </Form.Group>
+                                );
+                            }
+
+                            if (field.type === 'check') {
+                                return (
+                                    <Form.Group className='mb-3'>
+                                        <Form.Check label={field.label} defaultChecked={!!this.state.object[field.name]} name={field.name} />
+                                    </Form.Group>
+                                );
+                            }
+
+                            if (field.type === 'select') {
+                                return (
+                                    <Form.Group className='mb-3'>
+                                        <Form.Label>{field.label}</Form.Label>
+                                        <Form.Select name={field.name} placeholder={field.placeholder}>
+                                            {field.options.map((option, i) => {
+                                                return <option key={i} value={option.value}>{option.name}</option>;
+                                            })}
+                                        </Form.Select>
                                     </Form.Group>
                                 );
                             }

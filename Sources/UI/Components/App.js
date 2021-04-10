@@ -42,6 +42,9 @@ import ComponentContextMenu from './ComponentContextMenu';
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
 
+import GamesLobbies from './Games/Lobbies';
+import GamesLobby from './Games/Lobby';
+
 import FlashcardDeck from './Flashcard/Deck';
 import FlashcardDecks from './Flashcard/Decks';
 import FlashcardNotes from './Flashcard/Notes';
@@ -155,6 +158,12 @@ class App extends React.Component {
 
         document.addEventListener('ankiChange', function (e) {
             self.loadNumberOfReviews();
+        });
+
+        document.addEventListener('click', () => {
+            if (!this.audio) {
+                this.playAudio('/silence.mp3', undefined, true);
+            }
         });
 
         Helpers.addLiveEventListeners('cue', 'click', (e, target) => {
@@ -350,7 +359,7 @@ class App extends React.Component {
         }
     }
 
-    playAudio(url, selector) {
+    playAudio(url, selector, isBasic) {
         this.stopAudio();
 
         let audio = this.audio;
@@ -361,6 +370,9 @@ class App extends React.Component {
             audio.src = url;
         }
         audio.play();
+        if (isBasic) {
+            return;
+        }
         this.setState({ audio });
         if (selector && selector.length > 0) {
             document.querySelectorAll(selector).forEach(element => {
@@ -437,9 +449,9 @@ class App extends React.Component {
                     <Navbar.Brand>コツ</Navbar.Brand>
                 </LinkContainer>
                 {this.state.user && <Nav className="mr-auto" activeKey={window.location.pathname}>
-                    <LinkContainer exact to="/transcription">
-                        <Nav.Link active={false}>Transcribe</Nav.Link>
-                    </LinkContainer>
+                    {this.isAdminVisible() && <NavDropdown title='Admin'>
+                        {this.renderAdminLinks()}
+                    </NavDropdown>}
 
                     <NavDropdown title={<>Anki{this.state.numberOfReviews > 0 && <Badge className="ms-2 bg-secondary">{this.state.numberOfReviews}</Badge>}</>}>
                         <LinkContainer to="/flashcard/decks">
@@ -454,6 +466,14 @@ class App extends React.Component {
                         <NavDropdown.Divider />
                         <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
                     </NavDropdown>
+
+                    <LinkContainer exact to="/articles">
+                        <Nav.Link active={false}>Articles</Nav.Link>
+                    </LinkContainer>
+
+                    <LinkContainer exact to="/games">
+                        <Nav.Link active={false}>Games</Nav.Link>
+                    </LinkContainer>
 
                     <NavDropdown title='Lists'>
                         <LinkContainer to="/lists/words">
@@ -486,13 +506,9 @@ class App extends React.Component {
                         </LinkContainer>
                     </NavDropdown>
 
-                    <LinkContainer exact to="/articles">
-                        <Nav.Link active={false}>Articles</Nav.Link>
+                    <LinkContainer exact to="/transcription">
+                        <Nav.Link active={false}>Transcribe</Nav.Link>
                     </LinkContainer>
-
-                    {this.isAdminVisible() && <NavDropdown title='Admin'>
-                        {this.renderAdminLinks()}
-                    </NavDropdown>}
                 </Nav>}
             </div>
             {this.renderSearch('main')}
@@ -534,10 +550,11 @@ class App extends React.Component {
                         <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleLoginModal(true)}>Login</Nav.Link>
                         <Nav.Link className='col-6 justify-content-center' href="#" onClick={() => this.toggleRegisterModal(true)}>Register</Nav.Link>
                     </>}
+
                     {this.state.user && <>
-                        <LinkContainer exact to="/transcription">
-                            <Nav.Link className='col-6 justify-content-center' active={false}>Transcribe</Nav.Link>
-                        </LinkContainer>
+                        {this.isAdminVisible() && <NavDropdown title='Admin'>
+                            {this.renderAdminLinks()}
+                        </NavDropdown>}
 
                         <NavDropdown className='col-6 justify-content-center' title={<>Anki{this.state.numberOfReviews > 0 && <Badge className="ms-2 bg-secondary">{this.state.numberOfReviews}</Badge>}</>}>
                             <LinkContainer to="/flashcard/decks">
@@ -552,6 +569,14 @@ class App extends React.Component {
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={() => this.toggleCreateNoteModal(true)}>Add Note</NavDropdown.Item>
                         </NavDropdown>
+
+                        <LinkContainer exact to="/articles">
+                            <Nav.Link active={false}>Articles</Nav.Link>
+                        </LinkContainer>
+
+                        <LinkContainer exact to="/games">
+                            <Nav.Link active={false}>Games</Nav.Link>
+                        </LinkContainer>
 
                         <NavDropdown drop='down' title='Lists'>
                             <LinkContainer to="/lists/words">
@@ -584,13 +609,9 @@ class App extends React.Component {
                             </LinkContainer>
                         </NavDropdown>
 
-                        <LinkContainer exact to="/articles">
-                            <Nav.Link active={false}>Articles</Nav.Link>
+                        <LinkContainer exact to="/transcription">
+                            <Nav.Link className='col-6 justify-content-center' active={false}>Transcribe</Nav.Link>
                         </LinkContainer>
-
-                        {this.isAdminVisible() && <NavDropdown title='Admin'>
-                            {this.renderAdminLinks()}
-                        </NavDropdown>}
 
                         <NavDropdown className='dropdown-menu-end' title={<i className="bi bi-person-circle"></i>}>
                             <NavDropdown.Item disabled active={false}>Logged in as: <strong>{this.state.user.username}</strong></NavDropdown.Item>
@@ -740,6 +761,13 @@ class App extends React.Component {
                                 </Route>
                                 <Route path="/transcription/:id">
                                     <TranscriptionProject />
+                                </Route>
+
+                                <Route exact path="/games">
+                                    {this.loginProtect(<GamesLobbies />)}
+                                </Route>
+                                <Route exact path="/games/lobby/:lobbyID/:connectionID">
+                                    {this.loginProtect(<GamesLobby onPlayAudio={(url) => this.playAudio(url)} />)}
                                 </Route>
 
                                 <Route exact path="/flashcard/decks">

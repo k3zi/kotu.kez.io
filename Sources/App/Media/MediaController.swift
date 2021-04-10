@@ -1,5 +1,4 @@
 import Fluent
-import SQLKit
 import Vapor
 
 struct MediaCaptureRequest: Content {
@@ -165,10 +164,7 @@ class MediaController: RouteCollection {
             if !tags.isEmpty {
                 query = query.filter(AnkiDeckVideo.self, \.$tags, .custom("@>"), tags)
             }
-            return query
-                .group(.or) {
-                    $0.filter(.field(.sql(raw: "regexp_replace(\"\(AnkiDeckSubtitle.schema)\".\"text\", '（[ぁ-んァ-ンーa-zA-Z]）', '', 'g')"), .custom("LIKE"), .sql(SQLLiteral.string(modifiedQuery)))).filter(\.$text, .custom("LIKE"), modifiedQuery)
-                }
+            return query.filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$video)
                 .sort(\.$id)
                 .paginate(for: req)
@@ -299,9 +295,7 @@ class MediaController: RouteCollection {
             var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
             modifiedQuery = "%\(modifiedQuery)%"
             return YouTubeSubtitle.query(on: req.db)
-                .group(.or) {
-                    $0.filter(.field(.sql(raw: "regexp_replace(\"\(YouTubeSubtitle.schema)\".\"text\", '（[ぁ-んァ-ンーa-zA-Z]）', '', 'g')"), .custom("LIKE"), .sql(SQLLiteral.string(modifiedQuery)))).filter(\.$text, .custom("LIKE"), modifiedQuery)
-                }
+                .filter(\.$text, .custom("LIKE"), modifiedQuery)
                 .with(\.$youtubeVideo)
                 .sort(\.$startTime)
                 .paginate(for: req)

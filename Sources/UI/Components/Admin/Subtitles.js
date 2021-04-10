@@ -10,7 +10,7 @@ import Pagination from './../react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
-import EditModal from './EditModal';
+import CreateOrEditModal from './../CreateOrEditModal';
 import DeleteModal from './DeleteModal';
 
 class Subtitles extends React.Component {
@@ -24,6 +24,7 @@ class Subtitles extends React.Component {
                 per: 15,
                 total: 0
             },
+            query: '',
             isAudiobook: false,
             showDeleteModal: null,
             showEditModal: null
@@ -35,7 +36,7 @@ class Subtitles extends React.Component {
     }
 
     async load() {
-        const response = await fetch(`/api/admin/subtitles?page=${this.state.metadata.page}&per=${this.state.metadata.per}&audiobook=${this.state.isAudiobook ? 'true': 'false'}`);
+        const response = await fetch(`/api/admin/subtitles?page=${this.state.metadata.page}&per=${this.state.metadata.per}&q=${this.state.query}&audiobook=${this.state.isAudiobook ? 'true': 'false'}`);
         if (response.ok) {
             const otherVideos = await response.json();
             this.setState({ otherVideos: otherVideos.items, metadata: otherVideos.metadata });
@@ -49,6 +50,11 @@ class Subtitles extends React.Component {
 
     toggleIsAudiobook(e) {
         this.state.isAudiobook = e.target.checked;
+        this.loadPage(1);
+    }
+
+    search(query) {
+        this.state.query = query;
         this.loadPage(1);
     }
 
@@ -71,6 +77,7 @@ class Subtitles extends React.Component {
             <div>
                 <h2>Admin <small className="text-muted">Subtitles {this.state.metadata.total}</small></h2>
                 <Form.Group className='mb-3'>
+                    <Form.Control autoComplete='off' className='text-center mb-2' type="text" onChange={(e) => this.search(e.target.value)} placeholder="Search" defaultValue={this.state.query} />
                     <Form.Check inline type="checkbox" label="Audiobook" name='isAudiobook' defaultChecked={this.state.isAudiobook} onChange={(e) => this.toggleIsAudiobook(e)} />
                 </Form.Group>
                 <hr/>
@@ -108,18 +115,19 @@ class Subtitles extends React.Component {
                     </tbody>
                 </Table>
                 <Pagination totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
-                <EditModal
-                    title='Edit Video'
+                <CreateOrEditModal
+                    title='Edit Subtitles'
                     fields={[
-                        { label: 'Title', name: 'title', type: 'text', placeholder: 'Enter the name of the video' }
+                        { label: 'Title', name: 'title', type: 'text', placeholder: 'Enter the title of the media' }
                     ]}
                     object={this.state.showEditModal}
                     url={this.state.showEditModal && `/api/admin/subtitle/${this.state.showEditModal.id}`}
+                    method='PUT'
                     onHide={() => this.showEditModal(null)}
                     onSuccess={() => this.showEditModal(null)}
                 />
                 <DeleteModal
-                    title='Delete Video'
+                    title='Delete Subtitles'
                     object={this.state.showDeleteModal}
                     confirmationMessage={`Are you sure you wish to delete: ${this.state.showDeleteModal && this.state.showDeleteModal.title}?`}
                     url={this.state.showDeleteModal && `/api/admin/subtitle/${this.state.showDeleteModal.id}`}

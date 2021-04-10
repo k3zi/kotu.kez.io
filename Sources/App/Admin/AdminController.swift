@@ -241,7 +241,14 @@ class AdminController: RouteCollection {
         }
 
         subtitleProtected.get("subtitles") { (req: Request) -> EventLoopFuture<Page<AnkiDeckVideoResponse>> in
-            let q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            var q = (try? req.query.get(String.self, at: "q"))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !q.isEmpty {
+                q = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+                if !q.contains("%") && !q.contains("_") {
+                    q = "%\(q)%"
+                }
+            }
+
             let tags: [String] = [
                 ((try? req.query.get(Bool.self, at: "audiobook")) ?? false) ? "audiobook" : nil
             ].compactMap { $0 }
@@ -273,7 +280,7 @@ class AdminController: RouteCollection {
                 .from(AnkiDeckVideo.schema)
                 .join(AnkiDeckSubtitle.schema, on: "\(AnkiDeckSubtitle.schema).video_id=\(AnkiDeckVideo.schema).id")
             if !q.isEmpty {
-                itemsQuery = itemsQuery.where(.init("\(AnkiDeckVideo.schema).title"), .like, q)
+                itemsQuery = itemsQuery.where(SQLColumn("title", table: AnkiDeckVideo.schema), .like, SQLLiteral.string(q))
             }
             if !tags.isEmpty {
                 itemsQuery = itemsQuery.where(SQLColumn("tags", table: AnkiDeckVideo.schema), SQLRaw("@>"), SQLBind(tags))

@@ -98,8 +98,8 @@ public func configure(_ app: Application) throws {
     PitchAccentManager.configure(app: app)
 
     let directoryURL = URL(fileURLWithPath: app.directory.workingDirectory)
-//    let directoryName = "SGK_REIKOKU"
-//    let dictionaryName = "例解学習国語辞典"
+//    let directoryName = "SMK8"
+//    let dictionaryName = "新明解第八版"
 //    let dictionaryVersion = "3"
 //    let dictionaryType = "ja"
 //    let dictionaryURL = directoryURL.appendingPathComponent("../Dictionaries/\(directoryName)")
@@ -198,7 +198,7 @@ public func configure(_ app: Application) throws {
 //        for case let fileURL as URL in enumerator {
 //            let filename = fileURL.path.suffix(from: dictionaryAbsolutePath.endIndex).dropFirst()
 //            guard !["icon.png", "style.css", "dark_style.css"].contains(filename) else { continue }
-//            if ["png", "svg", "html", "css"].contains(fileURL.pathExtension) {
+//            if ["png", "jpg", "svg", "html", "css"].contains(fileURL.pathExtension) {
 //                let fileAttributes = try fileURL.resourceValues(forKeys:[.isRegularFileKey])
 //                if fileAttributes.isRegularFile! {
 //                    files[String(filename)] = try Data(contentsOf: fileURL)
