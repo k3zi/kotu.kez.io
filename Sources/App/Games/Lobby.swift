@@ -43,7 +43,7 @@ final class Lobby {
     var state: State
     var data: GameData
     let handler: GameHandler
-    var users: [User]
+    var users: [Lobby.User]
 
     init(id: UUID, db: Database, name: String, isPublic: Bool, game: Game, users: [User]) {
         self.id = id

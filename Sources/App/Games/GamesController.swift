@@ -75,24 +75,24 @@ class GamesController: RouteCollection {
                 return ws.close(promise: nil)
             }
 
-            guard let user = lobby.users.first(where: { $0.id == id && $0.userID == user.id }) else {
+            guard let gameUser = lobby.users.first(where: { $0.id == id && $0.userID == user.id }) else {
                 return ws.close(promise: nil)
             }
 
             let connection = Lobby.User.Connection(id: .init(), ws: ws)
             gamesDispatchQueue.sync {
-                user.connections.append(connection)
+                gameUser.connections.append(connection)
                 lobby.sendUpdate()
-                lobby.handler.on(connection: connection, from: user, in: lobby)
+                lobby.handler.on(connection: connection, from: gameUser, in: lobby)
             }
 
             connection.ws.onText { (ws, text) in
-                lobby.handler.on(text: text, from: user, in: lobby)
+                lobby.handler.on(text: text, from: gameUser, in: lobby)
             }
 
             ws.onClose.whenComplete { _ in
                 gamesDispatchQueue.sync {
-                    user.connections.removeAll(where: { $0.id == connection.id })
+                    gameUser.connections.removeAll(where: { $0.id == connection.id })
                     lobby.sendUpdate()
                 }
             }
