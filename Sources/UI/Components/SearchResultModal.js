@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import AnimateHeight from 'react-animate-height';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -152,7 +153,9 @@ class SearchResultModal extends React.Component {
                         </Modal.Header>
                         <Modal.Body className='d-flex justify-content-center align-items-center overflow-auto'>
                             {this.state.isLoading && <h1 className="text-center" style={{ height: '60vh' }} ><Spinner animation="border" variant="secondary" /></h1>}
-                            {!this.state.isLoading && <iframe ref={this.frameRef} className="col-12" style={{ height: this.state.frameHeight, width: this.state.frameWidth }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
+                            <AnimateHeight duration={500} height={this.state.isLoading ? 0 : this.state.frameHeight}>
+                                {!this.state.isLoading && <iframe ref={this.frameRef} className="col-12" style={{ height: this.state.frameHeight, width: this.state.frameWidth }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
+                            </AnimateHeight>
                         </Modal.Body>
                     </Col>
                 </Row>

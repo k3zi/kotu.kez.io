@@ -12,6 +12,7 @@ import Table from 'react-bootstrap/Table';
 
 import CreateOrEditModal from './../CreateOrEditModal';
 import DeleteModal from './DeleteModal';
+import PurgeSubtitlesModal from './PurgeSubtitlesModal';
 
 class Subtitles extends React.Component {
 
@@ -72,6 +73,14 @@ class Subtitles extends React.Component {
         await this.load();
     }
 
+    async showDeleteSubtitlesModal(video, type) {
+        if (!video) {
+            return this.setState({ showDeleteSubtitlesModal: null });
+        }
+
+        this.setState({ showDeleteSubtitlesModal: `/api/admin/subtitles/${video.id}/${type == 'warning' ? 'allCPSWarnings' : 'allCPSErrors'}` })
+    }
+
     render() {
         return (
             <div>
@@ -102,8 +111,8 @@ class Subtitles extends React.Component {
                                 )}</div></td>
                                 <td className="align-middle text-center">{otherVideo.count}</td>
                                 <td className="align-middle text-center">
-                                    <Badge pill className={`me-1 bg-${otherVideo.charactersPerSecondWarningCount > 0 ? 'warning' : 'secondary'}`}>{otherVideo.charactersPerSecondWarningCount}</Badge>
-                                    <Badge pill className={`bg-${otherVideo.charactersPerSecondErrorCount > 0 ? 'danger' : 'secondary'}`}>{otherVideo.charactersPerSecondErrorCount}</Badge>
+                                    <Badge onClick={() => this.showDeleteSubtitlesModal(otherVideo, 'warning')} pill className={`me-1 bg-${otherVideo.charactersPerSecondWarningCount > 0 ? 'warning cursor-pointer' : 'secondary'}`}>{otherVideo.charactersPerSecondWarningCount}</Badge>
+                                    <Badge onClick={() => this.showDeleteSubtitlesModal(otherVideo, 'error')} pill className={`bg-${otherVideo.charactersPerSecondErrorCount > 0 ? 'danger cursor-pointer' : 'secondary'}`}>{otherVideo.charactersPerSecondErrorCount}</Badge>
                                 </td>
                                 <td className="align-middle text-center expand">
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="info" onClick={() => this.showEditModal(otherVideo)}><i className="bi bi-pencil-square"></i></Button>
@@ -133,6 +142,11 @@ class Subtitles extends React.Component {
                     url={this.state.showDeleteModal && `/api/admin/subtitle/${this.state.showDeleteModal.id}`}
                     onHide={() => this.showDeleteModal(null)}
                     onSuccess={() => this.showDeleteModal(null)}
+                />
+                <PurgeSubtitlesModal
+                    title='Delete Subtitles'
+                    fetchURL={this.state.showDeleteSubtitlesModal}
+                    onHide={() => this.showDeleteSubtitlesModal(null)}
                 />
             </div>
         );

@@ -310,6 +310,36 @@ class AdminController: RouteCollection {
                 )
             }
         }
+
+        subtitleID.delete(":subtitleID") { (req: Request) -> EventLoopFuture<Response> in
+            guard let subtitleID = req.parameters.get("subtitleID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return AnkiDeckSubtitle.query(on: req.db)
+                .filter(\.$id == subtitleID)
+                .delete()
+                .map { Response(status: .ok) }
+        }
+
+        subtitleProtected.get("subtitles", ":videoID", "allCPSWarnings") { (req: Request) -> EventLoopFuture<[AnkiDeckSubtitle]> in
+            guard let videoID = req.parameters.get("videoID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return AnkiDeckSubtitle.query(on: req.db)
+                .filter(\.$video.$id == videoID)
+                .filter(DatabaseQuery.Filter.sql(raw: "\"start_time\" IS NOT NULL"))
+                .filter(DatabaseQuery.Filter.sql(raw: "\"end_time\" IS NOT NULL"))
+                .filter(DatabaseQuery.Filter.sql(raw: "\"end_time\" > \"start_time\""))
+                .filter(DatabaseQuery.Filter.sql(raw: "((LENGTH(\"text\") * 1.0) / (\"end_time\" - \"start_time\") BETWEEN 15.0 AND 20.0)"))
+                .all()
+        }
+
+        subtitleProtected.get("subtitles", ":videoID", "allCPSErrors") { (req: Request) -> EventLoopFuture<[AnkiDeckSubtitle]> in
+            guard let videoID = req.parameters.get("videoID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+            return AnkiDeckSubtitle.query(on: req.db)
+                .filter(\.$video.$id == videoID)
+                .filter(DatabaseQuery.Filter.sql(raw: "\"start_time\" IS NOT NULL"))
+                .filter(DatabaseQuery.Filter.sql(raw: "\"end_time\" IS NOT NULL"))
+                .filter(DatabaseQuery.Filter.sql(raw: "\"end_time\" > \"start_time\""))
+                .filter(DatabaseQuery.Filter.sql(raw: "(LENGTH(\"text\") * 1.0) / (\"end_time\" - \"start_time\") > 20.0"))
+                .all()
+        }
     }
 
 }

@@ -15,7 +15,7 @@ class GamesController: RouteCollection {
         let lobbies = games.grouped("lobbies")
 
         lobbies.get { (req: Request) -> Page<Lobby.Response> in
-            let filteredLobbies = gameLobbies.filter { $0.isPublic }.sorted(by: { $0.name > $1.name })
+            let filteredLobbies = gameLobbies.filter { $0.isPublic && $0.state != .abandoned }.sorted(by: { $0.name > $1.name })
             let total = filteredLobbies.count
             let page = try req.query.decode(PageRequest.self)
             let start = (page.page - 1) * page.per
@@ -83,11 +83,11 @@ class GamesController: RouteCollection {
             gamesDispatchQueue.sync {
                 gameUser.connections.append(connection)
                 lobby.sendUpdate()
-                lobby.handler.on(connection: connection, from: gameUser, in: lobby)
+                lobby.on(connection: connection, from: gameUser)
             }
 
             connection.ws.onText { (ws, text) in
-                lobby.handler.on(text: text, from: gameUser, in: lobby)
+                lobby.on(text: text, from: gameUser)
             }
 
             ws.onClose.whenComplete { _ in

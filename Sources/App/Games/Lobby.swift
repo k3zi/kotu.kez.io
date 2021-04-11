@@ -40,9 +40,11 @@ final class Lobby {
     let name: String
     let isPublic: Bool
     let game: Game
+    let handler: GameHandler
+
     var state: State
     var data: GameData
-    let handler: GameHandler
+    var lastActive: Date = .init()
     var users: [Lobby.User]
 
     init(id: UUID, db: Database, name: String, isPublic: Bool, game: Game, users: [User]) {
@@ -55,6 +57,32 @@ final class Lobby {
         self.users = users
         self.data = game.newData()
         self.handler = game.newHandler()
+
+        let timer = DispatchSource.makeTimerSource(queue: gamesDispatchQueue)
+        timer.schedule(deadline: .now(), repeating: .seconds(30), leeway: .seconds(0))
+        timer.setEventHandler { [weak self] in
+            guard let self = self, self.state != .abandoned else {
+                return timer.cancel()
+            }
+
+            var changed = false
+            for user in self.users {
+                if user.connections.isEmpty && abs(user.lastActive.timeIntervalSinceNow) > 120 {
+                    self.users.removeAll(where: { $0.id == user.id })
+                    changed = true
+                }
+            }
+
+            if changed {
+                self.sendUpdate()
+            }
+
+            if self.users.count == 0 {
+                self.state = .abandoned
+                timer.cancel()
+            }
+        }
+        timer.resume()
     }
 
     func sendToEveryone(event: WSEvent) {
@@ -82,6 +110,18 @@ final class Lobby {
         sendToEach {
             Lobby.Update(lobby: response, user: $0.response)
         }
+    }
+
+    func on(text: String, from user: Lobby.User) {
+        lastActive = .init()
+        user.lastActive = lastActive
+        handler.on(text: text, from: user, in: self)
+    }
+
+    func on(connection: Lobby.User.Connection, from user: Lobby.User) {
+        lastActive = .init()
+        user.lastActive = lastActive
+        handler.on(connection: connection, from: user, in: self)
     }
 
     var response: Response {
@@ -136,6 +176,7 @@ extension Lobby {
         var isOwner: Bool
         var connections: [Connection]
         var score: Int
+        var lastActive: Date = .init()
 
         init(id: UUID, name: String, userID: UUID?, isOwner: Bool = false) {
             self.id = id

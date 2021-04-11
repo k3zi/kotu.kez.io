@@ -32,6 +32,12 @@ class Transcribe extends React.Component {
         }
     }
 
+    componentWillUnmount() {
+        if (this.props.ws) {
+            this.props.ws.removeEventListener('message', this.handleMessage);
+        }
+    }
+
     componentDidUpdate(prevProps) {
         if (prevProps.ws != this.props.ws) {
             if (prevProps.ws) {

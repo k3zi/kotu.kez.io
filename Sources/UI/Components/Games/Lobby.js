@@ -25,10 +25,19 @@ class Lobby extends React.Component {
             ws: null,
             isReady: false
         };
+
+        this.handleMessage = this.handleMessage.bind(this);
     }
 
     componentDidMount() {
         this.setupSocket();
+    }
+
+    componentWillUnmount() {
+        if (this.state.ws) {
+            this.state.ws.removeEventListener('message', this.handleMessage);
+            this.state.ws.close();
+        }
     }
 
     async setupSocket() {
@@ -41,18 +50,20 @@ class Lobby extends React.Component {
             console.log(err);
         };
 
-        ws.addEventListener('message', (event) => {
-            const message = JSON.parse(event.data);
-            const name = message.name;
-            const data = message.data;
-            if (name === 'update') {
-                this.setState({ lobby: data.lobby, user: data.user, isReady: true });
-            }
-        });
+        ws.addEventListener('message', this.handleMessage);
 
         ws.onclose = () => {
             this.props.history.push(`/games`);
         };
+    }
+
+    handleMessage(event) {
+        const message = JSON.parse(event.data);
+        const name = message.name;
+        const data = message.data;
+        if (name === 'update') {
+            this.setState({ lobby: data.lobby, user: data.user, isReady: true });
+        }
     }
 
     render() {
