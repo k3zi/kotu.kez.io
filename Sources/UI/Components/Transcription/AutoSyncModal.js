@@ -33,13 +33,10 @@ class AutoSyncModal extends React.Component {
             return;
         }
         this.setState({ isSubmitting: true, didError: false, message: null });
-
-        const data = Object.fromEntries(new FormData(event.target));
         const response = await fetch(`/api/transcription/project/${this.props.project.id}/autoSync`, {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: new FormData(event.target),
             headers: {
-                'Content-Type': 'application/json',
                 'X-Kotu-Share-Hash': this.getShareHash(false)
             }
         });
@@ -70,9 +67,14 @@ class AutoSyncModal extends React.Component {
 
                 <Modal.Body>
                     <Form onSubmit={(e) => this.submit(e)}>
-                        <Form.Group controlId="editFragmentModalStartTime">
+                        <Form.Group>
                             <Form.Label>Original Text</Form.Label>
                             <Form.Control as='textarea' autoComplete='off' name="text" placeholder="Enter the original text" />
+                        </Form.Group>
+
+                        <Form.Group className='mt-3'>
+                            <Form.Label>Subtitle File</Form.Label>
+                            <Form.Control type="file" name="subtitleFile" custom />
                         </Form.Group>
 
                         {this.state.didError && <Alert variant="danger" className='mt-3'>

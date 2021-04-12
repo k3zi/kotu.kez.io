@@ -9,7 +9,8 @@ struct VTTFileRoot: SubtitleFileRoot {
     static func parse(tokenizer: Tokenizer) throws -> VTTFileRoot {
         try tokenizer.consume(expect: "WEBVTT\n")
         tokenizer.consume(while: { a, _ in !a.isNumber })
-        let subtitles = tokenizer.input.match("\\d\\d:\\d\\d:\\d\\d.\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d.\\d\\d\\d.*?\\n(?:.*?)\\n\\n").concurrentMap { try? Subtitle.parse(tokenizer: Tokenizer(input: $0[0])) }.compactMap { $0 }
+
+        let subtitles = tokenizer.input.components(separatedBy: "\n\n").concurrentMap { try? Subtitle.parse(tokenizer: Tokenizer(input: $0)) }.compactMap { $0 }
         return .init(subtitles: subtitles)
     }
 

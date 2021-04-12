@@ -301,8 +301,10 @@ class TranscriptionController: RouteCollection {
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
             struct Body: Content {
                 let text: String
+                let subtitleFile: Vapor.File?
             }
-            let originalText = String(try req.content.decode(Body.self).text.splitSeparator(separatorDecision: {
+            let body = try req.content.decode(Body.self)
+            let originalText = String(body.text.splitSeparator(separatorDecision: {
                 switch $0 {
                 case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
                 case "。", ".", "？", "?": return .keepLeft
@@ -324,54 +326,65 @@ class TranscriptionController: RouteCollection {
                 .unwrap(orError: Abort(.badRequest, reason: "Project not found"))
                 .guardWrite(req: req)
                 .throwingFlatMap { project in
-                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
-                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                    let uuid = UUID().uuidString
-
-                    try downloadSubtitles(uuid: uuid, youtubeID: project.youtubeID, directory: directory, auto: true)
-                    let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
-                    guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
-                        try FileManager.default.removeItem(at: fileURL)
-                        throw Abort(.internalServerError)
-                    }
-
                     guard let translation = project.translations.first(where: { $0.isOriginal }) else {
                         throw Abort(.badRequest)
                     }
-                    let subtitles = subtitleRoot.subtitles
-                    let individualWords = subtitles.concurrentMap { subtitle -> [SubtitleWord] in
-                        var words = [SubtitleWord]()
-                        do {
-                            let tokenizer = Tokenizer(input: subtitle.text)
-                            tokenizer.consume(upUntil: "\n")
-                            try tokenizer.consume(expect: "\n")
-                            var start = subtitle.timeRange.start
-                            var isFirst = true
-                            while (isFirst || tokenizer.hasPrefix("<")) && !tokenizer.reachedEnd {
-                                let text: String
-                                if !isFirst {
-                                    try tokenizer.consume(expect: "<c>")
-                                    text = tokenizer.consume(upUntil: "<")
-                                    try tokenizer.consume(expect: "</c>")
-                                } else {
-                                    text = tokenizer.consume(upUntil: "<")
-                                }
-                                let end: VTTFileRoot.Subtitle.TimeRange.Time
-                                if tokenizer.hasPrefix("<") {
-                                    try tokenizer.consume(expect: "<")
-                                    end = try VTTFileRoot.Subtitle.TimeRange.Time.parse(tokenizer: tokenizer)
 
-                                    try tokenizer.consume(expect: ">")
-                                } else {
-                                    end = subtitle.timeRange.end
+                    let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
+                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let uuid = UUID().uuidString
+                    let individualWords: [SubtitleWord]
+
+                    if let file = body.subtitleFile {
+                        let data = Data(buffer: file.data)
+                        guard let subtitleRoot = try SubtitleFile(data: data, encoding: .utf8, kind: .srt).root as? SRTFileRoot else {
+                            throw Abort(.internalServerError)
+                        }
+
+                        individualWords = subtitleRoot.subtitles.concurrentMap { subtitle -> SubtitleWord in
+                            return .init(text: subtitle.text, time: .init(start: .init(milliseconds: subtitle.timeRange.start.milliseconds), end: .init(milliseconds: subtitle.timeRange.end.milliseconds)))
+                        }
+                    } else {
+                        try downloadSubtitles(uuid: uuid, youtubeID: project.youtubeID, directory: directory, auto: true)
+                        let fileURL = directory.appendingPathComponent(uuid).appendingPathExtension("ja.vtt")
+                        guard let subtitleRoot = try SubtitleFile(file: fileURL, encoding: .utf8, kind: .vtt).root as? VTTFileRoot else {
+                            try FileManager.default.removeItem(at: fileURL)
+                            throw Abort(.internalServerError)
+                        }
+                        individualWords = subtitleRoot.subtitles.concurrentMap { subtitle -> [SubtitleWord] in
+                            var words = [SubtitleWord]()
+                            do {
+                                let tokenizer = Tokenizer(input: subtitle.text)
+                                tokenizer.consume(upUntil: "\n")
+                                try tokenizer.consume(expect: "\n")
+                                var start = subtitle.timeRange.start
+                                var isFirst = true
+                                while (isFirst || tokenizer.hasPrefix("<")) && !tokenizer.reachedEnd {
+                                    let text: String
+                                    if !isFirst {
+                                        try tokenizer.consume(expect: "<c>")
+                                        text = tokenizer.consume(upUntil: "<")
+                                        try tokenizer.consume(expect: "</c>")
+                                    } else {
+                                        text = tokenizer.consume(upUntil: "<")
+                                    }
+                                    let end: VTTFileRoot.Subtitle.TimeRange.Time
+                                    if tokenizer.hasPrefix("<") {
+                                        try tokenizer.consume(expect: "<")
+                                        end = try VTTFileRoot.Subtitle.TimeRange.Time.parse(tokenizer: tokenizer)
+
+                                        try tokenizer.consume(expect: ">")
+                                    } else {
+                                        end = subtitle.timeRange.end
+                                    }
+                                    words.append(.init(text: text, time: .init(start: start, end: end)))
+                                    start = end
+                                    isFirst = false
                                 }
-                                words.append(.init(text: text, time: .init(start: start, end: end)))
-                                start = end
-                                isFirst = false
-                            }
-                        } catch { }
-                        return words
-                    }.flatMap { $0 }
+                            } catch { }
+                            return words
+                        }.flatMap { $0 }
+                    }
 
                     let individualCharacters: [SubtitleCharacter] = try individualWords.flatMap { word in
                         Array(try dummify(string: word.text)).flatMap { $0.unicodeScalars }.map { SubtitleCharacter(character: $0, time: word.time)}
@@ -386,6 +399,8 @@ class TranscriptionController: RouteCollection {
                         return false
                     })
                     .filter { !$0.isEmpty }
+
+                    var lastEndTime: Double = 0
 
                     let alignedSubtitles = originalAlignedCharacters.enumerated().compactMap { (i, characters) -> MediaSubtitle? in
                         let text = originalTextChunks[i].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -418,8 +433,9 @@ class TranscriptionController: RouteCollection {
                             return nil
                         }
 
-                        let startTime = individualCharacters[matchStartIndex].time.start.milliseconds / 1000
+                        let startTime = max(lastEndTime, individualCharacters[matchStartIndex].time.start.milliseconds / 1000)
                         let endTime = individualCharacters[matchEndIndex].time.end.milliseconds / 1000
+                        lastEndTime = endTime
 //                        if case .missing = searchArea.last, (matchEndIndex + 1) < individualCharacters.count {
 //                            let otherEndTime = individualCharacters[matchEndIndex + 1].time.end.milliseconds / 1000
 //                            if otherEndTime - endTime < 1 {

@@ -83,6 +83,17 @@ struct SubtitleFile {
         }
     }
 
+    init(data contents: Data, encoding: String.Encoding = .unicode, kind: Kind = .detect) throws {
+        let stringContents = String(data: contents, encoding: encoding)
+        guard let string = stringContents else {
+            throw Error.fileContentsCouldNotBeParsed
+        }
+        if kind == .detect {
+            throw Error.invalidKind
+        }
+        root = try kind.rootType.parse(tokenizer: Tokenizer(input: string))
+    }
+
     init(file: GenericSubtitleFile, kind: Kind = .detect) throws {
         guard kind != .detect else { throw Error.invalidKind }
         root = kind.rootType.encode(file: file)

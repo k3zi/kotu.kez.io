@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import AnimateHeight from 'react-animate-height';
+import _ from 'underscore';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -30,12 +31,19 @@ class SearchResultModal extends React.Component {
             isSubmitting: false,
             headword: null,
             frameHeight: '0px',
-            frameWidth: '0px'
+            frameWidth: '0px',
+            isVerticalText: false
         };
 
         this.frameRef = React.createRef();
         this.adjustContentLinks = this.adjustContentLinks.bind(this);
         this.adjustFrameHeight = this.adjustFrameHeight.bind(this);
+        this.throttledStateUpdate = _.throttle(this.throttledStateUpdate.bind(this), 500);
+    }
+
+    throttledStateUpdate() {
+        const state = this.state;
+        this.setState({ state });
     }
 
     componentDidMount() {
@@ -78,20 +86,25 @@ class SearchResultModal extends React.Component {
         const frame = this.frameRef.current;
         if (!frame || !frame.contentWindow.document.body) return;
         const writingMode = frame.contentWindow.getComputedStyle(frame.contentWindow.document.body)['writing-mode'];
-        const frameHeight = writingMode.includes('vertical') ? '60vh' : (frame.contentWindow.document.documentElement.offsetHeight + 'px');
-        const frameWidth = writingMode.includes('vertical') ? (frame.contentWindow.document.documentElement.offsetWidth + 'px') : '100%';
+        const frameHeight = writingMode.includes('vertical') ? this.vh(60) : frame.contentWindow.document.documentElement.offsetHeight;
+        const frameWidth = writingMode.includes('vertical') ? frame.contentWindow.document.documentElement.offsetWidth : 'auto';
         if (frameHeight != this.state.frameHeight || frameWidth != this.state.frameWidth) {
-            this.setState({ frameHeight, frameWidth });
+            this.state.frameHeight = frameHeight;
+            this.state.frameWidth = frameWidth;
+            this.state.isVerticalText = writingMode.includes('vertical');
+            this.throttledStateUpdate();
         }
     }
 
     async loadHeadword(headword) {
-        this.setState({ headword });
+        this.state.headword = headword;
+        this.throttledStateUpdate();
         if (!headword) {
             return;
         }
+        this.state.isLoading = true;
+        this.throttledStateUpdate();
 
-        this.setState({ isLoading: true });
         let response;
         if (headword.entry) {
             response = await fetch(`/api/dictionary/entry/${headword.entry.id}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
@@ -99,18 +112,23 @@ class SearchResultModal extends React.Component {
             response = await fetch(`/api/dictionary/entry/${headword.dictionary.id}/${headword.entryIndex}?forceHorizontalText=${this.context.settings.ui.prefersHorizontalText ? 'true' : 'false'}&forceDarkCSS=${this.props.colorScheme == 'dark' ? 'true' : 'false'}`);
         }
         const result = await response.text();
-        this.setState({ selectedResultHTML: result, isLoading: false, headword: headword });
+        this.state.selectedResultHTML = result;
+        this.state.isLoading = false;
+        this.state.headword = headword;
+        this.throttledStateUpdate();
 
         this.checkList();
     }
 
     async checkList() {
         const response = await fetch(`/api/lists/word/first?q=${encodeURIComponent(this.state.headword.headline)}&isLookup=1`);
-        this.setState({ inList: response.ok });
+        this.state.inList = response.ok;
+        this.throttledStateUpdate();
     }
 
     async addToList() {
-        this.setState({ isSubmitting: true });
+        this.state.isSubmitting = true;
+        this.throttledStateUpdate();
 
         const data = {
             value: this.state.headword.headline
@@ -124,11 +142,14 @@ class SearchResultModal extends React.Component {
         });
         const result = await response.json();
         const success = !result.error;
+        this.state.isSubmitting = false;
+        this.state.inList = response.ok;
+        this.throttledStateUpdate();
+    }
 
-        this.setState({
-            isSubmitting: false,
-            inList: response.ok
-        });
+    vh(v) {
+        const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        return (v * h) / 100;
     }
 
     render() {
@@ -152,8 +173,8 @@ class SearchResultModal extends React.Component {
                             <Button onClick={() => this.addToList()} className='ms-2' variant='primary' disabled={this.state.inList}>{this.state.inList ? 'Added' : 'Add to List'}</Button>
                         </Modal.Header>
                         <Modal.Body className='d-flex justify-content-center align-items-center overflow-auto'>
-                            {this.state.isLoading && <h1 className="text-center" style={{ height: '60vh' }} ><Spinner animation="border" variant="secondary" /></h1>}
-                            <AnimateHeight duration={500} height={this.state.isLoading ? 0 : this.state.frameHeight}>
+                            <AnimateHeight duration={250} height={this.state.isLoading ? this.vh(40) : this.state.frameHeight} className={`w-100 ${this.state.isLoading ? 'text-center' : (this.state.isVerticalText ? 'text-end' : 'text-start')}`}>
+                                {this.state.isLoading && <h1 className="d-flex justify-content-center align-items-center" style={{ height: '40vh' }} ><Spinner animation="border" variant="secondary" /></h1>}
                                 {!this.state.isLoading && <iframe ref={this.frameRef} className="col-12" style={{ height: this.state.frameHeight, width: this.state.frameWidth }} srcDoc={this.state.selectedResultHTML} frameBorder="0"></iframe>}
                             </AnimateHeight>
                         </Modal.Body>
