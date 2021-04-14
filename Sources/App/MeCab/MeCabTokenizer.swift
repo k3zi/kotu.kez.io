@@ -57,8 +57,8 @@ struct PitchAccentResolver: ExceptionResolver {
         if tokenizer.next.id == "13334" {
             tokenizer.nodes[0].features[25] = "C4"
         }
-        // さん → 前部のアクセント
-        if tokenizer.next.id == "14495" {
+        // さん・ちゃん → 前部のアクセント
+        if ["14495", "23719"].contains(tokenizer.next.id) {
             tokenizer.nodes[0].features[25] = "C5"
         }
 

@@ -104,6 +104,7 @@ class App extends React.Component {
             hasDictionaries: true,
             searchNavSelectedOption: 'Words'
         };
+        this.abortController = new AbortController();
     }
 
     componentDidMount() {
@@ -301,9 +302,11 @@ class App extends React.Component {
     }
 
     async search(query) {
+        this.abortController.abort();
+        this.abortController = new AbortController();
         this.setState({ query, results: [], isLoading: true });
         if (query.length === 0) return;
-        const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/dictionary/search?q=${encodeURIComponent(query)}`, { signal: this.abortController.signal });
         if (response.ok) {
             const results = (await response.json()).items;
             if (results.length === 0) {
@@ -316,8 +319,8 @@ class App extends React.Component {
             this.setState({ results });
         }
 
-        const response2 = await fetch(`/api/media/youtube/subtitles/search?q=${encodeURIComponent(query)}`);
-        const response3 = await fetch(`/api/media/anki/subtitles/search?q=${encodeURIComponent(query)}`);
+        const response2 = await fetch(`/api/media/youtube/subtitles/search?q=${encodeURIComponent(query)}`, { signal: this.abortController.signal });
+        const response3 = await fetch(`/api/media/anki/subtitles/search?q=${encodeURIComponent(query)}`, { signal: this.abortController.signal });
         if (response2.ok && response3.ok) {
             const youTubeSubtitles = (await response2.json()).items;
             const ankiSubtites = (await response3.json()).items;

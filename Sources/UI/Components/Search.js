@@ -50,6 +50,8 @@ class Search extends React.Component {
                 total: 0
             }
         };
+
+        this.abortController = new AbortController();
     }
 
     componentDidMount() {
@@ -76,6 +78,8 @@ class Search extends React.Component {
     }
 
     async load() {
+        this.abortController.abort();
+        this.abortController = new AbortController();
         const query = this.props.match.params.query;
         const optionValue = this.props.match.params.optionValue;
         const option = this.state.options.filter(o => o.value === optionValue)[0] || this.state.options[0];
@@ -93,7 +97,9 @@ class Search extends React.Component {
         if (!query || query.length === 0) {
             return;
         }
-        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}&audiobook=${this.getQueryParam('audiobook') === 'true' ? 'true' : 'false'}&exact=${this.getQueryParam('exact') === 'true' ? 'true' : 'false'}`);
+        const response = await fetch(`${option.endpoint}?page=${page}&per=${per}&q=${query}&audiobook=${this.getQueryParam('audiobook') === 'true' ? 'true' : 'false'}&exact=${this.getQueryParam('exact') === 'true' ? 'true' : 'false'}`, {
+            signal: this.abortController.signal
+        });
         if (response.ok) {
             const result = await response.json();
 
