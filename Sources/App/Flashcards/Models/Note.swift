@@ -17,6 +17,9 @@ final class Note: Model, Content, Hashable {
     @ID(key: .id)
     var id: UUID?
 
+    @Field(key: "tags")
+    var tags: [String]
+
     @Parent(key: "note_type_id")
     var noteType: NoteType
 
@@ -34,9 +37,10 @@ final class Note: Model, Content, Hashable {
 
     init() { }
 
-    init(id: UUID? = nil, noteTypeID: UUID) {
+    init(id: UUID? = nil, noteTypeID: UUID, tags: [String]) {
         self.id = id
         self.$noteType.id = noteTypeID
+        self.tags = tags
     }
 
 }
@@ -90,6 +94,22 @@ extension Note {
         }
     }
 
+    struct Migration3: Fluent.Migration {
+        var name: String { "CreateNoteTags" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("tags", .array(of: .string), .required, .sql(.default("{}")))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("tags")
+                .update()
+        }
+    }
+
 }
 
 extension Note {
@@ -98,10 +118,12 @@ extension Note {
         let targetDeckID: UUID
         let noteTypeID: UUID
         let fieldValues: [NoteFieldValue.Create]
+        let tags: [String]
     }
 
     struct Update: Content {
         let fieldValues: [NoteFieldValue.Update]
+        let tags: [String]
     }
 
 }
@@ -113,6 +135,7 @@ extension Note.Create: Validatable {
 
         validations.add("noteTypeID", as: UUID.self)
         validations.add("fieldValues", as: [NoteFieldValue.Create].self)
+        validations.add("tags", as: [String].self)
     }
 
 }
@@ -121,6 +144,7 @@ extension Note.Update: Validatable {
 
     static func validations(_ validations: inout Validations) {
         validations.add("fieldValues", as: [NoteFieldValue.Update].self)
+        validations.add("tags", as: [String].self)
     }
 
 }

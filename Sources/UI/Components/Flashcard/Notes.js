@@ -89,6 +89,7 @@ class Notes extends React.Component {
                             <th className="text-center col-6">Sort Field</th>
                             <th className="text-center">Cards</th>
                             <th className="text-center">Note Type</th>
+                            <th className="text-center">Tags</th>
                             <th className="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -98,8 +99,11 @@ class Notes extends React.Component {
                                 <td className="align-middle">{note.fieldValues[0].value}</td>
                                 <td className="align-middle text-center text-primary">{note.cards.length}</td>
                                 <td className="align-middle text-center text-primary">{note.noteType.name}</td>
+                                <td className="align-middle"><div className='d-flex justify-content-center align-items-center'>{note.tags.map(tag =>
+                                    <Badge className='bg-secondary me-1 my-1'>{tag}</Badge>
+                                )}</div></td>
                                 <td className="align-middle text-center">
-                                    <Button variant="primary" onClick={() => this.showEditNoteModal(note)}><i className="bi bi-arrow-right"></i></Button>
+                                    <Button variant="primary" onClick={() => this.showEditNoteModal(note)}><i className="bi bi-pencil-square"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="danger" onClick={() => this.showDeleteNoteModal(note)}><i className="bi bi-trash"></i></Button>
                                     <div className='w-100 d-block d-md-none'></div>

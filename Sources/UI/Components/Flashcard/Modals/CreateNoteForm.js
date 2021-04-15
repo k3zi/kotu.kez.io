@@ -1,4 +1,6 @@
 import React from 'react';
+import Tags from '@yaireo/tagify/dist/react.tagify';
+import '@yaireo/tagify/dist/tagify.css';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -27,6 +29,8 @@ class CreateNoteForm extends React.Component {
             noteTypes: [],
             noteType: null,
             fieldValues: [],
+            tags: [],
+            existingTags: [],
             decks: [],
             deck: null
         };
@@ -45,6 +49,7 @@ class CreateNoteForm extends React.Component {
     async load() {
         const response = await fetch('/api/flashcard/noteTypes');
         const response2 = await fetch('/api/flashcard/decks');
+        const response3 = await fetch('/api/flashcard/tags');
         if (response.ok && response2.ok) {
             const noteTypes = await response.json();
             const selectedNoteType = noteTypes.filter(t => this.state.noteType && t.id === this.state.noteType.id)[0]
@@ -67,8 +72,13 @@ class CreateNoteForm extends React.Component {
                 noteType: selectedNoteType,
                 decks,
                 deck: selectedDeck,
-                fieldValues
+                fieldValues,
+                tags: this.context.settings.anki.lastUsedTags
             });
+        }
+
+        if (response3.ok) {
+            this.setState({ existingTags: await response3.json() });
         }
     }
 
@@ -92,7 +102,8 @@ class CreateNoteForm extends React.Component {
         const data = {
             fieldValues: this.state.fieldValues,
             noteTypeID: this.state.noteType.id,
-            targetDeckID: this.state.deck.id
+            targetDeckID: this.state.deck.id,
+            tags: this.state.tags
         };
         const response = await fetch('/api/flashcard/note', {
             method: 'POST',
@@ -127,6 +138,10 @@ class CreateNoteForm extends React.Component {
     onTextChange(e, i) {
         this.state.fieldValues[i].value = e.target.value;
         this.setState({ fieldValues: this.state.fieldValues });
+    }
+
+    onTagsChange(e) {
+        this.state.tags = e.detail.tagify.value.map(v => v.value);
     }
 
     render() {
@@ -166,6 +181,11 @@ class CreateNoteForm extends React.Component {
                             </Alert>}
                         </div>;
                     })}
+
+                    <Form.Group className='mt-2'>
+                        <Form.Label>Tags</Form.Label>
+                        <Tags settings={{ whitelist: this.state.existingTags }} defaultValue={this.state.tags} onChange={(e) => this.onTagsChange(e)} />
+                    </Form.Group>
 
                     {this.state.didError && <Alert variant="danger">
                         {this.state.message}

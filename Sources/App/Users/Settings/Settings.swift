@@ -55,12 +55,14 @@ struct Settings: Content {
             case showFieldPreview
             case lastUsedDeckID
             case lastUsedNoteTypeID
+            case lastUsedTags
         }
 
         var keybinds: Keybinds = .init()
         var showFieldPreview: Bool = true
         var lastUsedDeckID: UUID? = nil
         var lastUsedNoteTypeID: UUID? = nil
+        var lastUsedTags: [String] = .init()
 
         init() { }
 
@@ -70,6 +72,7 @@ struct Settings: Content {
             showFieldPreview = (try? container.decodeIfPresent(Bool.self, forKey: .showFieldPreview)) ?? true
             lastUsedDeckID = (try? container.decodeIfPresent(UUID.self, forKey: .lastUsedDeckID)) ?? nil
             lastUsedNoteTypeID = (try? container.decodeIfPresent(UUID.self, forKey: .lastUsedNoteTypeID)) ?? nil
+            lastUsedTags = (try? container.decodeIfPresent([String].self, forKey: .lastUsedTags)) ?? []
         }
     }
 

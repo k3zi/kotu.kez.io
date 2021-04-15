@@ -1,4 +1,6 @@
 import React from 'react';
+import Tags from '@yaireo/tagify/dist/react.tagify';
+import '@yaireo/tagify/dist/tagify.css';
 
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
@@ -24,14 +26,25 @@ class EditNoteModal extends React.Component {
             didError: false,
             message: null,
             success: false,
-            note: null
+            note: null,
+            existingTags: []
         };
     }
 
     componentDidUpdate(prevProps) {
         if (prevProps.note != this.props.note && this.props.note) {
-            this.setState({ note: JSON.parse(JSON.stringify(this.props.note)) });
+            this.load();
         }
+    }
+
+    async load() {
+        console.log('will load');
+        const response = await fetch('/api/flashcard/tags');
+        let existingTags = this.state.existingTags || [];
+        if (response.ok) {
+            existingTags = await response.json();
+        }
+        this.setState({ existingTags, note: JSON.parse(JSON.stringify(this.props.note)) });
     }
 
     async submit(event) {
@@ -69,6 +82,10 @@ class EditNoteModal extends React.Component {
         this.setState({ note: this.state.note });
     }
 
+    onTagsChange(e) {
+        this.state.note.tags = e.detail.tagify.value.map(v => v.value);
+    }
+
     render() {
         return (
             <Modal {...this.props} show={!!this.props.note} size="lg" aria-labelledby="contained-modal-title-vcenter" centered>
@@ -79,8 +96,8 @@ class EditNoteModal extends React.Component {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <Form onSubmit={(e) => this.submit(e)}>
-                        {this.state.note && this.state.note.noteType.fields.map((field, i) => {
+                    {this.state.note && <Form onSubmit={(e) => this.submit(e)}>
+                         {this.state.note.noteType.fields.map((field, i) => {
                             const fieldValueIndex = this.state.note.fieldValues.findIndex(v => v.field.id === field.id);
                             if (fieldValueIndex < 0) {
                                 return <div></div>;
@@ -95,18 +112,18 @@ class EditNoteModal extends React.Component {
                                 </Alert>}
                             </div>;
                         })}
-
-                        {this.state.didError && <Alert variant="danger">
-                            {this.state.message}
-                        </Alert>}
-                        {!this.state.didError && this.state.message && <Alert variant="info">
+                        <Form.Group className='mt-2'>
+                            <Form.Label>Tags</Form.Label>
+                            <Tags settings={{ whitelist: this.state.existingTags }} defaultValue={this.state.note.tags} onChange={(e) => this.onTagsChange(e)} />
+                        </Form.Group>
+                        {this.state.message && <Alert variant={this.state.didError ? 'danger' : 'info'}>
                             {this.state.message}
                         </Alert>}
 
                         <Button className='col-12 mt-3' variant="primary" type="submit" disabled={this.state.isSubmitting || !this.state.note || this.state.note.fieldValues[0].value.trim().length == 0}>
                             {this.state.isSubmitting ? 'Loading...' : 'Update'}
                         </Button>
-                    </Form>
+                    </Form>}
                 </Modal.Body>
             </Modal>
         );

@@ -29,6 +29,24 @@ class FlashcardController: RouteCollection {
                 }
         }
 
+        guardedFlashcards.get("tags") { req -> EventLoopFuture<[String]> in
+            let user = try req.auth.require(User.self)
+            let userID = try user.requireID()
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+            struct Result: Decodable {
+                let unnest: String
+            }
+            return db.select()
+                .column(SQLFunction("UNNEST", args: SQLColumn("tags", table: Note.schema)))
+                .from(Note.schema)
+                .join(NoteType.schema, on: "\(NoteType.schema).id=\(Note.schema).note_type_id AND \(NoteType.schema).owner_id='\(userID.uuidString)'")
+                .all(decoding: Result.self).map {
+                    $0.map { $0.unnest }
+                }
+        }
+
         struct GroupedLogs: Content {
             let count: Int
             let groupDate: Date
@@ -200,6 +218,7 @@ class FlashcardController: RouteCollection {
                 .join(NoteType.self, on: \Note.$noteType.$id == \NoteType.$id)
                 .join(User.self, on: \NoteType.$owner.$id == \User.$id)
                 .filter(User.self, \.$id == userID)
+                .sort(\.$createdAt, .descending)
                 .paginate(for: req)
         }
 
@@ -209,7 +228,7 @@ class FlashcardController: RouteCollection {
         }
 
         func createNote(req: Request, object: Note.Create, noteType: NoteType, deck: Deck) throws -> EventLoopFuture<Note> {
-            let note = Note(noteTypeID: try noteType.requireID())
+            let note = Note(noteTypeID: try noteType.requireID(), tags: object.tags)
             return note.create(on: req.db)
                 .throwingFlatMap {
                     let fieldValues = try object.fieldValues.map {
@@ -272,6 +291,7 @@ class FlashcardController: RouteCollection {
                                     var settings = user.settings
                                     settings?.anki.lastUsedDeckID = deck.id
                                     settings?.anki.lastUsedNoteTypeID = noteType.id
+                                    settings?.anki.lastUsedTags = object.tags
                                     user.settings = settings
                                     return user.save(on: req.db)
                                 }
@@ -383,6 +403,8 @@ class FlashcardController: RouteCollection {
                         fieldValue.value = newValue ?? ""
                     }
 
+                    note.tags = object.tags
+
                     return EventLoopFuture<Void>.andAllSucceed(note.fieldValues.map { $0.save(on: req.db) }, on: req.eventLoop)
                         .throwingFlatMap {
                             let allFieldsValue = String(object.fieldValues.flatMap { $0.value })
@@ -430,6 +452,9 @@ class FlashcardController: RouteCollection {
                                         return deck.save(on: req.db)
                                     }
                             }
+                                .flatMap {
+                                    note.update(on: req.db)
+                                }
                                 .throwingFlatMap {
                                     Note.find(try note.requireID(), on: req.db)
                                         .unwrap(orError: Abort(.internalServerError))
@@ -784,7 +809,7 @@ class FlashcardController: RouteCollection {
                                             return NoteFieldValue.Create(fieldID: try field.requireID(), value: String(rawFieldValues[i]))
                                         }
 
-                                        let note = Note.Create(targetDeckID: id, noteTypeID: try noteType.requireID(), fieldValues: fieldValues)
+                                        let note = Note.Create(targetDeckID: id, noteTypeID: try noteType.requireID(), fieldValues: fieldValues, tags: note.tags.components(separatedBy: divider))
                                         return (note, noteType)
                                     }
                                     return try createNotes(req: req, values: values, deck: deck)
