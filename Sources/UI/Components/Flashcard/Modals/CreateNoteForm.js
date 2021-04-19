@@ -67,18 +67,16 @@ class CreateNoteForm extends React.Component {
             const selectedDeck = decks.filter(d => this.state.deck && d.id === this.state.deck.id)[0]
                 || decks.filter(d => d.id === this.context.settings.anki.lastUsedDeckID)[0]
                 || decks[0];
+            const existingTags = response3.ok ? await response3.json() : [];
             this.setState({
                 noteTypes,
                 noteType: selectedNoteType,
                 decks,
                 deck: selectedDeck,
                 fieldValues,
-                tags: this.context.settings.anki.lastUsedTags
+                tags: this.context.settings.anki.lastUsedTags,
+                existingTags
             });
-        }
-
-        if (response3.ok) {
-            this.setState({ existingTags: await response3.json() });
         }
     }
 

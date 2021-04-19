@@ -988,6 +988,14 @@ blockquote {
     color: rgba(255, 255, 255, 0.75);
 }
 
+.navbar-dark .btn-dark, .navbar-dark .btn-dark:hover, .navbar-dark .btn-dark:focus, .navbar-dark .btn-dark:active {
+    color: auto;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none;
+    outline: none;
+}
+
 .form-control.recording, .form-control.recording:focus {
     border-color: tint-color($danger, 50%);
     box-shadow: 0 0 $input-btn-focus-blur $input-btn-focus-width rgba($danger, $input-btn-focus-color-opacity);
