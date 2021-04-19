@@ -87,15 +87,42 @@ class MediaController: RouteCollection {
             return response
         }
 
-        media.get("external", "audio", ":id") { req -> EventLoopFuture<Response> in
+        func output(data fileData: Data, filename: String, mediaType: HTTPMediaType? = nil, for req: Request) throws -> Response {
+            let rangeString = req.headers.first(name: .range) ?? ""
+            let response = Response(status: .ok)
+            response.headers.contentType = mediaType
+            response.headers.contentDisposition = .init(.attachment, filename: filename)
+            if rangeString.count > 0 {
+                let range = try Range.parse(tokenizer: .init(input: rangeString))
+                let data = fileData[range.startByte...min(range.endByte, fileData.endIndex - 1)]
+                response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(fileData.count)")
+                response.headers.add(name: .contentLength, value: String(data.count))
+                response.body = .init(data: data)
+            } else {
+                response.body = .init(data: fileData)
+            }
+            return response
+        }
+
+        func fileResponse(for req: Request) throws -> EventLoopFuture<Response> {
             guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
             return ExternalFile
                 .query(on: req.db)
                 .filter(\.$id == id)
                 .first()
-                .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { file in
+                .throwingFlatMap { file in
+                    guard let file = file else {
+                        return File
+                            .query(on: req.db)
+                            .filter(\.$id == id)
+                            .first()
+                            .unwrap(orError: Abort(.notFound))
+                            .flatMapThrowing { file in
+                                let filename = "\(file.id!.uuidString).m4a"
+                                return try output(data: file.data, filename: filename, mediaType: HTTPMediaType.audio, for: req)
+                            }
+                    }
                     let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent(file.path)
                     var mediaType: HTTPMediaType?
                     if file.path.hasSuffix(".m4a") {
@@ -104,50 +131,18 @@ class MediaController: RouteCollection {
                     let fileExtension = fileURL.pathExtension
                     let type = mediaType ?? HTTPMediaType.fileExtension(fileExtension)
 
-                    let rangeString = req.headers.first(name: .range) ?? ""
-                    let response = Response(status: .ok)
-                    response.headers.contentType = type
-                    response.headers.contentDisposition = .init(.attachment, filename: fileURL.pathComponents.last!)
-
                     let fileData = try Data(contentsOf: fileURL)
-                    if rangeString.count > 0 {
-                        let range = try Range.parse(tokenizer: .init(input: rangeString))
-                        let data = fileData[range.startByte...min(range.endByte, fileData.endIndex - 1)]
-                        response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(fileData.count)")
-                        response.headers.add(name: .contentLength, value: String(data.count))
-                        response.body = .init(data: data)
-                    } else {
-                        response.body = .init(data: fileData)
-                    }
-                    return response
+                    let response = try output(data: fileData, filename: fileURL.pathComponents.last!, mediaType: type, for: req)
+                    return req.eventLoop.future(response)
                 }
         }
 
-        media.get("audio", ":id") { req -> EventLoopFuture<Response> in
-            guard let id = req.parameters.get("id", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
+        media.get("external", "audio", ":id") { req -> EventLoopFuture<Response> in
+            try fileResponse(for: req)
+        }
 
-            return File
-                .query(on: req.db)
-                .filter(\.$id == id)
-                .first()
-                .unwrap(orError: Abort(.notFound))
-                .flatMapThrowing { file in
-                    let rangeString = req.headers.first(name: .range) ?? ""
-                    let response = Response(status: .ok)
-                    response.headers.contentType = HTTPMediaType.audio
-                    let filename = "\(file.id!.uuidString).m4a"
-                    response.headers.contentDisposition = .init(.attachment, filename: filename)
-                    if rangeString.count > 0 {
-                        let range = try Range.parse(tokenizer: .init(input: rangeString))
-                        let data = file.data[range.startByte...min(range.endByte, file.data.endIndex - 1)]
-                        response.headers.add(name: .contentRange, value: "bytes \(data.startIndex)-\(data.endIndex)/\(file.data.count)")
-                        response.headers.add(name: .contentLength, value: String(data.count))
-                        response.body = .init(data: data)
-                    } else {
-                        response.body = .init(data: file.data)
-                    }
-                    return response
-                }
+        media.get("audio", ":id") { req -> EventLoopFuture<Response> in
+            try fileResponse(for: req)
         }
 
         let anki = guardedMedia.grouped("anki")
@@ -191,9 +186,7 @@ class MediaController: RouteCollection {
 
         let youtube = guardedMedia.grouped("youtube")
 
-        youtube.post("capture") { req -> EventLoopFuture<File> in
-            let user = try req.auth.require(User.self)
-
+        youtube.post("capture") { req -> EventLoopFuture<ExternalFile> in
             try MediaCaptureRequest.validate(content: req)
             let object = try req.content.decode(MediaCaptureRequest.self)
 
@@ -230,8 +223,17 @@ class MediaController: RouteCollection {
             let data = try Data(contentsOf: fileURL)
             try FileManager.default.removeItem(at: fileURL)
 
-            let file = File(owner: user, size: data.count, data: data)
-            return file.create(on: req.db).map { file }
+            let externalFile = ExternalFile(size: Int(data.count), path: "", aliasPath: nil, ext: "m4a")
+            return externalFile
+                .create(on: req.db)
+                .throwingFlatMap {
+                    let externalFilesDirectory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files")
+                    let uuid = try externalFile.requireID().uuidString
+                    let newFilePath = externalFilesDirectory.appendingPathComponent("\(uuid).m4a")
+                    externalFile.path = newFilePath.pathComponents.last!
+                    try data.write(to: newFilePath)
+                    return externalFile.update(on: req.db)
+                }.map { externalFile }
         }
 
         youtube.get("download") { req -> Response in

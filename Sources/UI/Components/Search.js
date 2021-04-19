@@ -16,6 +16,8 @@ import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import ToggleButton from 'react-bootstrap/ToggleButton';
 
+import CopyEmbedModal from './CopyEmbedModal';
+
 class Search extends React.Component {
 
     constructor(props) {
@@ -48,7 +50,8 @@ class Search extends React.Component {
                 page: 1,
                 per: 15,
                 total: 0
-            }
+            },
+            embed: null
         };
 
         this.abortController = new AbortController();
@@ -142,6 +145,10 @@ class Search extends React.Component {
         this.search(this.props.match.params.query, 1, undefined, undefined, e.target.checked);
     }
 
+    showEmbed(embed) {
+        this.setState({ embed });
+    }
+
     render() {
         return (
             <div>
@@ -196,15 +203,23 @@ class Search extends React.Component {
                         <FadeIn>
                             {this.state.results.map((s, i) => {
                                 return <ListGroup.Item action key={i} onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${s.externalFile.id}`)} className='text-break text-wrap' as="button" style={{ 'white-space': 'normal' }} eventKey={i} >
-                                    <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
-                                    <br />
-                                    <small>{s.video.title}</small>
+                                    <div className='d-flex align-items-center'>
+                                        <div className='me-auto'>
+                                            <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                                            <br />
+                                            <small>{s.video.title}</small>
+                                        </div>
+                                        <a className='fs-5' onClick={(e) => e.stopPropagation()} download href={`/api/media/external/audio/${s.externalFile.id}`}><i className="bi bi-download text-info"></i></a>
+                                        <a className='ps-3 fs-5' style={{ cursor: 'pointer' }} onClick={(e) => { this.showEmbed(`[audio: ${s.externalFile.id}]`); e.stopPropagation(); }}><i className="bi bi-link-45deg text-info"></i></a>
+                                    </div>
                                 </ListGroup.Item>;
                             })}
                         </FadeIn>
                     </ListGroup>}
                     <Pagination className='mt-3' totalPages={Math.ceil(this.state.metadata.total / this.state.metadata.per)} currentPage={this.state.metadata.page} showMax={7} onClick={(i) => this.loadPage(i)} />
                 </FadeIn>}
+
+                <CopyEmbedModal value={this.state.embed} onHide={() => this.showEmbed(null)} />
             </div>
         );
     }
