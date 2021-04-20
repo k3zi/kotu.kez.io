@@ -61,8 +61,7 @@ class Words extends React.Component {
         if (!word) {
             return;
         }
-        const values = word.value.split(/[\s・,、【】「」]/g).filter(s => s.length > 0).join('|');
-        console.log(values);
+        const values = word.value.split(/[\s・,、【［］】「」]/g).filter(s => s.length > 0).join('|');
         const encodedValues = encodeURIComponent(values);
 
         let userExamples = [];
