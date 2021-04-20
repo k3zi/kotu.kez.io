@@ -23,12 +23,11 @@ enum SeparatorDecision {
 }
 
 extension Collection where Self.Index: Strideable, Self.Index.Stride: SignedInteger {
-    func splitSeparator(separatorDecision: (Self.Element) throws -> SeparatorDecision) rethrows -> [Self.SubSequence] {
+    func splitSeparator(by decision: (Self.Element) throws -> SeparatorDecision) rethrows -> [Self.SubSequence] {
         var sequences = [Self.SubSequence]()
         var startIndex = self.startIndex
         for index in self.startIndex..<endIndex {
-            let decision = try separatorDecision(self[index])
-            switch decision {
+            switch try decision(self[index]) {
             case .keepLeft:
                 sequences.append(self[startIndex...index])
                 startIndex = index.advanced(by: 1)

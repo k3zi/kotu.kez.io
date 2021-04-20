@@ -21,7 +21,7 @@
                 "html-whitespace-sensitive-tag-names": "^1.0.3",
                 "pako": "^2.0.3",
                 "react-animate-height": "^2.0.23",
-                "react-bootstrap": "^2.0.0-alpha.0",
+                "react-bootstrap": "^2.0.0-alpha.1",
                 "react-fade-in": "^2.0.1",
                 "react-markdown": "^5.0.3",
                 "rehype-autolink-headings": "^5.0.1",
@@ -6624,9 +6624,9 @@
             }
         },
         "node_modules/react-bootstrap": {
-            "version": "2.0.0-alpha.0",
-            "resolved": "https://registry.npmjs.org/react-bootstrap/-/react-bootstrap-2.0.0-alpha.0.tgz",
-            "integrity": "sha512-PueJkfsNDtF3JMeea0jBLy6P7hgn34apWfhnllksix0iHYjcZQKu7wUzLWPQSSCRg6mi1XYcp17XKY32ev5k0w==",
+            "version": "2.0.0-alpha.1",
+            "resolved": "https://registry.npmjs.org/react-bootstrap/-/react-bootstrap-2.0.0-alpha.1.tgz",
+            "integrity": "sha512-zoIGDzgcBoGiKd/0Rgh5SRyvqgH5OJPMEtXp+1v4Ek8gZDVSPZf58Oy4yhXs30pw4HKBS0s4yzJZcGMFKq3Yuw==",
             "dependencies": {
                 "@babel/runtime": "^7.13.8",
                 "@restart/context": "^2.1.4",
@@ -13703,9 +13703,9 @@
             }
         },
         "react-bootstrap": {
-            "version": "2.0.0-alpha.0",
-            "resolved": "https://registry.npmjs.org/react-bootstrap/-/react-bootstrap-2.0.0-alpha.0.tgz",
-            "integrity": "sha512-PueJkfsNDtF3JMeea0jBLy6P7hgn34apWfhnllksix0iHYjcZQKu7wUzLWPQSSCRg6mi1XYcp17XKY32ev5k0w==",
+            "version": "2.0.0-alpha.1",
+            "resolved": "https://registry.npmjs.org/react-bootstrap/-/react-bootstrap-2.0.0-alpha.1.tgz",
+            "integrity": "sha512-zoIGDzgcBoGiKd/0Rgh5SRyvqgH5OJPMEtXp+1v4Ek8gZDVSPZf58Oy4yhXs30pw4HKBS0s4yzJZcGMFKq3Yuw==",
             "requires": {
                 "@babel/runtime": "^7.13.8",
                 "@restart/context": "^2.1.4",

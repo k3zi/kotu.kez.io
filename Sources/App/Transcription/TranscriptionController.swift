@@ -304,7 +304,7 @@ class TranscriptionController: RouteCollection {
                 let subtitleFile: Vapor.File?
             }
             let body = try req.content.decode(Body.self)
-            let originalText = String(body.text.splitSeparator(separatorDecision: {
+            let originalText = String(body.text.splitSeparator(by: {
                 switch $0 {
                 case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
                 case "。", ".", "？", "?": return .keepLeft

@@ -1006,6 +1006,12 @@ blockquote {
     border-color: $input-disabled-border-color;
 }
 
+.carousel-caption-position-relative {
+    .carousel-caption {
+        position: static !important;
+    }
+}
+
 .tagify {
     color: $input-color !important;
     background-color: $input-bg !important;

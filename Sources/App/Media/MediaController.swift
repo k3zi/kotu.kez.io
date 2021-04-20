@@ -45,6 +45,18 @@ extension PlexCaptureRequest: Validatable {
 
 }
 
+extension Page {
+
+    /// Maps a page's items to a different type using the supplied closure.
+    public func flatMap<U>(_ transform: (T) throws -> ([U])) rethrows -> Page<U> where U: Codable {
+        try .init(
+            items: self.items.flatMap(transform),
+            metadata: self.metadata
+        )
+    }
+
+}
+
 class MediaController: RouteCollection {
 
     static func stringFromTimeInterval(interval: TimeInterval) -> String {
@@ -149,8 +161,7 @@ class MediaController: RouteCollection {
         anki.get("subtitles", "search") { req -> EventLoopFuture<Page<AnkiDeckSubtitle>> in
             let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
             guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
-            var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
-            modifiedQuery = "%\(modifiedQuery)%"
+
             let tags: [String] = [
                 ((try? req.query.get(Bool.self, at: "audiobook")) ?? false) ? "audiobook" : nil
             ].compactMap { $0 }
@@ -159,7 +170,23 @@ class MediaController: RouteCollection {
             if !tags.isEmpty {
                 query = query.filter(AnkiDeckVideo.self, \.$tags, .custom("@>"), tags)
             }
-            return query.filter(\.$text, .custom("LIKE"), modifiedQuery)
+
+            if q.contains("|") {
+                let modifiedQuery = q.components(separatedBy: "|").filter { !$0.isEmpty }
+                query = query.group(.or) {
+                    $0.filter(all: modifiedQuery) { text in
+                        \.$text ~~ text
+                    }
+                }
+            } else {
+                var modifiedQuery = q.replacingOccurrences(of: "?", with: "_").replacingOccurrences(of: "*", with: "%")
+                modifiedQuery = "%\(modifiedQuery)%"
+                query = query
+                    .filter(\.$text, .custom("ILIKE"), modifiedQuery)
+
+            }
+
+            return query
                 .with(\.$video)
                 .sort(\.$id)
                 .paginate(for: req)
@@ -594,6 +621,52 @@ class MediaController: RouteCollection {
                         item.$content.value = ""
                     }
                     return page
+                }
+        }
+
+        struct ReaderSessionSearchResult: Content {
+            struct Session: Content {
+                let id: UUID
+                let title: String?
+                let url: String?
+            }
+            let text: String
+            let session: Session
+        }
+
+        sessions.get("search") { (req: Request) -> EventLoopFuture<Page<ReaderSessionSearchResult>> in
+            let user = try req.auth.require(User.self)
+            let q = try req.query.get(String.self, at: "q").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.count > 0 else { throw Abort(.badRequest, reason: "Empty query passed.") }
+            let modifiedQuery = q.components(separatedBy: "|").filter { !$0.isEmpty }
+            return user.$readerSessions
+                .query(on: req.db)
+                .group(.or) {
+                    $0.filter(all: modifiedQuery) { text in
+                        \.$textContent ~~ text
+                    }
+                }
+                .field(\.$id).field(\.$textContent).field(\.$title).field(\.$url).field(\.$visualType).field(\.$rubyType).field(\.$owner.$id).field(\.$scrollPhraseIndex).field(\.$showReaderOptions)
+                .sort(\.$updatedAt, .descending)
+                .paginate(for: req).flatMapThrowing {
+                    let page = $0
+                    for item in page.items {
+                        item.$annotatedContent.value = ""
+                        item.$content.value = ""
+                    }
+                    return try page.flatMap { session in
+                        let texts = session.textContent.splitSeparator(by: {
+                            switch $0 {
+                            case "\r\n", "\r", "\n", "\"", "「", "」": return .remove
+                            case "。", ".", "？", "?": return .keepLeft
+                            default: return .notSeparator
+                            }
+                        }).map { String($0) }.filter { o in !modifiedQuery.filter { q in o.contains(q) }.isEmpty }
+
+                        return try texts.map {
+                            ReaderSessionSearchResult(text: $0, session: ReaderSessionSearchResult.Session(id: try session.requireID(), title: session.title, url: session.url))
+                        }
+                    }
                 }
         }
 

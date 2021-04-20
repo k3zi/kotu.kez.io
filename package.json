@@ -61,7 +61,7 @@
         "html-whitespace-sensitive-tag-names": "^1.0.3",
         "pako": "^2.0.3",
         "react-animate-height": "^2.0.23",
-        "react-bootstrap": "^2.0.0-alpha.0",
+        "react-bootstrap": "^2.0.0-alpha.1",
         "react-fade-in": "^2.0.1",
         "react-markdown": "^5.0.3",
         "rehype-autolink-headings": "^5.0.1",
