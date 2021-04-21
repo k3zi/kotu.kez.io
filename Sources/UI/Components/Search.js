@@ -211,7 +211,7 @@ class Search extends React.Component {
                                             <small>{s.video.title}</small>
                                         </div>
                                         {s.video.tags.map(tag =>
-                                            <Badge className='bg-secondary me-1 my-1'>{tag}</Badge>
+                                            <Badge className='bg-secondary me-3 my-1'>{tag}</Badge>
                                         )}
                                         <a className='fs-5' onClick={(e) => e.stopPropagation()} download href={`/api/media/external/audio/${s.externalFile.id}`}><i className="bi bi-download text-info"></i></a>
                                         <a className='ps-3 fs-5' style={{ cursor: 'pointer' }} onClick={(e) => { this.showEmbed(`[audio: ${s.externalFile.id}]`); e.stopPropagation(); }}><i className="bi bi-link-45deg text-info"></i></a>
