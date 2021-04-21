@@ -180,7 +180,8 @@ class Search extends React.Component {
                             {this.state.results.map((r, i) => {
                                 return <ListGroup.Item action active={false} className='d-flex align-items-center text-break text-wrap' onClick={() => this.props.onSelectWord(r)} style={{ 'white-space': 'normal' }} eventKey={i} key={i}>
                                     <img className='me-2' height='20px' src={`/api/dictionary/icon/${r.dictionary.id}`} />
-                                    <span dangerouslySetInnerHTML={{ __html: r.headline.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                                    <span className='me-auto' dangerouslySetInnerHTML={{ __html: r.headline.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
+                                    {r.subentryIndex > 0 && <Badge className='bg-secondary'>Subentry</Badge>}
                                 </ListGroup.Item>;
                             })}
                         </FadeIn>
@@ -209,6 +210,9 @@ class Search extends React.Component {
                                             <br />
                                             <small>{s.video.title}</small>
                                         </div>
+                                        {s.tags.map(tag =>
+                                            <Badge className='bg-secondary me-1 my-1'>{tag}</Badge>
+                                        )}
                                         <a className='fs-5' onClick={(e) => e.stopPropagation()} download href={`/api/media/external/audio/${s.externalFile.id}`}><i className="bi bi-download text-info"></i></a>
                                         <a className='ps-3 fs-5' style={{ cursor: 'pointer' }} onClick={(e) => { this.showEmbed(`[audio: ${s.externalFile.id}]`); e.stopPropagation(); }}><i className="bi bi-link-45deg text-info"></i></a>
                                     </div>

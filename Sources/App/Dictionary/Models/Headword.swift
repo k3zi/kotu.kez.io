@@ -70,6 +70,9 @@ extension Headword {
             entry = headword.$entry.id.flatMap { .init(id: $0) }
 
             headline = headword.headline
+                .replacingOccurrences(of: "{hyoki-s}", with: "┊")
+                .replacingOccurrences(of: "{ZS:/}", with: "／")
+
             shortHeadline = headword.shortHeadline
             entryIndex = headword.entryIndex
             subentryIndex = headword.subentryIndex

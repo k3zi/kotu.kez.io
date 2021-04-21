@@ -182,6 +182,7 @@ class DictionaryController: RouteCollection {
                 .field(\.$headline).field(\.$shortHeadline).field(\.$dictionary.$id).field(\.$entry.$id).field(\.$entryIndex).field(\.$subentryIndex)
                 .field(DictionaryOwner.self, \.$order)
                 .sort(DictionaryOwner.self, \.$order)
+                .sort(\.$subentryIndex)
                 .sort(\.$headline)
                 .unique()
                 .paginate(for: req)

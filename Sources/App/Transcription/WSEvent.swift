@@ -9,18 +9,24 @@ struct WSEventHolder<Event: WSEvent>: Codable {
     let data: Event
     let connectionID: String
 
-    static func attemptDecodeUnwrap(type: Event.Type, jsonString: String, unwrappedCallback: (WSEventHolder<Event>) -> ()) {
+    static func attemptDecodeUnwrap(type: Event.Type, jsonString: String, unwrappedCallback: (WSEventHolder<Event>) throws -> ()) rethrows {
         guard let data = jsonString.data(using: .utf8) else { return }
         guard let object = try? JSONDecoder().decode(WSEventHolder<Event>.self, from: data), object.name == type.eventName else { return }
-        unwrappedCallback(object)
+        try unwrappedCallback(object)
     }
 }
+
+let wsEventEncoder: JSONEncoder = {
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    return encoder
+}()
 
 extension WSEvent {
 
     func jsonString(connectionID: String) -> String? {
         let payload = WSEventHolder(name: Self.eventName, data: self, connectionID: connectionID)
-        return (try? JSONEncoder().encode(payload)).flatMap({ String(data: $0, encoding: .utf8) })
+        return (try? wsEventEncoder.encode(payload)).flatMap({ String(data: $0, encoding: .utf8) })
     }
 
 }

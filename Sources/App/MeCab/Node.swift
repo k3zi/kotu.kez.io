@@ -196,7 +196,11 @@ extension Node {
     }
 
     var isGenerallyIgnored: Bool {
-        ["助詞", "補助記号", "助動詞", "補助記号", "空白"].contains(partOfSpeech)
+        ["助詞", "助動詞"].contains(partOfSpeech) || isPunctuation
+    }
+
+    var isPunctuation: Bool {
+        ["補助記号", "空白"].contains(partOfSpeech)
     }
 
     func shouldIgnore(for user: User) -> Bool {

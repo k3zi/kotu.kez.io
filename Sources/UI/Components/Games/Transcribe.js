@@ -20,21 +20,29 @@ class Transcribe extends React.Component {
         this.state = {
             externalFileID: null,
             tick: 0,
-            response: ''
+            response: '',
+            expiresAt: null,
+            secondsRemaining: 0
         };
         this.handleMessage = this.handleMessage.bind(this);
-        this.audioRef = React.createRef();
+        this.updateTimeout = this.updateTimeout.bind(this);
     }
 
     componentDidMount() {
         if (this.props.ws) {
             this.props.ws.addEventListener('message', this.handleMessage);
+            this.interval = setInterval(this.updateTimeout, 500);
         }
     }
 
     componentWillUnmount() {
         if (this.props.ws) {
             this.props.ws.removeEventListener('message', this.handleMessage);
+        }
+
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
         }
     }
 
@@ -45,6 +53,10 @@ class Transcribe extends React.Component {
             }
             if (this.props.ws) {
                 this.props.ws.addEventListener('message', this.handleMessage);
+            }
+
+            if (!this.interval) {
+                this.interval = setInterval(this.updateTimeout, 500);
             }
         }
     }
@@ -65,13 +77,10 @@ class Transcribe extends React.Component {
             this.setState({
                 externalFileID: data.externalFileID,
                 tick: data.tick,
-                response: ''
+                response: '',
+                expiresAt: new Date(data.expiresAt)
             });
             this.props.onPlayAudio(`/api/media/external/audio/${data.externalFileID}`);
-            if (this.audioRef.current) {
-                this.audioRef.current.pause();
-                this.audioRef.current.load();
-            }
         }
     }
 
@@ -79,6 +88,15 @@ class Transcribe extends React.Component {
         return this.props.lobby.users.reduce((prev, current) => {
             return (prev.score > current.score) ? prev : current
         });
+    }
+
+    updateTimeout() {
+        if (!this.state.expiresAt) {
+            return;
+        }
+
+        const secondsRemaining = Math.max(0, this.state.expiresAt.getTime() - (new Date()).getTime()) / 1000;
+        this.setState({ secondsRemaining });
     }
 
     submit(e) {
@@ -104,10 +122,9 @@ class Transcribe extends React.Component {
                 {!this.props.user.isOwner && this.props.lobby.state === 'notStarted' && <h1 className='text-center'>Waiting on lobby owner to start game...<br /><Spinner animation="border" variant="secondary" /></h1>}
                 {this.props.user.isOwner && this.props.lobby.state === 'notStarted' && <Button className='col-5' variant="primary" onClick={() => this.start()}>Start</Button>}
 
-                {this.props.lobby.state === 'inProgress' && this.state.externalFileID && this.state.response.length === 0 && <div className='col-12 text-center'>
-                    <audio controls ref={this.audioRef}>
-                        <source src={`/api/media/external/audio/${this.state.externalFileID}`} type='audio/mpeg' />
-                    </audio>
+                {this.props.lobby.state === 'inProgress' && this.state.externalFileID && this.state.response.length === 0 && <div className='col-12 text-center position-relative'>
+                    <span className={`fs-5 position-absolute${this.state.secondsRemaining < 15 ? ' text-danger' : ''}`} style={{ left: 0, top: 0 }}>{this.state.secondsRemaining.toFixed(0)}</span>
+                    <span className='cursor-pointer fs-1' onClick={() => this.props.onPlayAudio(`/api/media/external/audio/${this.state.externalFileID}`)}><i class="bi bi-play-btn-fill"></i></span>
                     <hr />
 
                     <Form onSubmit={(e) => this.submit(e)}>

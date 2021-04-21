@@ -8,7 +8,9 @@ class TranscribeGameData: GameData {
     var subtitle: AnkiDeckSubtitle?
     var userResponses: [Lobby.User: String] = [:]
     var responseStartDate: Date?
+    var responseExpiryDate: Date?
     var tick = 0
+    var timeout: TimeInterval = 60
     var timer: DispatchSourceTimer?
 }
 
@@ -22,6 +24,7 @@ struct TranscribeGameHandler: GameHandler {
         static let eventName = "subtitle"
         let externalFileID: UUID
         let tick: Int
+        let expiresAt: Date
     }
 
     struct UserResponse: WSEvent {
@@ -42,13 +45,13 @@ struct TranscribeGameHandler: GameHandler {
             sendSubtitle(lobby: lobby)
             let timer = DispatchSource.makeTimerSource(queue: gamesDispatchQueue)
             var timerTick = -1
-            timer.schedule(deadline: .now(), repeating: 1, leeway: .seconds(0))
+            timer.schedule(deadline: .now(), repeating: .seconds(1), leeway: .seconds(0))
             timer.setEventHandler { [weak lobby] in
                 guard let lobby = lobby, lobby.state == .inProgress, let data = lobby.data as? TranscribeGameData else {
                     return timer.cancel()
                 }
 
-                let timeoutReached = data.responseStartDate != nil && abs(data.responseStartDate!.timeIntervalSinceNow) > 60
+                let timeoutReached = data.responseStartDate != nil && abs(data.responseStartDate!.timeIntervalSinceNow) > data.timeout
 
                 if (data.userResponses.count == lobby.users.count || timeoutReached) && timerTick != data.tick {
                     data.userResponses = [:]
@@ -62,7 +65,7 @@ struct TranscribeGameHandler: GameHandler {
             (lobby.data as? TranscribeGameData)?.timer = timer
         }
 
-        WSEventHolder.attemptDecodeUnwrap(type: UserResponse.self, jsonString: text) { holder in
+        try? WSEventHolder.attemptDecodeUnwrap(type: UserResponse.self, jsonString: text) { holder in
             guard lobby.state == .inProgress, let data = lobby.data as? TranscribeGameData else {
                 return
             }
@@ -72,9 +75,12 @@ struct TranscribeGameHandler: GameHandler {
             }
 
             let response = holder.data.text
+            let targetText = try Mecab().tokenize(string: subtitle.text).filter { !$0.isPunctuation }.map { $0.surfacePronunciation }.joined()
+            let responseText = try Mecab().tokenize(string: response).filter { !$0.isPunctuation }.map { $0.surfacePronunciation }.joined()
             data.userResponses[user] = response
-            let score = max(0, subtitle.text.count - subtitle.text.editDistance(to: response))
-            user.score += score
+            let score = max(0, targetText.count - targetText.editDistance(to: responseText))
+            let adjustedScore = Float(score) / Float(targetText.count) * Float(subtitle.text.count)
+            user.score += Int(adjustedScore)
             if user.score >= 100 {
                 lobby.state = .finished
             }
@@ -83,10 +89,10 @@ struct TranscribeGameHandler: GameHandler {
     }
 
     func on(connection: Lobby.User.Connection, from user: Lobby.User, in lobby: Lobby) {
-        guard lobby.state == .inProgress, let data = lobby.data as? TranscribeGameData,let subtitle = data.subtitle else {
+        guard lobby.state == .inProgress, let data = lobby.data as? TranscribeGameData, let subtitle = data.subtitle, let expiryDate = data.responseExpiryDate else {
             return
         }
-        let event = Subtitle(externalFileID: subtitle.$externalFile.id, tick: data.tick)
+        let event = Subtitle(externalFileID: subtitle.$externalFile.id, tick: data.tick, expiresAt: expiryDate)
         if let eventString = event.jsonString(connectionID: connection.id.uuidString) {
             connection.ws.send(eventString)
         }
@@ -107,11 +113,14 @@ struct TranscribeGameHandler: GameHandler {
                 guard let lobby = lobby, let data = lobby.data as? TranscribeGameData else { return }
                 switch result {
                 case .success(let subtitle):
+                    let startDate = Date()
+                    let expiryDate = startDate.addingTimeInterval(data.timeout)
                     data.subtitle = subtitle
                     data.userResponses = [:]
-                    data.responseStartDate = Date()
+                    data.responseStartDate = startDate
+                    data.responseExpiryDate = expiryDate
                     data.tick += 1
-                    let event = Subtitle(externalFileID: subtitle.$externalFile.id, tick: data.tick)
+                    let event = Subtitle(externalFileID: subtitle.$externalFile.id, tick: data.tick, expiresAt: expiryDate)
                     lobby.sendToEveryone(event: event)
                 case .failure:
                     sendSubtitle(lobby: lobby)
