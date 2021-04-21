@@ -208,7 +208,10 @@ class Search extends React.Component {
                                         <div className='me-auto'>
                                             <span dangerouslySetInnerHTML={{ __html: s.text.replace(new RegExp(`${this.props.match.params.query}`, 'gi'), `<mark class='p-0'>${this.props.match.params.query}</mark>`)}}></span>
                                             <br />
-                                            <small>{s.video.title} {s.video.tags.map(tag => <Badge className='bg-secondary ms-2 my-1'>{tag}</Badge>)}</small>
+                                            <div className='d-flex align-items-center'>
+                                                {s.video.title}
+                                                {s.video.tags.map(tag => <Badge className='bg-secondary ms-2 my-1'>{tag}</Badge>)}
+                                            </div>
                                         </div>
                                         <a className='fs-5' onClick={(e) => e.stopPropagation()} download href={`/api/media/external/audio/${s.externalFile.id}`}><i className="bi bi-download text-info"></i></a>
                                         <a className='ps-3 fs-5' style={{ cursor: 'pointer' }} onClick={(e) => { this.showEmbed(`[audio: ${s.externalFile.id}]`); e.stopPropagation(); }}><i className="bi bi-link-45deg text-info"></i></a>
