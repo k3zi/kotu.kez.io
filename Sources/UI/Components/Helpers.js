@@ -353,7 +353,7 @@ helpers.parseMarkdown = (rawText) => {
     }
 
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    subst = '<audio controls><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>';
+    subst = '<audio controls src="/api/media/audio/$1"></audio>';
     text = text.replace(regex, subst);
     // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
@@ -418,7 +418,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
 
     // Handle media for front / back.
     regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    subst = `<audio controls${autoPlay ? ' autoplay' : ''}><source src="/api/media/audio/$1" type="audio/x-m4a"></audio>`;
+    subst = `<audio controls${autoPlay ? ' autoplay' : ''} src="/api/media/audio/$1"></audio>`;
     result = result.replace(regex, subst);
 
     regex = /\[frequency: (.*?)\]/mi;
