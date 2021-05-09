@@ -27,7 +27,11 @@ class Lobbies extends React.Component {
                 total: 0
             },
             lobbies: [],
-            invites: []
+            invites: [],
+            games: [
+                { name: 'Transcribe', value: 'transcribe' },
+                { name: 'Pitch Accent Minimal Pairs (Perception)', value: 'pitchAccentMinimalPairsPerception' }
+            ]
         };
     }
 
@@ -84,7 +88,7 @@ class Lobbies extends React.Component {
                         {this.state.lobbies.map(lobby => {
                             return (<tr>
                                 <td className="text-center align-middle">{lobby.name}</td>
-                                <td className="text-center align-middle">{lobby.game}</td>
+                                <td className="text-center align-middle">{this.state.games.filter(g => g.value === lobby.game)[0].name}</td>
                                 <td className="align-middle text-center">
                                     <Button className='mt-2 mt-md-0 ms-0 ms-md-2' variant="primary" onClick={() => this.join(lobby)}>Join</Button>
                                 </td>
@@ -107,9 +111,7 @@ class Lobbies extends React.Component {
                             name: 'game',
                             type: 'select',
                             placeholder: 'Select a game',
-                            options: [
-                                { name: 'Transcribe', value: 'transcribe' }
-                            ]
+                            options: this.state.games
                         },
                         {
                             label: 'Public',

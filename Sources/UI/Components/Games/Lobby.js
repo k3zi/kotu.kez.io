@@ -14,6 +14,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import YouTube from 'react-youtube';
 
 import Transcribe from './Transcribe';
+import PitchAccentMinimalPairsPerception from './PitchAccentMinimalPairsPerception';
 
 class Lobby extends React.Component {
 
@@ -74,6 +75,7 @@ class Lobby extends React.Component {
                     <Row>
                         <Col xs={9} className='d-flex'>
                             {this.state.lobby.game === 'transcribe' && <Transcribe ws={this.state.ws} lobby={this.state.lobby} user={this.state.user} connectionID={this.props.match.params.connectionID} onPlayAudio={this.props.onPlayAudio} />}
+                            {this.state.lobby.game === 'pitchAccentMinimalPairsPerception' && <PitchAccentMinimalPairsPerception ws={this.state.ws} lobby={this.state.lobby} user={this.state.user} connectionID={this.props.match.params.connectionID} onPlayAudio={this.props.onPlayAudio} />}
                         </Col>
                         <Col xs={3}>
                             <h3 className='text-center'>

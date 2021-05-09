@@ -33,18 +33,20 @@ class GamesController: RouteCollection {
         lobby.post { (req: Request) -> Lobby.Response in
             let user = try req.auth.require(User.self)
             let object = try req.content.decode(Lobby.Create.self)
-            let lobby = Lobby(id: .init(), db: req.db, name: object.name, isPublic: object.isPublic, game: object.game, users: [
-                .init(
-                    id: .init(),
-                    name: user.username,
-                    userID: try user.requireID(),
-                    isOwner: true
-                )
-            ])
-            gamesDispatchQueue.sync {
+            var response: Lobby.Response?
+            try gamesDispatchQueue.sync {
+                let lobby = Lobby(id: .init(), db: req.db, name: object.name, isPublic: object.isPublic, game: object.game, users: [
+                    .init(
+                        id: .init(),
+                        name: user.username,
+                        userID: try user.requireID(),
+                        isOwner: true
+                    )
+                ])
                 gameLobbies.append(lobby)
+                response = lobby.response
             }
-            return lobby.response
+            return response!
         }
 
         lobbyID.post("join") { (req: Request) -> Lobby.User.Response in

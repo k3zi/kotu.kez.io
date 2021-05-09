@@ -12,18 +12,23 @@ final class Lobby {
 
     enum Game: String, Codable {
         case transcribe
+        case pitchAccentMinimalPairsPerception
 
-        func newData() -> some GameData {
+        func newData() -> GameData {
             switch self {
             case .transcribe:
                 return TranscribeGameData()
+            case .pitchAccentMinimalPairsPerception:
+                return PitchAccentMinimalPairsPerceptionGameData()
             }
         }
 
-        func newHandler() -> some GameHandler {
+        func newHandler() -> GameHandler {
             switch self {
             case .transcribe:
                 return TranscribeGameHandler()
+            case .pitchAccentMinimalPairsPerception:
+                return PitchAccentMinimalPairsPerceptionGameHandler()
             }
         }
     }

@@ -183,7 +183,6 @@ class MediaController: RouteCollection {
                 modifiedQuery = "%\(modifiedQuery)%"
                 query = query
                     .filter(\.$text, .custom("ILIKE"), modifiedQuery)
-
             }
 
             return query
