@@ -138,6 +138,11 @@ class Counters extends React.Component {
                             <div className="d-grid">
                                 <Button disabled={this.state.selectedCounters.length === 0} block variant="primary" onClick={() => this.start()}>Start</Button>
                                 <hr />
+                                <div className='d-flex align-items-center mb-2'>
+                                    <Button variant='secondary' className='m-2 my-0' onClick={() => this.deselectAllCounters()}>Deselect All</Button>
+                                    <Button variant='secondary' className='m-2 me-auto my-0' onClick={() => this.selectAllCounters()}>Select All</Button>
+                                    <div>{this.state.selectedCounters.length} of {this.state.allCounters.length} selected</div>
+                                </div>
                             </div>
                         </Col>
                         <Col xs={0} lg={3}></Col>
@@ -145,9 +150,7 @@ class Counters extends React.Component {
                     <Row>
                         <Col xs={12}>
                             <div className='text-center'>
-                                <Button variant='secondary' className='m-2' onClick={() => this.deselectAllCounters()}>Deselect All</Button>
-                                <Button variant='secondary' className='m-2' onClick={() => this.selectAllCounters()}>Select All</Button>
-                                {this.state.allCounters.map(c => <Button className='m-2' active={this.state.selectedCounters.filter(sc => sc.id == c.id).length > 0} onClick={() => this.toggleCounter(c.id)}>{c.name}</Button>)}
+                                {this.state.allCounters.map(c => <Button variant='outline-primary' className='m-2' active={this.state.selectedCounters.filter(sc => sc.id == c.id).length > 0} onClick={() => this.toggleCounter(c.id)}>{c.name}</Button>)}
                             </div>
                         </Col>
                     </Row>
