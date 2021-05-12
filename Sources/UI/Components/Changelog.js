@@ -8,8 +8,10 @@ class Component extends React.Component {
         let markdown = `# Changelog
 #### 2021/5/12
 - **[tests]**: make test selections visually easier to understand
+---
 #### 2021/5/10
 - **[games]**: add minimal pair pitch accent game
+---
 #### 2021/4/3
 - **[anki]:** add modifiable keybindings
 - **[anki]:** speed up performance
