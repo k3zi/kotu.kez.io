@@ -133,11 +133,13 @@ struct Settings: Content {
     struct UI: Content {
         enum CodingKeys: String, CodingKey {
             case prefersColorContrast
+            case prefersCreateNoteOffcanvas
             case prefersDarkMode
             case prefersHorizontalText
         }
 
         var prefersColorContrast: Bool = false
+        var prefersCreateNoteOffcanvas: Bool = false
         var prefersDarkMode: Bool = false
         var prefersHorizontalText: Bool = false
 
@@ -146,6 +148,7 @@ struct Settings: Content {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             prefersColorContrast = (try? container.decodeIfPresent(Bool.self, forKey: .prefersColorContrast)) ?? false
+            prefersCreateNoteOffcanvas = (try? container.decodeIfPresent(Bool.self, forKey: .prefersCreateNoteOffcanvas)) ?? false
             prefersDarkMode = (try? container.decodeIfPresent(Bool.self, forKey: .prefersDarkMode)) ?? false
             prefersHorizontalText = (try? container.decodeIfPresent(Bool.self, forKey: .prefersHorizontalText)) ?? false
         }
