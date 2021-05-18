@@ -22,6 +22,7 @@ import Modal from 'react-bootstrap/Modal';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
+import Offcanvas from 'react-bootstrap/Offcanvas';
 import Spinner from 'react-bootstrap/Spinner';
 import Toast from 'react-bootstrap/Toast';
 
@@ -38,6 +39,7 @@ import SearchResultModal from './SearchResultModal';
 import SettingsModal from './SettingsModal';
 import ContextMenu from './ContextMenu';
 import ComponentContextMenu from './ComponentContextMenu';
+import CueContextMenu from './CueContextMenu';
 
 import TranscriptionProjects from './Transcription/Projects';
 import TranscriptionProject from './Transcription/Project';
@@ -51,6 +53,7 @@ import FlashcardNotes from './Flashcard/Notes';
 import FlashcardNoteTypes from './Flashcard/NoteTypes';
 import FlashcardNoteType from './Flashcard/NoteType';
 import FlashcardCreateNoteModal from './Flashcard/Modals/CreateNoteModal';
+import CreateNoteForm from './Flashcard/Modals/CreateNoteForm';
 
 import ListsWords from './Lists/Words';
 import AddSentenceModal from './AddSentenceModal';
@@ -90,6 +93,7 @@ class App extends React.Component {
             showOffCanvasMenu: false,
             showContextMenu: {},
             showComponentContextMenu: {},
+            showCueContextMenu: {},
 
             user: null,
             isReady: false,
@@ -172,6 +176,17 @@ class App extends React.Component {
             const subtitleIndex = target.dataset.subtitleIndex;
             this.setState({ subtitleIndex });
             this.playAudio(url, typeof subtitleIndex !== 'undefined' ? `[data-subtitle-index='${subtitleIndex}']` : '');
+        });
+
+        Helpers.addLiveEventListeners('cue', 'contextmenu', (e, target) => {
+            e.preventDefault();
+            const contextMenu = {
+                y: e.clientY,
+                x: e.clientX,
+                selection: window.getSelection().toString(),
+                target
+            };
+            this.setState({ showCueContextMenu: contextMenu });
         });
 
         Helpers.addLiveEventListeners('.plaintext[contenteditable]', 'paste', (e) => {
@@ -869,12 +884,22 @@ class App extends React.Component {
                         <FeedbackModal show={this.state.showFeedbackModal} onHide={() => this.toggleFeedbackModal(false)} />
                         <LoginModal show={this.state.showLoginModal} onHide={() => this.toggleLoginModal(false)} />
                         <RegisterModal show={this.state.showRegisterModal} onHide={() => this.toggleRegisterModal(false)} />
-                        <FlashcardCreateNoteModal show={this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
+                        <FlashcardCreateNoteModal show={(this.state.user && !this.state.user.settings.ui.prefersCreateNoteOffcanvas) && this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)} onSuccess={() => this.toggleCreateNoteModal(false)} />
                         <AddSentenceModal show={this.state.showAddSentenceModal} onHide={() => this.toggleAddSentenceModal(false)} onSuccess={() => this.toggleAddSentenceModal(false)} />
                         <SearchResultModal headwords={this.state.headwords} show={this.state.headwords.length > 0} onHide={() => this.setState({ headwords: [], isFocused: false })} />
                         <SettingsModal user={this.state.user} show={this.state.showSettingsModal} onHide={() => this.toggleShowSettingsModal(false)} onSave={() => this.loadUser()} />
                         <ContextMenu {...this.state.showContextMenu} onHide={() => this.setState({ showContextMenu: {} })} />
                         <ComponentContextMenu {...this.state.showComponentContextMenu} onHide={() => this.setState({ showComponentContextMenu: {} })} />
+                        <CueContextMenu {...this.state.showCueContextMenu} onHide={() => this.setState({ showCueContextMenu: {} })} />
+
+                        <Offcanvas scroll={true} enforceFocus={false} backdrop='static' show={(this.state.user && this.state.user.settings.ui.prefersCreateNoteOffcanvas) && this.state.showCreateNoteModal} onHide={() => this.toggleCreateNoteModal(false)}>
+                            <Offcanvas.Header closeButton>
+                                <Offcanvas.Title>Create Note</Offcanvas.Title>
+                            </Offcanvas.Header>
+                            <Offcanvas.Body>
+                                <CreateNoteForm {...this.props} onSuccess={() => this.toggleCreateNoteModal(false)} />
+                            </Offcanvas.Body>
+                        </Offcanvas>
                     </Router>
                 </ColorSchemeContext.Provider>
             </UserContext.Provider>

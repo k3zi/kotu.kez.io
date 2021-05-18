@@ -1037,3 +1037,15 @@ blockquote {
       box-shadow: $input-focus-box-shadow !important;
     }
 }
+
+.offcanvas-backdrop {
+    display: none;
+}
+
+#app {
+    transition: margin 250ms;
+}
+
+.offcanvas-open #app {
+    margin-left: 400px;
+}

@@ -381,6 +381,12 @@ class SettingsModal extends React.Component {
                             Any feedback on additional places that could be addressed would be well appreciated. Use the "Feedback" link at the bottom of the page.
                         </Form.Text>
                     </Form.Group>
+                    <Form.Group className='mb-3' controlId="settingsPrefersCreateNoteOffcanvas">
+                        <Form.Check defaultChecked={this.props.user.settings.ui.prefersCreateNoteOffcanvas} onChange={(e) => this.save((s) => s.ui.prefersCreateNoteOffcanvas = e.target.checked)} type="checkbox" label="Prefer Create Note as Offcanvas" />
+                        <Form.Text className="text-muted">
+                            This will display the Create Note form as a sidebar push instead of as a modal.
+                        </Form.Text>
+                    </Form.Group>
                     <Form.Group className='mb-3' controlId="settingsPrefersDarkMode">
                         <Form.Check defaultChecked={this.props.user.settings.ui.prefersDarkMode} onChange={(e) => this.save((s) => s.ui.prefersDarkMode = e.target.checked)} type="checkbox" label="Prefer Dark Mode" />
                     </Form.Group>
