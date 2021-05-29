@@ -63,6 +63,7 @@ class CueContextMenu extends React.Component {
                 <div className={`dropdown-menu ${this.props.target ? 'show' : ''}`} style={{ top: `${this.props.y}px`, left: `${this.props.x}px`, zIndex: 3050, position: 'fixed', width: 'auto' }}>
                     <Dropdown.Item onClick={() => this.copy()}>Copy Sentence</Dropdown.Item>
                     <Dropdown.Item onClick={() => this.copyAudioEmbed()}>Copy Audio Embed</Dropdown.Item>
+                    <Dropdown.Item download as='a' href={this.props.target && this.props.target.dataset.url}>Download Audio</Dropdown.Item>
                 </div>
                 <div onClick={() => this.props.onHide()} style={{ height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 2050, display: (this.props.target) ? 'block' : 'none' }}></div>
             </>

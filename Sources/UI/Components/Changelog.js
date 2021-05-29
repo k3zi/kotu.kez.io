@@ -6,6 +6,11 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/5/29
+- **[anki]**: move files (audio and images) when importing Anki .apkg files
+- **[anki]**: escape regex for field names
+- **[ui]**: stop playing silent audio on click now that games offer a way to replay audio
+---
 #### 2021/5/12
 - **[tests]**: make test selections visually easier to understand
 ---

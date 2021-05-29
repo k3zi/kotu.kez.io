@@ -165,12 +165,6 @@ class App extends React.Component {
             self.loadNumberOfReviews();
         });
 
-        document.addEventListener('click', () => {
-            if (!this.audio) {
-                this.playAudio('/silence.mp3', undefined, true);
-            }
-        });
-
         Helpers.addLiveEventListeners('cue', 'click', (e, target) => {
             const url = target.dataset.url;
             const subtitleIndex = target.dataset.subtitleIndex;

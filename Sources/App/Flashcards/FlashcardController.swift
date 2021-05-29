@@ -722,20 +722,38 @@ class FlashcardController: RouteCollection {
             let file = try req.content.decode(Upload.self).file
             let data = Data(buffer: file.data)
 
-            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp")
-            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let uuid = UUID().uuidString
+            let directory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Temp").appendingPathComponent(uuid)
+            let externalFilesDirectory = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files")
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(at: externalFilesDirectory, withIntermediateDirectories: true)
             guard let archive = Archive(data: data, accessMode: .read, preferredEncoding: .utf8) else  {
                 throw Abort(.badRequest, reason: "Could not open zip archive.")
             }
             guard let entry = archive["collection.anki2"] else {
                 throw Abort(.badRequest, reason: "Could not find SQLite database.")
             }
-            let destinationURL = directory.appendingPathComponent("\(uuid).sqlite")
+            let destinationURL = directory.appendingPathComponent("collection.anki2")
             do {
                 _ = try archive.extract(entry, to: destinationURL)
             } catch {
                 throw Abort(.badRequest, reason: "Extracting entry from archive failed with error: \(error)")
+            }
+
+            let media = archive["media"]
+            let mediaURL = directory.appendingPathComponent("media")
+            _ = try? media.flatMap { try archive.extract($0, to: mediaURL) }
+            let mediaMappingData = try? Data(contentsOf: mediaURL)
+            let rawMediaMapping = try? mediaMappingData.flatMap { try JSONSerialization.jsonObject(with: $0, options: []) as? [String: String] }
+            var mediaMapping = [String: Int]()
+            for pair in rawMediaMapping ?? [:] {
+                if let key = Int(pair.key) {
+                    mediaMapping[pair.value] = key
+                }
+            }
+            let mediaIDs = mediaMapping.values.sorted()
+            for id in mediaIDs {
+                _ = try archive.extract(archive[String(id)]!, to: directory.appendingPathComponent(String(id)))
             }
 
             req.application.databases.use(.sqlite(.file(destinationURL.path)), as: .init(string: uuid))
@@ -753,76 +771,112 @@ class FlashcardController: RouteCollection {
                     let deck = values.1
                     let usedModelIDs = Array(Set(notes.map { $0.modelID }))
 
-                    // Create Note Types
-                    let prevNoteTypes = collection.models.values.filter { usedModelIDs.contains($0.id) }
-                    let noteTypesWithoutCardTypes = prevNoteTypes.map {
-                        NoteType(ownerID: userID, name: $0.name, sharedCSS: $0.css)
+                    struct MediaFile {
+                        let filename: String
+                        let externalFile: ExternalFile
                     }
 
-                    return noteTypesWithoutCardTypes.create(on: req.db)
-                        .throwingFlatMap {
-                            // Create Note Card Types
-                            let cardTypes = try prevNoteTypes.flatMap { (model: Anki.Model) -> [CardType] in
-                                let noteType = noteTypesWithoutCardTypes.first(where: { $0.name == model.name })!
-                                let templates = model.tmpls.sorted(by: { $0.ord < $1.ord })
-                                return try templates.map { template in
-                                    CardType(noteTypeID: try noteType.requireID(), overrideDeckID: nil, name: template.name, frontHTML: template.qfmt, backHTML: template.afmt, css: "")
+                    // Add Media
+                   let mediaFileChunks = try mediaMapping.map { soundFile, mediaID -> EventLoopFuture<MediaFile> in
+                        let filePath = directory.appendingPathComponent(String(mediaID))
+                        let fileSize: UInt64
+                        let attr = try FileManager.default.attributesOfItem(atPath: filePath.path)
+                        let ext = soundFile.components(separatedBy: ".").last!
+                        fileSize = attr[FileAttributeKey.size] as! UInt64
+                        let externalFile = ExternalFile(size: Int(fileSize), path: "", ext: ext)
+                        return externalFile
+                            .create(on: req.db)
+                            .throwingFlatMap {
+                                let uuid = try externalFile.requireID().uuidString
+                                let newFilePath = externalFilesDirectory.appendingPathComponent("\(uuid).\(ext)")
+                                externalFile.path = newFilePath.pathComponents.last!
+                                try FileManager.default.moveItem(at: filePath, to: newFilePath)
+                                return externalFile.update(on: req.db).map {
+                                    MediaFile(filename: soundFile, externalFile: externalFile)
                                 }
                             }
+                    }
+                    .chunked(into: 127)
+                    .map { chunk -> EventLoopFuture<[MediaFile]> in
+                        return EventLoopFuture.whenAllSucceed(chunk, on: req.db.eventLoop)
+                    }
 
-                            return cardTypes.create(on: req.db).throwingFlatMap {
-                                let latestNoteTypes = try noteTypesWithoutCardTypes.map { try $0.requireID() }.map { NoteType.query(on: req.db).with(\.$cardTypes).filter(\.$id == $0).first().unwrap(orError: Abort(.badRequest, reason: "Unable to find just saved note type")) }
-                                return EventLoopFuture.whenAllSucceed(latestNoteTypes, on: req.eventLoop)
-                            }
+                    return EventLoopFuture.reduce(into: [MediaFile](), mediaFileChunks, on: req.eventLoop, +=).throwingFlatMap { (mediaFiles: [MediaFile]) in
+                        // Create Note Types
+                        let prevNoteTypes = collection.models.values.filter { usedModelIDs.contains($0.id) }
+                        let noteTypesWithoutCardTypes = prevNoteTypes.map {
+                            NoteType(ownerID: userID, name: $0.name, sharedCSS: $0.css)
                         }
-                        .throwingFlatMap { (noteTypes: [NoteType]) in
-                            // Create Note Fields
-                            let fields = try prevNoteTypes.flatMap { (model: Anki.Model) -> [NoteField] in
-                                let noteType = noteTypes.first(where: { $0.name == model.name })!
-                                let fields = model.flds.sorted(by: { $0.ord < $1.ord })
-                                return try fields.map { field in
-                                    NoteField(noteTypeID: try noteType.requireID(), name: field.name)
+
+                        return noteTypesWithoutCardTypes.create(on: req.db)
+                            .throwingFlatMap {
+                                // Create Note Card Types
+                                let cardTypes = try prevNoteTypes.flatMap { (model: Anki.Model) -> [CardType] in
+                                    let noteType = noteTypesWithoutCardTypes.first(where: { $0.name == model.name })!
+                                    let templates = model.tmpls.sorted(by: { $0.ord < $1.ord })
+                                    return try templates.map { template in
+                                        CardType(noteTypeID: try noteType.requireID(), overrideDeckID: nil, name: template.name, frontHTML: template.qfmt, backHTML: template.afmt, css: "")
+                                    }
+                                }
+
+                                return cardTypes.create(on: req.db).throwingFlatMap {
+                                    let latestNoteTypes = try noteTypesWithoutCardTypes.map { try $0.requireID() }.map { NoteType.query(on: req.db).with(\.$cardTypes).filter(\.$id == $0).first().unwrap(orError: Abort(.badRequest, reason: "Unable to find just saved note type")) }
+                                    return EventLoopFuture.whenAllSucceed(latestNoteTypes, on: req.eventLoop)
                                 }
                             }
+                            .throwingFlatMap { (noteTypes: [NoteType]) in
+                                // Create Note Fields
+                                let fields = try prevNoteTypes.flatMap { (model: Anki.Model) -> [NoteField] in
+                                    let noteType = noteTypes.first(where: { $0.name == model.name })!
+                                    let fields = model.flds.sorted(by: { $0.ord < $1.ord })
+                                    return try fields.map { field in
+                                        NoteField(noteTypeID: try noteType.requireID(), name: field.name)
+                                    }
+                                }
 
-                            return fields.create(on: req.db)
-                                .throwingFlatMap {
-                                    // Create Notes
-                                    let values = try notes.map { (note: Anki.Note) -> (Note.Create, NoteType) in
-                                        guard let model = prevNoteTypes.first(where: { $0.id == note.modelID }) else {
-                                            throw Abort(.badRequest, reason: "Could not find model for note")
-                                        }
-                                        guard let noteType = noteTypes.first(where: { $0.name == model.name }) else {
-                                            throw Abort(.badRequest, reason: "Could not find note type for model")
-                                        }
-                                        let divider = String(UnicodeScalar(UInt8(31)))
-                                        let rawFieldValues = note.fields.components(separatedBy: divider)
-                                        let modelFields = model.flds.sorted(by: { $0.ord < $1.ord })
-                                        guard rawFieldValues.count == modelFields.count else {
-                                            throw Abort(.badRequest, reason: "Count of note fields does not match count of model fields")
-                                        }
-                                        let fieldValues = try modelFields.enumerated().map { (i, modelField) -> NoteFieldValue.Create in
-                                            guard let field = fields.first(where: { $0.$noteType.id == noteType.id && $0.name == modelField.name }) else {
-                                                throw Abort(.badRequest, reason: "Could not find field for note.")
+                                return fields.create(on: req.db)
+                                    .throwingFlatMap {
+                                        // Create Notes
+                                        let values = try notes.map { (note: Anki.Note) -> (Note.Create, NoteType) in
+                                            guard let model = prevNoteTypes.first(where: { $0.id == note.modelID }) else {
+                                                throw Abort(.badRequest, reason: "Could not find model for note")
+                                            }
+                                            guard let noteType = noteTypes.first(where: { $0.name == model.name }) else {
+                                                throw Abort(.badRequest, reason: "Could not find note type for model")
+                                            }
+                                            let divider = String(UnicodeScalar(UInt8(31)))
+                                            let rawFieldValues = note.fields.components(separatedBy: divider)
+                                            let modelFields = model.flds.sorted(by: { $0.ord < $1.ord })
+                                            guard rawFieldValues.count == modelFields.count else {
+                                                throw Abort(.badRequest, reason: "Count of note fields does not match count of model fields")
+                                            }
+                                            let fieldValues = try modelFields.enumerated().map { (i, modelField) -> NoteFieldValue.Create in
+                                                guard let field = fields.first(where: { $0.$noteType.id == noteType.id && $0.name == modelField.name }) else {
+                                                    throw Abort(.badRequest, reason: "Could not find field for note.")
+                                                }
+
+                                                var fieldString = String(rawFieldValues[i])
+                                                for mediaFile in mediaFiles {
+                                                    fieldString = fieldString.replacingOccurrences(of: mediaFile.filename, with: mediaFile.externalFile.id?.uuidString ?? mediaFile.filename)
+                                                }
+                                                return NoteFieldValue.Create(fieldID: try field.requireID(), value: fieldString)
                                             }
 
-                                            return NoteFieldValue.Create(fieldID: try field.requireID(), value: String(rawFieldValues[i]))
+                                            let note = Note.Create(targetDeckID: id, noteTypeID: try noteType.requireID(), fieldValues: fieldValues, tags: note.tags.components(separatedBy: divider))
+                                            return (note, noteType)
                                         }
-
-                                        let note = Note.Create(targetDeckID: id, noteTypeID: try noteType.requireID(), fieldValues: fieldValues, tags: note.tags.components(separatedBy: divider))
-                                        return (note, noteType)
+                                        return try createNotes(req: req, values: values, deck: deck)
+                                            .throwingFlatMap { notes in
+                                                let sm = deck.sm
+                                                let cards = notes.flatMap { $0.cards }
+                                                try cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
+                                                deck.sm = sm
+                                                return deck.save(on: req.db)
+                                                    .map { notes }
+                                            }
                                     }
-                                    return try createNotes(req: req, values: values, deck: deck)
-                                        .throwingFlatMap { notes in
-                                            let sm = deck.sm
-                                            let cards = notes.flatMap { $0.cards }
-                                            try cards.map { try $0.requireID() }.forEach(sm.addItem(card:))
-                                            deck.sm = sm
-                                            return deck.save(on: req.db)
-                                                .map { notes }
-                                        }
-                                }
-                        }
+                            }
+                    }
                 }
         }
 

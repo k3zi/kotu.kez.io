@@ -35,6 +35,10 @@ helpers.digest = async (message) => {
     return hashHex;
 };
 
+helpers.escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 helpers.randomString = (length) => {
     let text = '';
     const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -326,8 +330,20 @@ helpers.htmlForPitch = async (sentence) => {
     return await helpers.generateVisualSentenceElement(html, helpers.textFromHTML(sentence));
 };
 
+helpers.parseAudioMarkdown = (text, autoPlay) => {
+    let regex = /\[(audio|sound):(\s*)([A-Za-z0-9-]+)\]/gmi;
+    let subst = `<audio controls${autoPlay ? ' autoplay' : ''} src="/api/media/audio/$3"></audio>`;
+    return text.replace(regex, subst);
+}
+
 helpers.parseMarkdown = (rawText) => {
-    let text = rawText.trim().replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s+$/gm, '\n\n<br />\n\n');
+    let text = rawText.trim()
+        .replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s+$/gm, '\n\n<br />\n\n');
+    let newText = text;
+    do {
+        text = newText;
+        newText = text.replace(/<br(\s*)\/>[\n\r]+<br(\s*)\/>/gm, '<br \/>');
+    } while (text != newText);
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     let subst;
@@ -352,9 +368,7 @@ helpers.parseMarkdown = (rawText) => {
         text = text.substring(0, match.index) + html + text.substring(match.index + match[0].length);
     }
 
-    regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    subst = '<audio controls src="/api/media/audio/$1"></audio>';
-    text = text.replace(regex, subst);
+    text = helpers.parseAudioMarkdown(text, false);
     // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
     return unified()
@@ -397,14 +411,13 @@ helpers.htmlForCard = async (baseHTML, options) => {
     modifiedFieldValues.push({ field: { name: 'Tags' }, value: '' });
 
     // Replace fields.
-    for (let fieldValue of fieldValues) {
-        const fieldName = fieldValue.field.name;
+    for (let fieldValue of modifiedFieldValues) {
+        const fieldName = helpers.escapeRegExp(fieldValue.field.name);
         const value = fieldValue.value;
         const replace = `{{${fieldName}}}`;
         result = result.replace(new RegExp(replace, 'g'), value.trim());
-
         if (!value || value.length === 0) {
-            result = result.replace(new RegExp(`\{\{#${fieldName}\}\}(.*)\{\{\/${fieldName}\}\}`, 'gi'), '');
+            result = result.replace(new RegExp(`\{\{#${fieldName}\}\}[\\s\\S]*?\{\{\/${fieldName}\}\}`, 'gmi'), '');
         }
     }
 
@@ -417,9 +430,7 @@ helpers.htmlForCard = async (baseHTML, options) => {
     result = result.replace(regex, subst);
 
     // Handle media for front / back.
-    regex = /\[audio: ([A-Za-z0-9-]+)\]/gmi;
-    subst = `<audio controls${autoPlay ? ' autoplay' : ''} src="/api/media/audio/$1"></audio>`;
-    result = result.replace(regex, subst);
+    result = helpers.parseAudioMarkdown(result, autoPlay);
 
     regex = /\[frequency: (.*?)\]/mi;
     let match;
