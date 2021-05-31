@@ -58,8 +58,8 @@ class MinimalPairs extends React.Component {
             'doContrastRo': 'ド vs ロ',
             'daContrastRa': 'ダ vs ラ',
             'deContrastRe': 'デ vs レ',
-            'giContrastNi': 'ギ vs ニ',
-            'geContrastNe': 'ゲ vs ネ',
+            // 'giContrastNi': 'ギ vs ニ',
+            // 'geContrastNe': 'ゲ vs ネ',
             'shortContrastLongVowel': 'Short vs Long Vowel',
             'shortContrastLongConsonant': 'Short vs Long Consonant'
         }[contrastType];

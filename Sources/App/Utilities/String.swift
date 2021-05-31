@@ -54,7 +54,7 @@ extension String {
                 BiCharacterMinimalPair(first: "ツ", second: "ス", kind: .tsuContrastSu),
                 BiCharacterMinimalPair(first: "ド", second: "ロ", kind: .doContrastRo),
                 BiCharacterMinimalPair(first: "ダ", second: "ラ", kind: .daContrastRa),
-                BiCharacterMinimalPair(first: "デ", second: "ス", kind: .deContrastRe),
+                BiCharacterMinimalPair(first: "デ", second: "レ", kind: .deContrastRe),
                 BiCharacterMinimalPair(first: "ギ", second: "ニ", kind: .giContrastNi),
                 BiCharacterMinimalPair(first: "ゲ", second: "ネ", kind: .geContrastNe)
             ]

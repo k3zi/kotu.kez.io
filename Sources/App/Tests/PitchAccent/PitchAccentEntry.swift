@@ -81,7 +81,7 @@ struct SyllabaryMinimalPair: Content {
 
         case tsuContrastSu
         case doContrastRo, daContrastRa, deContrastRe
-        case giContrastNi, geContrastNe
+        // case giContrastNi, geContrastNe
 
         case shortContrastLongVowel, shortContrastLongConsonant
     }
