@@ -9,6 +9,9 @@ class TestsController: RouteCollection {
         let tests = routes.grouped("tests")
             .grouped(User.guardMiddleware())
 
+        let syllabary = tests.grouped("syllabary")
+        let syllabaryMinimalPairs = syllabary.grouped("minimalPairs")
+
         let pitchAccent = tests.grouped("pitchAccent")
         let names = pitchAccent.grouped("names")
         let counters = pitchAccent.grouped("counters")
@@ -112,6 +115,16 @@ class TestsController: RouteCollection {
 
         minimalPairs.get("random") { (req: Request) -> MinimalPair in
             return PitchAccentManager.shared.minimalPairs.randomElement()!
+        }
+
+        syllabaryMinimalPairs.get("random") { (req: Request) -> SyllabaryMinimalPair in
+            var randomKind: SyllabaryMinimalPair.Kind
+            var pair: SyllabaryMinimalPair?
+            while pair == nil {
+                randomKind = SyllabaryMinimalPair.Kind.allCases.filter { $0 != .none }.randomElement()!
+                pair = PitchAccentManager.shared.syllabaryMinimalPairs.filter { $0.kind == randomKind }.randomElement()
+            }
+            return pair!
         }
     }
 

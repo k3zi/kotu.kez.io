@@ -37,4 +37,59 @@ extension String {
         return matrix.last!.last!
     }
 
+    func minimalPair(with target: String) -> SyllabaryMinimalPair.Kind {
+        if count == target.count && moraCount == target.moraCount {
+            let differentPairs = zip(self, target).filter { $0.0 != $0.1 }
+            guard differentPairs.count == 1, let differentPair = differentPairs.first else {
+                return .none
+            }
+
+            struct BiCharacterMinimalPair {
+                let first: Character
+                let second: Character
+                let kind: SyllabaryMinimalPair.Kind
+            }
+
+            let minimalPairs: [BiCharacterMinimalPair] = [
+                BiCharacterMinimalPair(first: "ツ", second: "ス", kind: .tsuContrastSu),
+                BiCharacterMinimalPair(first: "ド", second: "ロ", kind: .doContrastRo),
+                BiCharacterMinimalPair(first: "ダ", second: "ラ", kind: .daContrastRa),
+                BiCharacterMinimalPair(first: "デ", second: "ス", kind: .deContrastRe),
+                BiCharacterMinimalPair(first: "ギ", second: "ニ", kind: .giContrastNi),
+                BiCharacterMinimalPair(first: "ゲ", second: "ネ", kind: .geContrastNe)
+            ]
+            for minimalPair in minimalPairs {
+                if Set([minimalPair.first, minimalPair.second]).intersection([differentPair.0, differentPair.1]).count == 2 {
+                    return minimalPair.kind
+                }
+            }
+
+            return .none
+        }
+
+        guard abs(moraCount - target.moraCount) == 1 else {
+            return .none
+        }
+
+        let difference = self.difference(from: target)
+        guard (difference.insertions.count == 1 && difference.removals.count == 0) || ((difference.insertions.count == 0 && difference.removals.count == 1)), let singularDifference = difference.insertions.first ?? difference.removals.first else {
+            return .none
+        }
+
+        struct MonoCharacterMinimalPair {
+            let first: Character
+            let kind: SyllabaryMinimalPair.Kind
+        }
+
+        let possibleDifferences: [MonoCharacterMinimalPair] = [
+            .init(first: "ー", kind: .shortContrastLongVowel),
+            .init(first: "ッ", kind: .shortContrastLongConsonant)
+        ]
+
+        switch singularDifference {
+        case let .insert(_, element, _), let .remove(_, element, _):
+            return possibleDifferences.first { $0.first == element }?.kind ?? .none
+        }
+    }
+
 }

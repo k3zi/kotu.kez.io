@@ -6,6 +6,9 @@ import gfm from 'remark-gfm';
 class Component extends React.Component {
     render() {
         let markdown = `# Changelog
+#### 2021/5/31
+- **[test]**: add test for syllabary minimal pairs
+---
 #### 2021/5/29
 - **[anki]**: move files (audio and images) when importing Anki .apkg files
 - **[anki]**: escape regex for field names

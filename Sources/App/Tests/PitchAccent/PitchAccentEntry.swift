@@ -73,3 +73,33 @@ struct MinimalPair: Content {
         self.pairs = pairs
     }
 }
+
+struct SyllabaryMinimalPair: Content {
+
+    enum Kind: String, Content, CaseIterable {
+        case none
+
+        case tsuContrastSu
+        case doContrastRo, daContrastRa, deContrastRe
+        case giContrastNi, geContrastNe
+
+        case shortContrastLongVowel, shortContrastLongConsonant
+    }
+
+    let pitchAccent: Int
+    let pairs: [PitchAccentEntry]
+    let kind: Kind
+
+    init(pitchAccent: Int, pairs: [PitchAccentEntry], kind: Kind) {
+        self.pitchAccent = pitchAccent
+        self.pairs = pairs
+        self.kind = kind
+    }
+
+    init(pitchAccent: Int, pairs: [PitchAccentEntry]) {
+        self.pitchAccent = pitchAccent
+        self.pairs = pairs
+        self.kind = pairs[0].accents[0].accent[0].pronunciation.minimalPair(with: pairs[1].accents[0].accent[0].pronunciation)
+    }
+
+}

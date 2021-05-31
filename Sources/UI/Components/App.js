@@ -66,6 +66,8 @@ import TestsPitchAccentMinimalPairs from './Tests/PitchAccent/MinimalPairs';
 import TestsPitchAccentNames from './Tests/PitchAccent/Names';
 import TestsPitchAccentCounters from './Tests/PitchAccent/Counters';
 
+import TestsSyllabaryMinimalPairs from './Tests/Syllabary/MinimalPairs';
+
 import AdminUsers from './Admin/Users';
 import AdminFeedback from './Admin/Feedback';
 import AdminSubtitles from './Admin/Subtitles';
@@ -516,6 +518,11 @@ class App extends React.Component {
                         <LinkContainer to="/tests/pitchAccent/counters">
                             <NavDropdown.Item active={false}>Counters (Recall)</NavDropdown.Item>
                         </LinkContainer>
+
+                        <NavDropdown.Header>Syllabary</NavDropdown.Header>
+                        <LinkContainer to="/tests/syllabary/minimalPairs">
+                            <NavDropdown.Item active={false}>Minimal Pairs (Perception)</NavDropdown.Item>
+                        </LinkContainer>
                     </NavDropdown>
 
                     <LinkContainer exact to="/transcription">
@@ -618,6 +625,11 @@ class App extends React.Component {
                             </LinkContainer>
                             <LinkContainer to="/tests/pitchAccent/counters">
                                 <NavDropdown.Item active={false}>Counters (Recall)</NavDropdown.Item>
+                            </LinkContainer>
+
+                            <NavDropdown.Header>Syllabary</NavDropdown.Header>
+                            <LinkContainer to="/tests/syllabary/minimalPairs">
+                                <NavDropdown.Item active={false}>Minimal Pairs (Perception)</NavDropdown.Item>
                             </LinkContainer>
                         </NavDropdown>
 
@@ -853,6 +865,10 @@ class App extends React.Component {
                                 </Route>
                                 <Route path="/tests/pitchAccent/counters">
                                     {this.loginProtect(<TestsPitchAccentCounters />)}
+                                </Route>
+
+                                <Route path="/tests/syllabary/minimalPairs">
+                                    {this.loginProtect(<TestsSyllabaryMinimalPairs />)}
                                 </Route>
                             </Switch>}
                         </Container>
