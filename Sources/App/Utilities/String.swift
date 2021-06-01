@@ -55,8 +55,8 @@ extension String {
                 BiCharacterMinimalPair(first: "ド", second: "ロ", kind: .doContrastRo),
                 BiCharacterMinimalPair(first: "ダ", second: "ラ", kind: .daContrastRa),
                 BiCharacterMinimalPair(first: "デ", second: "レ", kind: .deContrastRe),
-                BiCharacterMinimalPair(first: "ギ", second: "ニ", kind: .giContrastNi),
-                BiCharacterMinimalPair(first: "ゲ", second: "ネ", kind: .geContrastNe)
+//                BiCharacterMinimalPair(first: "ギ", second: "ニ", kind: .giContrastNi),
+//                BiCharacterMinimalPair(first: "ゲ", second: "ネ", kind: .geContrastNe)
             ]
             for minimalPair in minimalPairs {
                 if Set([minimalPair.first, minimalPair.second]).intersection([differentPair.0, differentPair.1]).count == 2 {
