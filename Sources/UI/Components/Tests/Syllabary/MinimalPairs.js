@@ -49,7 +49,7 @@ class MinimalPairs extends React.Component {
     }
 
     contrastTypes() {
-        return ['tsuContrastSu', 'doContrastRo', 'daContrastRa', 'deContrastRe', 'giContrastNi', 'geContrastNe', 'shortContrastLongVowel', 'shortContrastLongConsonant'];
+        return ['tsuContrastSu', 'doContrastRo', 'daContrastRa', 'deContrastRe', /*'giContrastNi', 'geContrastNe',*/ 'shortContrastLongVowel', 'shortContrastLongConsonant'];
     }
 
     contrastTypeDescription(contrastType) {
