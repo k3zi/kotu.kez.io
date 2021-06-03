@@ -8,8 +8,8 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import Pagination from './react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 
-import { ResponsiveCalendar } from '@nivo/calendar';
-import { ResponsiveBar } from '@nivo/bar';
+import { ResponsiveCalendarCanvas } from '@nivo/calendar';
+import { ResponsiveBarCanvas } from '@nivo/bar';
 
 class Component extends React.Component {
 
@@ -121,7 +121,7 @@ class Component extends React.Component {
                             {this.state.reviewLogs.length > 0 && <div>
                                 <h4>Anki Review History</h4>
                                 <div style={{ height: '127px' }}>
-                                    <ResponsiveCalendar
+                                    <ResponsiveCalendarCanvas
                                         data={this.state.reviewLogs}
                                         from={new Date(new Date().getFullYear(), 0, 1)}
                                         to={new Date()}
@@ -156,7 +156,7 @@ class Component extends React.Component {
                             {this.state.reviewsGroupedByGrade.length > 0 && <div>
                                 <h4>Anki Grading Spread</h4>
                                 <div style={{ height: '127px' }}>
-                                    <ResponsiveBar
+                                    <ResponsiveBarCanvas
                                         data={this.state.reviewsGroupedByGrade}
                                         keys={[ 'count' ]}
                                         indexBy="grade"

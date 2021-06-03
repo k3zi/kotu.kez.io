@@ -10,7 +10,7 @@ import Pagination from './../react-bootstrap-pagination';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 
-import { ResponsiveLine } from '@nivo/line';
+import { ResponsiveLineCanvas } from '@nivo/line';
 
 class Decks extends React.Component {
 
@@ -114,7 +114,7 @@ class Decks extends React.Component {
                 <h2>Admin <small className="text-muted">User(s) {this.state.metadata.total}</small></h2>
                 <hr />
                 <div style={{ height: '254px' }}>
-                    <ResponsiveLine
+                    <ResponsiveLineCanvas
                         curve='monotoneX'
                         animate={true}
                         margin={{ top: 10, right: 20, bottom: 10, left: 20 }}
