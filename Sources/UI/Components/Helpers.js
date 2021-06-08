@@ -339,14 +339,6 @@ helpers.parseAudioMarkdown = (text, autoPlay) => {
 helpers.parseMarkdown = (rawText) => {
     let text = rawText.trim()
         .replace(/(^(\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s+$/gm, '\n\n<br />\n\n');
-    let newText = text;
-    do {
-        text = newText;
-        newText = text.replace(/<br(\s*)\/>[\n\r]*<br(\s*)\/>/gm, '<br \/>');
-    } while (text != newText);
-    text = text.replace(/<br(\s*)\/>[\n\r]*<hr(.*?)>/gm, '<hr$2>');
-    text = text.replace(/<hr(.*?)>[\n\r]*<br(\s*)\/>/gm, '<hr$1>');
-    text = text.replace(/<br(\s*)\/>[\n\r]*<script(.*?)>/gm, '<script$2>');
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     let subst;
@@ -374,7 +366,7 @@ helpers.parseMarkdown = (rawText) => {
     text = helpers.parseAudioMarkdown(text, false);
     // This fixes cases were HTML is right next to markdown so can't be parsed correctly.
     text = text.replace(/\n/g, '\n\n');
-    return unified()
+    text = unified()
         .use(markdown)
         .use(breaks)
         .use(gfm)
@@ -400,6 +392,16 @@ helpers.parseMarkdown = (rawText) => {
         })
         .use(stringify)
         .processSync(text).contents;
+
+    let newText = text;
+    do {
+        text = newText;
+        newText = text.replace(/<br(\s*)\/?>[\n\r]*<br(\s*)\/?>/gm, '<br \/>');
+    } while (text != newText);
+    text = text.replace(/<br(\s*)\/?>[\n\r]*<hr(.*?)>/gm, '<hr$2>');
+    text = text.replace(/<hr(.*?)>[\n\r]*<br(\s*)\/?>/gm, '<hr$1>');
+    text = text.replace(/<br(\s*)\/?>[\n\r]*<script(.*?)>/gm, '<script$2>');
+    return text;
 };
 
 helpers.htmlForCard = async (baseHTML, options) => {
