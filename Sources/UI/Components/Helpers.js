@@ -342,8 +342,11 @@ helpers.parseMarkdown = (rawText) => {
     let newText = text;
     do {
         text = newText;
-        newText = text.replace(/<br(\s*)\/>[\n\r]+<br(\s*)\/>/gm, '<br \/>');
+        newText = text.replace(/<br(\s*)\/>[\n\r]*<br(\s*)\/>/gm, '<br \/>');
     } while (text != newText);
+    text = text.replace(/<br(\s*)\/>[\n\r]*<hr(.*?)>/gm, '<hr$2>');
+    text = text.replace(/<hr(.*?)>[\n\r]*<br(\s*)\/>/gm, '<hr$1>');
+    text = text.replace(/<br(\s*)\/>[\n\r]*<script(.*?)>/gm, '<script$2>');
     let regex = /\[mpitch: (.*?)\]/mi;
     let match;
     let subst;
