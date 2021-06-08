@@ -24,6 +24,7 @@ import YouTube from 'react-youtube';
 import CreateNoteForm from './../Flashcard/Modals/CreateNoteForm';
 import Helpers from './../Helpers';
 import UserContext from './../Context/User';
+import ContentEditable from './../Common/ContentEditable';
 
 class Reader extends React.Component {
 
@@ -401,7 +402,7 @@ class Reader extends React.Component {
                 <Row className='flex-fill'>
                     <Col className='h-100 d-flex flex-column' xs={12} md={user.settings.reader.showCreateNoteForm ? 7 : 12}>
                         <div id='readerOptions' className={`collapse${this.showReaderOptions() ? ' show' : ''}`}>
-                            <Form.Control autoComplete='off' className='text-center' type="text" onChange={(e) => this.load(e)} placeholder="Enter Text / Article URL" value={this.state.text} />
+                            <ContentEditable autoComplete='off' value={this.state.content} onChange={(e) => this.load(e)} className='form-control text-center h-auto text-break plaintext clickable' placeholder="Enter Text / Article URL" value={this.state.text} />
                             {this.state.session && <>
                                 <InputGroup className="mt-3">
                                     <Form.Control value={this.state.session.media ? this.state.session.media.title : '(None)'} readOnly />
