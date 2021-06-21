@@ -2,6 +2,7 @@ import Fluent
 import FluentPostgresDriver
 import FluentSQLiteDriver
 import Gatekeeper
+import IkigaJSON
 import Leaf
 import Redis
 import Vapor
@@ -10,7 +11,6 @@ import ZIPFoundation
 let ankiDeckQueue = DispatchQueue(label: "io.kez.kotu.setup.anki")
 
 public func configure(_ app: Application) throws {
-
     app.redis.configuration = try RedisConfiguration(hostname: "127.0.0.1")
     app.sessions.use(.redis)
 
@@ -19,6 +19,15 @@ public func configure(_ app: Application) throws {
     app.http.server.configuration.requestDecompression = .enabled(limit: .none)
     app.http.server.configuration.supportPipelining = true
     app.http.server.configuration.serverName = "kotu"
+
+    var decoder = IkigaJSONDecoder()
+    decoder.settings.dateDecodingStrategy = .iso8601
+    ContentConfiguration.global.use(decoder: decoder, for: .json)
+
+    var encoder = IkigaJSONEncoder()
+    encoder.settings.encodeNilAsNull = true
+    encoder.settings.dateDecodingStrategy = .iso8601
+    ContentConfiguration.global.use(encoder: encoder, for: .json)
 
     app.databases.use(.postgres(
         hostname: "localhost",
@@ -92,6 +101,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(Deck.Migration3())
     app.migrations.add(ReaderSession.Migration10())
     app.migrations.add(Note.Migration3())
+    app.migrations.add(Feedback.Migration2())
 
     try app.autoMigrate().wait()
     try DictionaryManager.configure(app: app).wait()
@@ -365,4 +375,21 @@ public func configure(_ app: Application) throws {
     app.views.use(.leaf)
 
     try routes(app)
+}
+
+extension IkigaJSONEncoder: ContentEncoder {
+    public func encode<E: Encodable>(_ encodable: E, to body: inout ByteBuffer, headers: inout HTTPHeaders) throws {
+        headers.contentType = .json
+        try self.encodeAndWrite(encodable, into: &body)
+    }
+}
+
+extension IkigaJSONDecoder: ContentDecoder {
+    public func decode<D: Decodable>(_ decodable: D.Type, from body: ByteBuffer, headers: HTTPHeaders) throws -> D {
+        guard headers.contentType == .json || headers.contentType == .jsonAPI else {
+            throw Abort(.unsupportedMediaType)
+        }
+
+        return try self.decode(D.self, from: body)
+    }
 }

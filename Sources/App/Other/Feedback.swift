@@ -11,6 +11,9 @@ final class Feedback: Model, Content {
     @Field(key: "value")
     var value: String
 
+    @Field(key: "is_archived")
+    var isArchived: Bool
+
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
@@ -19,6 +22,7 @@ final class Feedback: Model, Content {
     init(id: UUID? = nil, value: String) {
         self.id = id
         self.value = value
+        self.isArchived = false
     }
 
 }
@@ -27,6 +31,11 @@ extension Feedback {
 
     struct Create: Content {
         let value: String
+    }
+
+    struct Update: Content {
+        let value: String
+        let isArchived: Bool
     }
 
 }
@@ -63,6 +72,22 @@ extension Feedback {
             database.schema(schema)
                 .deleteField("value")
                 .field("value", .date, .required)
+                .update()
+        }
+    }
+
+    struct Migration2: Fluent.Migration {
+        var name: String { "FeedbackArchive" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("is_archived", .bool, .required, .sql(.default(false)))
+                .update()
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("is_archived")
                 .update()
         }
     }

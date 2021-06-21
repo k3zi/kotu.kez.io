@@ -94,7 +94,7 @@ extension Node {
             return surface
         }
 
-        let overlap = try! NeedlemanWunsch.align(input1: Array(katakanaSurface), input2: Array(surfacePronunciation))
+        let overlap = NeedlemanWunsch.align(input1: Array(katakanaSurface), input2: Array(surfacePronunciation))
         let zipped = Array(zip(overlap.output1, overlap.output2))
         enum Status {
             case none

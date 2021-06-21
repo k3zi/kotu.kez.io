@@ -119,8 +119,23 @@ class AdminController: RouteCollection {
         adminProtected.get("feedback") { (req: Request) -> EventLoopFuture<[Feedback]> in
             return Feedback
                 .query(on: req.db)
+                .filter(\.$isArchived == false)
                 .sort(\.$createdAt)
                 .all()
+        }
+
+        adminProtected.put("feedback", ":id") { (req: Request) -> EventLoopFuture<Feedback> in
+            let feedbackID = try req.parameters.require("id", as: UUID.self)
+
+            let object = try req.content.decode(Feedback.Update.self)
+            return Feedback.find(feedbackID, on: req.db)
+                .unwrap(orError: Abort(.badRequest, reason: "Feedback not found"))
+                .flatMap { feedback in
+                    feedback.value = object.value
+                    feedback.isArchived = object.isArchived
+                    return feedback.update(on: req.db)
+                        .map { feedback }
+                }
         }
 
         adminProtected.get("users") { (req: Request) -> EventLoopFuture<Page<User>> in

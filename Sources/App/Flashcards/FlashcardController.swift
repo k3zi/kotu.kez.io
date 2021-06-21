@@ -884,6 +884,10 @@ class FlashcardController: RouteCollection {
             let user = try req.auth.require(User.self)
             guard let id = req.parameters.get("deckID", as: UUID.self) else { throw Abort(.badRequest, reason: "ID not provided") }
 
+            guard let db = req.db as? SQLDatabase else {
+                throw Abort(.internalServerError)
+            }
+
             return user.$decks
                 .query(on: req.db)
                 .with(\.$cards) {
@@ -894,6 +898,11 @@ class FlashcardController: RouteCollection {
                 .filter(\.$id == id)
                 .first()
                 .unwrap(orError: Abort(.badRequest, reason: "Deck not found"))
+                .throwingFlatMap { deck in
+                    return db.raw(.init("DELETE FROM \(ReviewLog.schema) USING \(Card.schema) WHERE \(Card.schema).id=\(ReviewLog.schema).card_id AND \(Card.schema).deck_id='\(try deck.requireID().uuidString)'"))
+                        .run()
+                        .map { deck }
+                }
                 .flatMap { deck in
                     let cards = deck.cards
                     return deck.cards.delete(on: req.db)

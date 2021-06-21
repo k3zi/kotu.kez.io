@@ -1,4 +1,5 @@
 import Fluent
+import IkigaJSON
 import Vapor
 
 struct MediaCaptureRequest: Content {
@@ -702,6 +703,7 @@ class MediaController: RouteCollection {
                 .flatMapThrowing {
                     let fileURL = URL(fileURLWithPath: req.application.directory.resourcesDirectory).appendingPathComponent("Files").appendingPathComponent("Sessions").appendingPathComponent("\(try $0.requireID()).sentences")
                     let sentencesData = try? Data(contentsOf: fileURL)
+                    let sentences = sentencesData.flatMap { try? IkigaJSONDecoder().decode([SimpleSentence].self, from: $0) }
                     return ReaderSession.Response(
                         id: try $0.requireID(),
                         annotatedContent: $0.annotatedContent,
@@ -710,7 +712,7 @@ class MediaController: RouteCollection {
                         rubyType: $0.rubyType,
                         visualType: $0.visualType,
                         url: $0.url,
-                        sentences: sentencesData.flatMap { try? JSONDecoder().decode([SimpleSentence].self, from: $0)},
+                        sentences: sentences,
                         scrollPhraseIndex: $0.scrollPhraseIndex,
                         showReaderOptions: $0.showReaderOptions,
                         title: $0.title,
