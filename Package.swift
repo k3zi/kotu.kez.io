@@ -23,7 +23,9 @@ let package = Package(
         .package(name: "Gzip", url: "https://github.com/1024jp/GzipSwift.git", .branch("develop")),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
         .package(url: "https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "4.0.4")
+        .package(url: "https://github.com/jpsim/Yams.git", from: "4.0.4"),
+        .package(url: "https://github.com/Ikiga/IkigaJSON.git", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-algorithms", from: "0.1.0")
     ],
     targets: [
         .target(
@@ -39,7 +41,9 @@ let package = Package(
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .target(name: "MeCab"),
                 .product(name: "Gatekeeper", package: "gatekeeper"),
-                .product(name: "Yams", package: "Yams")
+                .product(name: "Yams", package: "Yams"),
+                .product(name: "IkigaJSON", package: "IkigaJSON"),
+                .product(name: "Algorithms", package: "swift-algorithms")
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
