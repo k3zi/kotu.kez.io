@@ -101,30 +101,6 @@ class Names extends React.Component {
         this.load();
     }
 
-    accentOutput(word, accent) {
-        const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
-        let output = '';
-        let mora = 0;
-        let i = 0;
-        while (i < word.length) {
-            output += word.charAt(i);
-
-            i++;
-            mora++;
-
-            while (i < word.length && smallrowKatakana.includes(word.charAt(i))) {
-                output += word.charAt(i);
-                i++;
-            }
-
-            if (mora === accent) {
-                output += '＼';
-            }
-        }
-
-        return output;
-    }
-
     render() {
         return (
             <div>
@@ -146,7 +122,7 @@ class Names extends React.Component {
                             <h4 className='text-center'>History</h4>
                             <ListGroup className="overflow-auto hide-scrollbar max-vh-75">
                                 {this.state.history.map((item, i) => {
-                                    return <ListGroup.Item key={i} variant={item.correctCount > item.incorrectCount ? 'success' : (item.correctCount == item.incorrectCount ? 'warning' : 'danger')}>{this.accentOutput(item.lastNamePronunciation, item.lastNamePitchAccent.mora)}・{this.accentOutput(item.firstNamePronunciation, item.firstNamePitchAccent.mora)}</ListGroup.Item>;
+                                    return <ListGroup.Item key={i} variant={item.correctCount > item.incorrectCount ? 'success' : (item.correctCount == item.incorrectCount ? 'warning' : 'danger')}>{Helpers.outputAccentPlainText(item.lastNamePronunciation, item.lastNamePitchAccent.mora)}・{Helpers.outputAccentPlainText(item.firstNamePronunciation, item.firstNamePitchAccent.mora)}</ListGroup.Item>;
                                 })}
                             </ListGroup>
                         </Col>

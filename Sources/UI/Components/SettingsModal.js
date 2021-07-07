@@ -372,6 +372,20 @@ class SettingsModal extends React.Component {
                         <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.showFurigana} onChange={(e) => this.save((s) => s.tests.pitchAccent.showFurigana = e.target.checked)} type="checkbox" label="Show Furigana Over Kanji" />
                     </Form.Group>
 
+                    <h6>Pitch Accent - Minimal Pairs</h6>
+                    <Form.Group className='mb-3' controlId="settingsTestsPitchAccentMinimalPairsShowContinueOnCorrect">
+                        <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.minimalPairs && this.props.user.settings.tests.pitchAccent.minimalPairs.showContinueOnCorrect} onChange={(e) => this.save((s) => s.tests.pitchAccent.minimalPairs.showContinueOnCorrect = e.target.checked)} type="checkbox" label="Show 'Continue' on Correct" />
+                        <Form.Text className="text-muted">
+                            Displays a 'Continue' button after selecting a correct answer. When disabled will automaticlly continue to the next problem.
+                        </Form.Text>
+                    </Form.Group>
+                    <Form.Group className='mb-3' controlId="settingsTestsPitchAccentMinimalPairsShowContinueOnIncorrect">
+                        <Form.Check defaultChecked={this.props.user.settings.tests && this.props.user.settings.tests.pitchAccent && this.props.user.settings.tests.pitchAccent.minimalPairs && this.props.user.settings.tests.pitchAccent.minimalPairs.showContinueOnIncorrect} onChange={(e) => this.save((s) => s.tests.pitchAccent.minimalPairs.showContinueOnIncorrect = e.target.checked)} type="checkbox" label="Show 'Continue' on Incorrect" />
+                        <Form.Text className="text-muted">
+                            Displays a 'Continue' button after selecting an incorrect answer. When disabled will automaticlly continue to the next problem.
+                        </Form.Text>
+                    </Form.Group>
+
                     <hr />
 
                     <h5>UI</h5>

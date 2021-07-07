@@ -111,6 +111,7 @@ class App extends React.Component {
             searchNavSelectedOption: 'Words'
         };
         this.abortController = new AbortController();
+        this.playAudio = this.playAudio.bind(this);
     }
 
     componentDidMount() {
@@ -768,16 +769,16 @@ class App extends React.Component {
                                     <Scratchpad />
                                 </Route>
                                 <Route exact path="/search/:query/:optionValue/:page/:per">
-                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={this.playAudio} />)}
                                 </Route>
                                 <Route exact path="/search/:optionValue/:page/:per">
-                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={this.playAudio} />)}
                                 </Route>
                                 <Route exact path="/search/:query">
-                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={this.playAudio} />)}
                                 </Route>
                                 <Route exact path="/search">
-                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={(url) => this.playAudio(url)} />)}
+                                    {this.loginProtect(<Search onSelectWord={(r) => this.loadResult(r)} onPlayAudio={this.playAudio} />)}
                                 </Route>
 
                                 <Route exact path="/transcription">
@@ -791,7 +792,7 @@ class App extends React.Component {
                                     {this.loginProtect(<GamesLobbies />)}
                                 </Route>
                                 <Route exact path="/games/lobby/:lobbyID/:connectionID">
-                                    {this.loginProtect(<GamesLobby onPlayAudio={(url) => this.playAudio(url)} />)}
+                                    {this.loginProtect(<GamesLobby onPlayAudio={this.playAudio} />)}
                                 </Route>
 
                                 <Route exact path="/flashcard/decks">
@@ -858,17 +859,17 @@ class App extends React.Component {
                                 </Route>
 
                                 <Route path="/tests/pitchAccent/minimalPairs">
-                                    {this.loginProtect(<TestsPitchAccentMinimalPairs />)}
+                                    {this.loginProtect(<TestsPitchAccentMinimalPairs onPlayAudio={this.playAudio} />)}
                                 </Route>
                                 <Route path="/tests/pitchAccent/names">
-                                    {this.loginProtect(<TestsPitchAccentNames />)}
+                                    {this.loginProtect(<TestsPitchAccentNames onPlayAudio={this.playAudio} />)}
                                 </Route>
                                 <Route path="/tests/pitchAccent/counters">
-                                    {this.loginProtect(<TestsPitchAccentCounters />)}
+                                    {this.loginProtect(<TestsPitchAccentCounters onPlayAudio={this.playAudio} />)}
                                 </Route>
 
                                 <Route path="/tests/syllabary/minimalPairs">
-                                    {this.loginProtect(<TestsSyllabaryMinimalPairs />)}
+                                    {this.loginProtect(<TestsSyllabaryMinimalPairs onPlayAudio={this.playAudio} />)}
                                 </Route>
                             </Switch>}
                         </Container>

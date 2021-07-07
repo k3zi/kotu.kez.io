@@ -184,7 +184,7 @@ class DictionaryController: RouteCollection {
                 .sort(DictionaryOwner.self, \.$order)
                 .sort(\.$subentryIndex)
                 .sort(\.$headline)
-                .unique()
+                .unique() // Because we use .unique() we can not add in the ID
                 .paginate(for: req)
                 .map { page in
                     let items = page.items.map { Headword.Simple(headword: $0) }

@@ -101,23 +101,47 @@ struct Settings: Content {
     }
 
     struct Tests: Content {
+
         enum CodingKeys: String, CodingKey {
             case pitchAccent
         }
 
         struct PitchAccent: Content {
+
             enum CodingKeys: String, CodingKey {
+                case minimalPairs
                 case showFurigana
             }
 
+            struct MinimalPairs: Content {
+                enum CodingKeys: String, CodingKey {
+                    case showContinueOnCorrect
+                    case showContinueOnIncorrect
+                }
+
+                var showContinueOnCorrect: Bool = false
+                var showContinueOnIncorrect: Bool = true
+
+                init() { }
+
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    showContinueOnCorrect = (try? container.decodeIfPresent(Bool.self, forKey: .showContinueOnCorrect)) ?? false
+                    showContinueOnIncorrect = (try? container.decodeIfPresent(Bool.self, forKey: .showContinueOnIncorrect)) ?? true
+                }
+            }
+
+            var minimalPairs = MinimalPairs()
             var showFurigana: Bool = true
 
             init() { }
 
             init(from decoder: Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
+                minimalPairs = (try? container.decodeIfPresent(MinimalPairs.self, forKey: .minimalPairs)) ?? MinimalPairs()
                 showFurigana = (try? container.decodeIfPresent(Bool.self, forKey: .showFurigana)) ?? true
             }
+
         }
 
         var pitchAccent = PitchAccent()

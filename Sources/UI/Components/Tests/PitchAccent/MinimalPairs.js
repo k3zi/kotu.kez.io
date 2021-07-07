@@ -19,6 +19,9 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Table from 'react-bootstrap/Table';
 
+import Helpers from './../../Helpers';
+import UserContext from './../../Context/User';
+
 class MinimalPairs extends React.Component {
 
     constructor(props) {
@@ -30,6 +33,8 @@ class MinimalPairs extends React.Component {
             started: false,
             history: []
         };
+
+        this.load = this.load.bind(this);
     }
 
     componentDidMount() {
@@ -41,6 +46,10 @@ class MinimalPairs extends React.Component {
     }
 
     async load() {
+        this.setState({
+            minimalPair: null,
+            selectedIndex: null
+        });
         const response = await fetch('/api/tests/pitchAccent/minimalPairs/random');
         if (response.ok) {
             const minimalPair = await response.json();
@@ -48,63 +57,47 @@ class MinimalPairs extends React.Component {
         }
     }
 
-    accentOutput(word, accent) {
-        const smallrowKatakana = 'ァィゥェォヵㇰヶㇱㇲㇳㇴㇵㇶㇷㇷ゚ㇸㇹㇺャュョㇻㇼㇽㇾㇿヮ';
-        let output = '';
-        let mora = 0;
-        let i = 0;
-        while (i < word.length) {
-            output += word.charAt(i);
-
-            i++;
-            mora++;
-
-            while (i < word.length && smallrowKatakana.includes(word.charAt(i))) {
-                output += word.charAt(i);
-                i++;
-            }
-
-            if (mora === accent) {
-                output += '＼';
-            }
+    selectIndex(index) {
+        if (this.state.selectedIndex !== null) {
+            return this.props.onPlayAudio(`/api/media/nhk/audio/${this.state.minimalPair.pairs[index].soundFile}`);
         }
+        const correct = index == this.state.pairIndex;
+        const history = this.state.history;
+        const pair = this.state.minimalPair.pairs[this.state.pairIndex];
+        const entry = pair.entries[0];
+        history.unshift({
+            correct,
+            pair,
+            type: (pair.pitchAccent == 0 || pair.pitchAccent == entry.moraCount) ? 'Heiban / Odaka' : (pair.pitchAccent == 1 ? 'Atamadaka' : 'Nakadaka')
+        });
+        const statistics = {
+            heiban: history.filter(i => i.type == 'Heiban / Odaka'),
+            atamadaka: history.filter(i => i.type == 'Atamadaka'),
+            nakadaka: history.filter(i => i.type == 'Nakadaka')
+        };
+        statistics.heibanCorrect = statistics.heiban.filter(i => i.correct);
+        statistics.atamadakaCorrect = statistics.atamadaka.filter(i => i.correct);
+        statistics.nakadakaCorrect = statistics.nakadaka.filter(i => i.correct);
+        this.setState({
+            selectedIndex: index,
+            history,
+            statistics
+        });
 
-        return output;
+        const { showContinueOnCorrect, showContinueOnIncorrect } = this.context.settings.tests.pitchAccent.minimalPairs;
+        if (!this.shouldShowContinue(this.context.settings, index)) {
+            setTimeout(this.load, 1000);
+        }
     }
 
-    selectIndex(index) {
-        const correct = index == this.state.pairIndex;
-        this.setState({ selectedIndex: index });
-
-        setTimeout(() => {
-            const history = this.state.history;
-            const pair = this.state.minimalPair.pairs[this.state.pairIndex];
-            const entry = pair.entries[0];
-            history.unshift({
-                correct,
-                pair,
-                type: (pair.pitchAccent == 0 || pair.pitchAccent == entry.moraCount) ? 'Heiban / Odaka' : (pair.pitchAccent == 1 ? 'Atamadaka' : 'Nakadaka')
-            });
-            const statistics = {
-                heiban: history.filter(i => i.type == 'Heiban / Odaka'),
-                atamadaka: history.filter(i => i.type == 'Atamadaka'),
-                nakadaka: history.filter(i => i.type == 'Nakadaka')
-            };
-            statistics.heibanCorrect = statistics.heiban.filter(i => i.correct);
-            statistics.atamadakaCorrect = statistics.atamadaka.filter(i => i.correct);
-            statistics.nakadakaCorrect = statistics.nakadaka.filter(i => i.correct);
-            this.setState({
-                minimalPair: null,
-                selectedIndex: null,
-                history,
-                statistics
-            });
-            this.load();
-        }, 1000);
+    shouldShowContinue(settings, selectedIndex) {
+        const { showContinueOnCorrect, showContinueOnIncorrect } = settings.tests.pitchAccent.minimalPairs;
+        const correct = selectedIndex == this.state.pairIndex;
+        return (correct && showContinueOnCorrect) || (!correct && showContinueOnIncorrect);
     }
 
     render() {
-        return (
+        return (<UserContext.Consumer>{user => (
             <div>
                 {!this.state.started && <Row>
                     <Col xs={0} lg={3}></Col>
@@ -124,7 +117,7 @@ class MinimalPairs extends React.Component {
                             <h4 className='text-center'>History</h4>
                             <ListGroup className="overflow-auto hide-scrollbar max-vh-75">
                                 {this.state.history.map((item, i) => {
-                                    return <ListGroup.Item key={i} variant={item.correct ? 'success' : 'danger'}>{this.accentOutput(item.pair.entries[0].accents[0].accent[0].pronunciation, item.pair.entries[0].accents[0].accent[0].pitchAccent)}</ListGroup.Item>;
+                                    return <ListGroup.Item key={i} variant={item.correct ? 'success' : 'danger'}>{Helpers.outputAccentPlainText(item.pair.entries[0].accents[0].accent[0].pronunciation, item.pair.entries[0].accents[0].accent[0].pitchAccent)}</ListGroup.Item>;
                                 })}
                             </ListGroup>
                         </Col>
@@ -133,16 +126,20 @@ class MinimalPairs extends React.Component {
                             <audio controls autoPlay>
                                 <source src={`/api/media/nhk/audio/${this.state.minimalPair.pairs[this.state.pairIndex].soundFile}`} type='audio/mpeg' />
                             </audio>
-                            <hr />
+                            <hr className='mt-2' />
                             <Row>
                                 {this.state.minimalPair.pairs.map((pair, i) => {
                                     return <Col key={i}>
                                         <div className="d-grid">
-                                            <Button block variant={this.state.selectedIndex === i ? (this.state.pairIndex === i ? 'success' : 'danger') : (this.state.selectedIndex == null ? 'primary' : (this.state.pairIndex === i ? 'success' : 'danger'))} className="mt-3" onClick={() => this.selectIndex(i)}>{this.accentOutput(pair.entries[0].accents[0].accent[0].pronunciation, pair.entries[0].accents[0].accent[0].pitchAccent)}</Button>
+                                            <Button block variant={this.state.selectedIndex === i ? (this.state.pairIndex === i ? 'success' : 'danger') : (this.state.selectedIndex == null ? 'primary' : (this.state.pairIndex === i ? 'success' : 'danger'))} onClick={() => this.selectIndex(i)}>{Helpers.outputAccentPlainText(pair.entries[0].accents[0].accent[0].pronunciation, pair.entries[0].accents[0].accent[0].pitchAccent)}</Button>
                                         </div>
                                     </Col>;
                                 })}
                             </Row>
+                            {this.state.selectedIndex !== null && this.shouldShowContinue(user.settings, this.state.selectedIndex) && <>
+                                <hr />
+                                <Button block variant='primary' className='col-12' onClick={() => this.load()}>Continue</Button>
+                            </>}
                         </Col>
                         <Col xs={12} lg={3} className='order-1 order-lg-2 mt-3 mt-lg-0'>
                             <h4 className='text-center'>Statistics</h4>
@@ -157,8 +154,9 @@ class MinimalPairs extends React.Component {
                     </Row>
                 </div>}
             </div>
-        );
+        )}</UserContext.Consumer>);
     }
 }
 
+MinimalPairs.contextType = UserContext;
 export default MinimalPairs;
