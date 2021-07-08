@@ -19,7 +19,7 @@ public func configure(_ app: Application) throws {
     app.http.server.configuration.supportPipelining = true
     app.http.server.configuration.serverName = "kotu"
 
-    var decoder = IkigaJSONDecoder()
+    let decoder = IkigaJSONDecoder()
     decoder.settings.dateDecodingStrategy = .iso8601
     ContentConfiguration.global.use(decoder: decoder, for: .json)
 
@@ -75,6 +75,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(BlogPost.Migration(), BlogPost.Migration1())
     app.migrations.add(Card.Migration1())
     app.migrations.add(Deck.Migration1())
+    app.migrations.add(Deck.MigrationPre2())
     app.migrations.add(Deck.Migration2())
     app.migrations.add(YouTubeVideo.Migration(), YouTubeSubtitle.Migration(), YouTubeSubtitle.Migration1())
     app.migrations.add(Note.Migration2())
@@ -97,7 +98,6 @@ public func configure(_ app: Application) throws {
     app.migrations.add(ReaderSession.Migration8())
     app.migrations.add(ReaderSession.Migration9())
     app.migrations.add(Card.Migration2(), Card.Migration3())
-    app.migrations.add(Deck.Migration3())
     app.migrations.add(ReaderSession.Migration10())
     app.migrations.add(Note.Migration3())
     app.migrations.add(Feedback.Migration2())

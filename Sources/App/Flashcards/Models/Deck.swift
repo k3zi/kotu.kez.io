@@ -116,6 +116,33 @@ extension Deck {
         }
     }
 
+    // This needs to get called before since request_fi is required for 2.
+    struct MigrationPre2: Fluent.Migration {
+        var name: String { "FlashcardDeckRequestedFI" }
+
+        func prepare(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .field("requested_fi", .double, .required, .sql(.default(8)))
+                .update()
+                .flatMap {
+                    Deck.query(on: database)
+                        .all()
+                        .flatMap { decks in
+                            for deck in decks {
+                                deck.requestedFI = deck.sm.requestedFI
+                            }
+                            return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
+                        }
+                }
+        }
+
+        func revert(on database: Database) -> EventLoopFuture<Void> {
+            database.schema(schema)
+                .deleteField("requested_fi")
+                .update()
+        }
+    }
+
     struct Migration2: Fluent.Migration {
         var name: String { "FlashcardDeckOffsetGrade" }
 
@@ -147,32 +174,6 @@ extension Deck {
                     }
                     return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
                 }
-        }
-    }
-
-    struct Migration3: Fluent.Migration {
-        var name: String { "FlashcardDeckRequestedFI" }
-
-        func prepare(on database: Database) -> EventLoopFuture<Void> {
-            database.schema(schema)
-                .field("requested_fi", .double, .required, .sql(.default(8)))
-                .update()
-                .flatMap {
-                    Deck.query(on: database)
-                        .all()
-                        .flatMap { decks in
-                            for deck in decks {
-                                deck.requestedFI = deck.sm.requestedFI
-                            }
-                            return EventLoopFuture<Void>.andAllSucceed(decks.map { $0.save(on: database) }, on: database.eventLoop)
-                        }
-                }
-        }
-
-        func revert(on database: Database) -> EventLoopFuture<Void> {
-            database.schema(schema)
-                .deleteField("requested_fi")
-                .update()
         }
     }
 
