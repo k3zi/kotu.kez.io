@@ -15,7 +15,7 @@ Hosted at: https://kotu.io
 - Add subtitles to videos and collaborate with others to translate form language to language.
 - Export subtitles as .srt files.
 
-![Transcribe](.github/transcibe.png)
+![Transcribe](.github/transcribe.png)
 
 #### YouTube
 
